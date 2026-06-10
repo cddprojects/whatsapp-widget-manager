@@ -35,6 +35,27 @@
         });
     }
 
+    function showSettingsPanel(sectionId, updateHash) {
+        var workspace = document.querySelector('[data-settings-workspace]');
+        if (!workspace) return;
+
+        var panels = workspace.querySelectorAll('[data-settings-panel]');
+        var buttons = workspace.querySelectorAll('[data-section-target]');
+        var activePanel = workspace.querySelector('[data-settings-panel="' + sectionId + '"]') || panels[0];
+        if (!activePanel) return;
+
+        panels.forEach(function (panel) {
+            panel.classList.toggle('is-active', panel === activePanel);
+        });
+        buttons.forEach(function (button) {
+            button.classList.toggle('is-active', button.getAttribute('data-section-target') === activePanel.getAttribute('data-settings-panel'));
+        });
+
+        if (updateHash) {
+            history.replaceState(null, '', '#' + activePanel.getAttribute('data-settings-panel'));
+        }
+    }
+
     document.addEventListener('click', function (event) {
         var copyButton = event.target.closest('[data-copy-target]');
         if (copyButton) {
@@ -75,6 +96,11 @@
         if (resetButton && !confirm('Reset all custom code fields?')) {
             event.preventDefault();
         }
+
+        var sectionButton = event.target.closest('[data-section-target]');
+        if (sectionButton) {
+            showSettingsPanel(sectionButton.getAttribute('data-section-target'), true);
+        }
     });
 
     document.querySelectorAll('form[data-confirm]').forEach(function (form) {
@@ -105,4 +131,7 @@
         businessMode.addEventListener('change', refreshBusinessHours);
         refreshBusinessHours();
     }
+
+    var initialSection = window.location.hash ? window.location.hash.slice(1) : '';
+    showSettingsPanel(initialSection || 'whatsapp-number', false);
 })();

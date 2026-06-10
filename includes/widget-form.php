@@ -9,6 +9,18 @@ if (!is_array($businessHours)) {
     $businessHours = default_business_hours();
 }
 $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($widget) : '';
+$settingsSections = [
+    ['id' => 'whatsapp-number', 'number' => '1', 'label' => 'WhatsApp Number'],
+    ['id' => 'prefilled-message', 'number' => '2', 'label' => 'Pre-Filled Message'],
+    ['id' => 'call-to-action', 'number' => '3', 'label' => 'Call To Action'],
+    ['id' => 'style-position', 'number' => '4', 'label' => 'Style & Position'],
+    ['id' => 'url-structure', 'number' => '5', 'label' => 'URL Structure'],
+    ['id' => 'display-settings', 'number' => '6', 'label' => 'Display Settings'],
+    ['id' => 'business-hours', 'number' => '7', 'label' => 'Business Hours'],
+    ['id' => 'greeting-dialog', 'number' => '8', 'label' => 'Greeting Dialog'],
+    ['id' => 'domain-embed', 'number' => '9', 'label' => 'Domain & Embed Code'],
+    ['id' => 'custom-code', 'number' => '10', 'label' => 'Custom Code'],
+];
 ?>
 
 <?php if (!empty($errors)): ?>
@@ -29,7 +41,27 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         <button type="submit" class="btn btn-primary">Save Widget</button>
     </div>
 
-    <section class="settings-card">
+    <div class="settings-workspace" data-settings-workspace>
+        <aside class="settings-sidebar" aria-label="Widget settings sections">
+            <div class="settings-sidebar-card">
+                <strong>Widget setup</strong>
+                <p>Choose a section to edit.</p>
+                <nav class="settings-section-nav">
+                    <?php foreach ($settingsSections as $index => $section): ?>
+                        <button
+                            type="button"
+                            class="settings-nav-item<?= $index === 0 ? ' is-active' : '' ?>"
+                            data-section-target="<?= e($section['id']) ?>">
+                            <span><?= e($section['number']) ?></span>
+                            <?= e($section['label']) ?>
+                        </button>
+                    <?php endforeach; ?>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="settings-panels">
+    <section class="settings-card is-active" data-settings-panel="whatsapp-number">
         <div class="section-title">
             <span>1</span>
             <div>
@@ -40,19 +72,15 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         <div class="form-grid">
             <label>
                 <span>Widget name</span>
-                <input type="text" name="widget_name" value="<?= e($widget['widget_name']) ?>" required>
+                <input type="text" name="widget_name" value="<?= e($widget['widget_name']) ?>">
             </label>
             <label>
                 <span>Country code</span>
-                <select name="whatsapp_country_code">
-                    <?php foreach (country_codes() as $code => $label): ?>
-                        <option value="<?= e($code) ?>"<?= selected((string) $widget['whatsapp_country_code'], $code) ?>><?= e($label) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <select name="whatsapp_country_code"><?= render_country_options((string) $widget['whatsapp_country_code']) ?></select>
             </label>
             <label>
                 <span>WhatsApp number</span>
-                <input type="tel" name="whatsapp_number" value="<?= e($widget['whatsapp_number']) ?>" placeholder="123456789" required>
+                <input type="tel" name="whatsapp_number" value="<?= e($widget['whatsapp_number']) ?>" placeholder="123456789">
                 <small>Digits only. Do not include spaces, symbols, or the country code.</small>
             </label>
             <label class="toggle-row">
@@ -69,11 +97,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
             <div data-random-number-list>
                 <?php foreach ($randomNumbers as $index => $row): ?>
                     <div class="repeat-row">
-                        <select name="random_numbers[<?= (int) $index ?>][country_code]">
-                            <?php foreach (country_codes() as $code => $label): ?>
-                                <option value="<?= e($code) ?>"<?= selected((string) ($row['country_code'] ?? '+60'), $code) ?>><?= e($label) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <select name="random_numbers[<?= (int) $index ?>][country_code]"><?= render_country_options((string) ($row['country_code'] ?? '+60')) ?></select>
                         <input type="tel" name="random_numbers[<?= (int) $index ?>][number]" value="<?= e((string) ($row['number'] ?? '')) ?>" placeholder="123456789">
                         <button type="button" class="btn btn-small btn-danger-soft" data-remove-row>Remove</button>
                     </div>
@@ -82,7 +106,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </div>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="prefilled-message">
         <div class="section-title">
             <span>2</span>
             <div>
@@ -102,7 +126,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </div>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="call-to-action">
         <div class="section-title">
             <span>3</span>
             <div>
@@ -116,7 +140,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </label>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="style-position">
         <div class="section-title">
             <span>4</span>
             <div>
@@ -231,7 +255,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </div>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="url-structure">
         <div class="section-title">
             <span>5</span>
             <div>
@@ -279,7 +303,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </div>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="display-settings">
         <div class="section-title">
             <span>6</span>
             <div>
@@ -303,7 +327,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </div>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="business-hours">
         <div class="section-title">
             <span>7</span>
             <div>
@@ -339,7 +363,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </div>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="greeting-dialog">
         <div class="section-title">
             <span>8</span>
             <div>
@@ -367,7 +391,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </div>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="domain-embed">
         <div class="section-title">
             <span>9</span>
             <div>
@@ -377,7 +401,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </div>
         <label>
             <span>Website domain</span>
-            <input type="text" name="website_domain" value="<?= e($widget['website_domain']) ?>" placeholder="example.com" required>
+            <input type="text" name="website_domain" value="<?= e($widget['website_domain']) ?>" placeholder="example.com">
             <small>Accepted formats: example.com, www.example.com, https://example.com.</small>
         </label>
         <?php if ($embed !== ''): ?>
@@ -396,7 +420,7 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         <?php endif; ?>
     </section>
 
-    <section class="settings-card">
+    <section class="settings-card" data-settings-panel="custom-code">
         <div class="section-title">
             <span>10</span>
             <div>
@@ -439,4 +463,6 @@ $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($wi
         </label>
         <button type="submit" name="reset_custom_code" value="1" class="btn btn-light" data-reset-custom-code>Reset Custom Code</button>
     </section>
+        </div>
+    </div>
 </form>

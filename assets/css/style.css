@@ -249,6 +249,93 @@ code {
     gap: 22px;
 }
 
+.settings-workspace {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
+}
+
+.settings-sidebar {
+    position: sticky;
+    top: 152px;
+}
+
+.settings-sidebar-card {
+    padding: 18px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+    border-radius: 22px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.settings-sidebar-card strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 18px;
+}
+
+.settings-sidebar-card p {
+    margin: 0 0 16px;
+}
+
+.settings-section-nav {
+    display: grid;
+    gap: 8px;
+}
+
+.settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    padding: 11px 12px;
+    color: var(--muted);
+    background: transparent;
+    font: inherit;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.settings-nav-item span {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    color: var(--primary);
+    background: var(--primary-soft);
+    font-size: 12px;
+}
+
+.settings-nav-item:hover,
+.settings-nav-item.is-active {
+    color: var(--primary-dark);
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+
+.settings-nav-item.is-active span {
+    color: #ffffff;
+    background: var(--primary);
+}
+
+.settings-panels {
+    min-width: 0;
+}
+
+.settings-card[data-settings-panel] {
+    display: none;
+}
+
+.settings-card[data-settings-panel].is-active {
+    display: block;
+}
+
 .sticky-actions {
     position: sticky;
     top: 72px;
@@ -722,6 +809,26 @@ code {
     .topnav a,
     .form-actions .btn {
         width: 100%;
+    }
+
+    .settings-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-sidebar {
+        position: static;
+    }
+
+    .settings-section-nav {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .settings-nav-item {
+        min-width: max-content;
+        white-space: nowrap;
     }
 
     .two-columns,
