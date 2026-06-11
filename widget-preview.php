@@ -19,7 +19,7 @@ $src = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Preview - <?= e($widget['widget_name']) ?></title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= (int) filemtime(__DIR__ . '/assets/css/style.css') ?>">
 </head>
 <body class="preview-body">
     <div class="preview-site">
