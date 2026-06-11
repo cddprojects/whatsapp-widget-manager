@@ -767,10 +767,14 @@ function enabled_label($value, string $enabled = 'Enabled', string $disabled = '
 function widget_style_frame_size(string $style): array
 {
     return match ($style) {
-        'style-1', 'style-4', 'style-8' => ['width' => 230, 'height' => 90],
-        'style-6' => ['width' => 220, 'height' => 70],
-        'style-3-large' => ['width' => 100, 'height' => 100],
-        default => ['width' => 90, 'height' => 90],
+        'style-1' => ['width' => 240, 'height' => 90],
+        'style-2', 'style-3' => ['width' => 96, 'height' => 96],
+        'style-3-large' => ['width' => 130, 'height' => 130],
+        'style-4', 'style-8' => ['width' => 260, 'height' => 90],
+        'style-5' => ['width' => 120, 'height' => 120],
+        'style-6' => ['width' => 220, 'height' => 80],
+        'style-7', 'style-7-extend' => ['width' => 110, 'height' => 110],
+        default => ['width' => 120, 'height' => 120],
     };
 }
 
@@ -797,20 +801,21 @@ function iframe_position_css(array $widget, string $device): string
         . $horizontalSide . ':' . $horizontalValue . ';';
 }
 
+function iframe_position_settings(array $widget, string $device): array
+{
+    return [
+        'position' => enum_value((string) ($widget[$device . '_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed'),
+        'verticalSide' => enum_value((string) ($widget[$device . '_vertical_position_type'] ?? 'bottom'), ['top', 'bottom'], 'bottom'),
+        'verticalValue' => css_unit_value((string) ($widget[$device . '_vertical_position_value'] ?? '25px'), '25px'),
+        'horizontalSide' => enum_value((string) ($widget[$device . '_horizontal_position_type'] ?? 'right'), ['left', 'right'], 'right'),
+        'horizontalValue' => css_unit_value((string) ($widget[$device . '_horizontal_position_value'] ?? '25px'), '25px'),
+    ];
+}
+
 function embed_code(array $widget): string
 {
-    $src = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
-    $frameId = 'ctcw-frame-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $widget['id']);
-    $size = widget_frame_size($widget);
-    $desktopCss = iframe_position_css($widget, 'desktop');
-    $mobileCss = iframe_position_css($widget, 'mobile');
-
-    return '<style>'
-        . '#' . $frameId . '{border:0; ' . $desktopCss . ' width:' . (int) $size['width'] . 'px; height:' . (int) $size['height'] . 'px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); background:transparent; pointer-events:auto; z-index:999999; overflow:hidden;}'
-        . '@media (max-width:767px){#' . $frameId . '{' . $mobileCss . ' width:min(' . (int) $size['width'] . 'px, calc(100vw - 16px)); height:min(' . (int) $size['height'] . 'px, calc(100vh - 16px));}}'
-        . '</style>'
-        . '<iframe id="' . $frameId . '" src="' . $src . '" scrolling="no" style="background:transparent;" allowtransparency="true"></iframe>'
-        . '<script>(function(){var frame=document.getElementById("' . $frameId . '");if(!frame){return;}var maxWidth=function(){return Math.max(80,window.innerWidth-16);};var maxHeight=function(){return Math.max(80,window.innerHeight-16);};window.addEventListener("message",function(event){if(event.source!==frame.contentWindow||!event.data||event.data.type!=="ctcw:size"||String(event.data.id)!=="' . e((string) $widget['id']) . '"){return;}var width=Math.min(maxWidth(),Math.max(60,parseInt(event.data.width,10)||' . (int) $size['width'] . '));var height=Math.min(maxHeight(),Math.max(60,parseInt(event.data.height,10)||' . (int) $size['height'] . '));frame.style.width=width+"px";frame.style.height=height+"px";});})();</script>';
+    $src = SYSTEM_BASE_URL . '/embed.js.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
+    return '<script src="' . $src . '"></script>';
 }
 
 function json_for_html($value): string

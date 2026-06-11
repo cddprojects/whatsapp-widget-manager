@@ -73,6 +73,8 @@ $mobileVerticalValue = (string) ($widget['mobile_vertical_position_value'] ?? '2
 $mobileHorizontalValue = (string) ($widget['mobile_horizontal_position_value'] ?? '25px');
 $desktopAlign = $desktopHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
 $mobileAlign = $mobileHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
+$desktopAnchorClass = 'ctcw-anchor-' . $desktopVerticalSide . ' ctcw-anchor-' . $desktopHorizontalSide;
+$mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile-anchor-' . $mobileHorizontalSide;
 ?>
 <!doctype html>
 <html lang="en">
@@ -116,7 +118,7 @@ $mobileAlign = $mobileHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
 <?php if ($showWidget): ?>
     <?= $widget['custom_script_body'] ?? '' ?>
     <div
-        class="ctcw-container <?= e($desktopStyle) ?> <?= $isOnline ? 'is-online' : 'is-offline' ?>"
+        class="ctcw-container ctcw-widget-root <?= e($desktopAnchorClass) ?> <?= e($mobileAnchorClass) ?> <?= e($desktopStyle) ?> <?= $isOnline ? 'is-online' : 'is-offline' ?>"
         data-mobile-style="<?= e($mobileStyle) ?>"
         data-desktop-style="<?= e($desktopStyle) ?>"
         data-show-desktop="<?= !empty($widget['show_desktop']) ? '1' : '0' ?>"
