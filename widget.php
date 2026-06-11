@@ -66,7 +66,7 @@ $mobileHorizontalValue = (string) ($widget['mobile_horizontal_position_value'] ?
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
     <title><?= e($widget['widget_name']) ?></title>
-    <link rel="stylesheet" href="assets/css/widget.css">
+    <link rel="stylesheet" href="assets/css/widget.css?v=<?= (int) filemtime(__DIR__ . '/assets/css/widget.css') ?>">
     <?php if ($showWidget): ?>
         <?= $widget['custom_script_head'] ?? '' ?>
         <style>
@@ -122,7 +122,7 @@ $mobileHorizontalValue = (string) ($widget['mobile_horizontal_position_value'] ?
     <script>
         window.CTCW_WIDGET = <?= json_for_html($widgetConfig) ?>;
     </script>
-    <script src="assets/js/widget.js"></script>
+    <script src="assets/js/widget.js?v=<?= (int) filemtime(__DIR__ . '/assets/js/widget.js') ?>"></script>
     <?= $widget['custom_script_footer'] ?? '' ?>
 <?php endif; ?>
 </body>
