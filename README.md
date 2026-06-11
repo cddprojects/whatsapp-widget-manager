@@ -80,7 +80,7 @@ In phpMyAdmin, open the `click_to_chat_manager` database, choose the **Import** 
 ```html
 <iframe
   src="https://YOUR-SYSTEM-DOMAIN.com/widget.php?id=WIDGET_ID&key=PUBLIC_KEY"
-  style="border:0; position:fixed; bottom:0; right:0; width:100%; height:100%; pointer-events:none; z-index:999999;"
+  style="border:0; position:fixed; bottom:0; right:0; width:100%; height:100%; pointer-events:auto; z-index:999999;"
   allowtransparency="true"></iframe>
 ```
 

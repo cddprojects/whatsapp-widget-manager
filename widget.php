@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/functions.php';
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
 $widgetId = (int) ($_GET['id'] ?? 0);
 $publicKey = (string) ($_GET['key'] ?? '');
 $widget = $widgetId > 0 && $publicKey !== '' ? find_public_widget($widgetId, $publicKey) : null;
