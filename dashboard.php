@@ -63,7 +63,12 @@ require __DIR__ . '/includes/header.php';
                                 <strong><?= e($widget['widget_name']) ?></strong>
                                 <small>ID #<?= (int) $widget['id'] ?></small>
                             </td>
-                            <td><?= e($widget['website_domain']) ?></td>
+                            <td>
+                                <strong><?= e($widget['website_domain']) ?></strong>
+                                <small>Domain Lock: <?= e(enabled_label($widget['domain_lock_enabled'] ?? 1)) ?></small>
+                                <small>WWW: <?= e(enabled_label($widget['allow_www'] ?? 1, 'Allowed', 'Not Allowed')) ?></small>
+                                <small>Subdomains: <?= e(enabled_label($widget['allow_subdomains'] ?? 0, 'Allowed', 'Not Allowed')) ?></small>
+                            </td>
                             <td><span class="status-pill"><?= e(widget_status_label($widget)) ?></span></td>
                             <td><?= e(date('M j, Y', strtotime((string) $widget['created_at']))) ?></td>
                             <td>
