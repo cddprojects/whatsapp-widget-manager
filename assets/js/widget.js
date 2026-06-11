@@ -19,10 +19,10 @@
         'style-3-large': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
         'style-3-extend': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
         'style-4': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] },
-        'style-5': { normal: [130, 130], hover: [420, 260], greeting: [390, 300] },
+        'style-5': { normal: [420, 260], hover: [420, 260], greeting: [390, 300] },
         'style-6': { normal: [260, 90], hover: [280, 100], greeting: [390, 300] },
         'style-7': { normal: [130, 130], hover: [140, 140], greeting: [390, 300] },
-        'style-7-extend': { normal: [130, 130], hover: [420, 160], greeting: [390, 300] },
+        'style-7-extend': { normal: [420, 160], hover: [420, 160], greeting: [390, 300] },
         'style-8': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] }
     };
 

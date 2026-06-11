@@ -298,12 +298,12 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
 }
 
 .style-7-extend.is-hovering .ctcw-widget {
-    max-width: 240px;
+    max-width: 320px;
     padding: 0 20px;
 }
 
 .style-7-extend.is-hovering .ctcw-text {
-    max-width: 160px;
+    max-width: 240px;
     opacity: 1;
 }
 
