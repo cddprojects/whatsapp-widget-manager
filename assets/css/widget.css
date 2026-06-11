@@ -246,27 +246,32 @@ body * {
 }
 
 .style-7-extend .ctcw-widget {
-    width: 58px;
+    width: auto;
+    min-width: 58px;
     max-width: 58px;
     height: 58px;
     min-height: 58px;
     overflow: hidden;
     padding: 0 17px;
     border-radius: 999px;
+    justify-content: flex-start;
+    transition: max-width 0.25s ease, padding 0.25s ease, transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .style-7-extend .ctcw-text {
+    max-width: 0;
+    overflow: hidden;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: max-width 0.25s ease, opacity 0.2s ease;
 }
 
 .style-7-extend .ctcw-widget:hover {
-    width: auto;
     max-width: 240px;
     padding: 0 20px;
 }
 
 .style-7-extend .ctcw-widget:hover .ctcw-text {
+    max-width: 160px;
     opacity: 1;
 }
 
