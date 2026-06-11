@@ -60,10 +60,11 @@
         return styleSizes[state] || styleSizes.normal || [120, 120];
     }
 
-    function sendWidgetSize(width, height) {
+    function sendWidgetSize(width, height, state) {
         window.parent.postMessage({
             type: 'ctcw',
             id: String(config.widgetId || ''),
+            state: state || currentState,
             width: width,
             height: height
         }, '*');
@@ -72,7 +73,13 @@
     function reportMappedSize(state) {
         currentState = state;
         var size = sizeForState(state);
-        sendWidgetSize(size[0], size[1]);
+        sendWidgetSize(size[0], size[1], state);
+    }
+
+    function scheduleSizeReports() {
+        [50, 300, 800].forEach(function (delay) {
+            window.setTimeout(reportSize, delay);
+        });
     }
 
     function reportSize() {
@@ -91,10 +98,10 @@
             var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
             var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
             var minimum = sizeForState(currentState);
-            var width = Math.max(minimum[0], Math.ceil(maxX - minX + 16));
-            var height = Math.max(minimum[1], Math.ceil(maxY - minY + 16));
+            var width = Math.max(minimum[0], Math.ceil(maxX - minX + 32));
+            var height = Math.max(minimum[1], Math.ceil(maxY - minY + 32));
 
-            sendWidgetSize(width, height);
+            sendWidgetSize(width, height, currentState);
         });
     }
 
@@ -181,6 +188,7 @@
             reportMappedSize('greeting');
             greeting.classList.add('is-visible');
             reportSize();
+            scheduleSizeReports();
         }, Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000);
     }
 
@@ -189,12 +197,14 @@
             greeting.classList.remove('is-visible');
             reportMappedSize('normal');
             reportSize();
+            scheduleSizeReports();
         });
     }
 
     container.addEventListener('mouseenter', function () {
         reportMappedSize('hover');
         window.setTimeout(reportSize, 80);
+        scheduleSizeReports();
     });
 
     container.addEventListener('mouseleave', function () {
@@ -203,6 +213,7 @@
                 reportMappedSize('normal');
             }
             reportSize();
+            scheduleSizeReports();
         }, 250);
     });
 
@@ -224,6 +235,7 @@
         if (!config.online) {
             reportMappedSize('animation');
             button.classList.add('is-shaking');
+            scheduleSizeReports();
             window.setTimeout(function () { button.classList.remove('is-shaking'); }, 400);
             return;
         }
@@ -232,11 +244,13 @@
 
     applyResponsiveState();
     reportMappedSize('normal');
+    scheduleSizeReports();
     window.addEventListener('resize', applyResponsiveState);
     window.addEventListener('load', reportSize);
     document.addEventListener('DOMContentLoaded', function () {
         reportMappedSize('normal');
         reportSize();
+        scheduleSizeReports();
     });
 
     var reportsRemaining = 8;

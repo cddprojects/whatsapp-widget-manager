@@ -70,10 +70,28 @@ $config = [
         return Math.max(120, window.innerHeight - 16);
     }
 
-    function clampSize(width, height) {
+    function minimumForState(state) {
+        if (state === 'greeting') {
+            return { width: 400, height: 320 };
+        }
+
+        var active = activeConfig();
+        var size = active.size || { width: 120, height: 120 };
+        if (size.width > 180) {
+            return {
+                width: Math.max(280, size.width),
+                height: Math.max(120, size.height)
+            };
+        }
+
+        return { width: 120, height: 120 };
+    }
+
+    function clampSize(width, height, state) {
+        var minimum = minimumForState(state);
         return {
-            width: Math.min(maxWidth(), Math.max(90, parseInt(width, 10) || 120)),
-            height: Math.min(maxHeight(), Math.max(90, parseInt(height, 10) || 120))
+            width: Math.min(maxWidth(), Math.max(minimum.width, parseInt(width, 10) || minimum.width)),
+            height: Math.min(maxHeight(), Math.max(minimum.height, parseInt(height, 10) || minimum.height))
         };
     }
 
@@ -90,8 +108,8 @@ $config = [
         iframe.style[position.horizontalSide] = position.horizontalValue;
     }
 
-    function applySize(width, height) {
-        var size = clampSize(width, height);
+    function applySize(width, height, state) {
+        var size = clampSize(width, height, state);
         lastSize = size;
         iframe.style.width = size.width + 'px';
         iframe.style.height = size.height + 'px';
@@ -110,7 +128,7 @@ $config = [
         iframe.style.maxWidth = 'calc(100vw - 16px)';
         iframe.style.maxHeight = 'calc(100vh - 16px)';
         applyPosition();
-        applySize(activeConfig().size.width, activeConfig().size.height);
+        applySize(activeConfig().size.width, activeConfig().size.height, 'normal');
     }
 
     function mount() {
@@ -144,7 +162,7 @@ $config = [
         if (!event.data || (event.data.type !== 'ctcw' && event.data.type !== 'ctcw:size') || String(event.data.id) !== config.widgetId) {
             return;
         }
-        applySize(event.data.width, event.data.height);
+        applySize(event.data.width, event.data.height, event.data.state || 'normal');
     });
 
     window.addEventListener('resize', function () {
@@ -153,10 +171,10 @@ $config = [
         }
         applyPosition();
         if (lastSize) {
-            applySize(lastSize.width, lastSize.height);
+            applySize(lastSize.width, lastSize.height, 'normal');
             return;
         }
-        applySize(activeConfig().size.width, activeConfig().size.height);
+        applySize(activeConfig().size.width, activeConfig().size.height, 'normal');
         if (iframe.contentWindow) {
             iframe.contentWindow.postMessage({
                 type: 'ctcw',
