@@ -37,6 +37,7 @@ if (!is_array($randomNumbers)) {
 }
 
 $widgetConfig = [
+    'widgetId' => (int) $widget['id'],
     'widgetName' => (string) $widget['widget_name'],
     'site' => (string) $widget['website_domain'],
     'countryCode' => (string) $widget['whatsapp_country_code'],

@@ -32,6 +32,34 @@
         });
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
+        reportSize();
+    }
+
+    function reportSize() {
+        window.requestAnimationFrame(function () {
+            var rects = [container.getBoundingClientRect()];
+            var hoverBox = container.querySelector('.ctcw-hover-box');
+            if (greeting && greeting.classList.contains('is-visible')) {
+                rects.push(greeting.getBoundingClientRect());
+            }
+            if (hoverBox && window.getComputedStyle(hoverBox).opacity !== '0') {
+                rects.push(hoverBox.getBoundingClientRect());
+            }
+
+            var minX = Math.min.apply(null, rects.map(function (rect) { return rect.left; }));
+            var minY = Math.min.apply(null, rects.map(function (rect) { return rect.top; }));
+            var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
+            var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
+            var width = Math.ceil(maxX - minX + 16);
+            var height = Math.ceil(maxY - minY + 16);
+
+            window.parent.postMessage({
+                type: 'ctcw:size',
+                id: String(config.widgetId || ''),
+                width: width,
+                height: height
+            }, '*');
+        });
     }
 
     function chooseNumber() {
@@ -115,14 +143,24 @@
     if (config.greetingEnabled && greeting) {
         window.setTimeout(function () {
             greeting.classList.add('is-visible');
+            reportSize();
         }, Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000);
     }
 
     if (closeGreeting) {
         closeGreeting.addEventListener('click', function () {
             greeting.classList.remove('is-visible');
+            reportSize();
         });
     }
+
+    container.addEventListener('mouseenter', function () {
+        window.setTimeout(reportSize, 80);
+    });
+
+    container.addEventListener('mouseleave', function () {
+        window.setTimeout(reportSize, 120);
+    });
 
     button.addEventListener('click', function (event) {
         event.preventDefault();
@@ -149,4 +187,5 @@
 
     applyResponsiveState();
     window.addEventListener('resize', applyResponsiveState);
+    window.addEventListener('load', reportSize);
 })();

@@ -767,11 +767,10 @@ function enabled_label($value, string $enabled = 'Enabled', string $disabled = '
 function widget_style_frame_size(string $style): array
 {
     return match ($style) {
-        'style-1', 'style-4', 'style-8', 'style-7-extend' => ['width' => 300, 'height' => 150],
-        'style-5' => ['width' => 380, 'height' => 170],
-        'style-6' => ['width' => 260, 'height' => 110],
-        'style-3-large' => ['width' => 140, 'height' => 140],
-        default => ['width' => 130, 'height' => 130],
+        'style-1', 'style-4', 'style-8' => ['width' => 230, 'height' => 90],
+        'style-6' => ['width' => 220, 'height' => 70],
+        'style-3-large' => ['width' => 100, 'height' => 100],
+        default => ['width' => 90, 'height' => 90],
     };
 }
 
@@ -781,11 +780,6 @@ function widget_frame_size(array $widget): array
     $mobile = widget_style_frame_size((string) ($widget['mobile_style'] ?? 'style-1'));
     $width = max($desktop['width'], $mobile['width']);
     $height = max($desktop['height'], $mobile['height']);
-
-    if (!empty($widget['greeting_enabled'])) {
-        $width = max($width, 380);
-        $height = max($height, 340);
-    }
 
     return ['width' => $width, 'height' => $height];
 }
@@ -812,10 +806,11 @@ function embed_code(array $widget): string
     $mobileCss = iframe_position_css($widget, 'mobile');
 
     return '<style>'
-        . '#' . $frameId . '{border:0; ' . $desktopCss . ' width:' . (int) $size['width'] . 'px; height:' . (int) $size['height'] . 'px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); background:transparent; pointer-events:auto; z-index:999999;}'
+        . '#' . $frameId . '{border:0; ' . $desktopCss . ' width:' . (int) $size['width'] . 'px; height:' . (int) $size['height'] . 'px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); background:transparent; pointer-events:auto; z-index:999999; overflow:hidden;}'
         . '@media (max-width:767px){#' . $frameId . '{' . $mobileCss . ' width:min(' . (int) $size['width'] . 'px, calc(100vw - 16px)); height:min(' . (int) $size['height'] . 'px, calc(100vh - 16px));}}'
         . '</style>'
-        . '<iframe id="' . $frameId . '" src="' . $src . '" scrolling="no" style="background:transparent;" allowtransparency="true"></iframe>';
+        . '<iframe id="' . $frameId . '" src="' . $src . '" scrolling="no" style="background:transparent;" allowtransparency="true"></iframe>'
+        . '<script>(function(){var frame=document.getElementById("' . $frameId . '");if(!frame){return;}var maxWidth=function(){return Math.max(80,window.innerWidth-16);};var maxHeight=function(){return Math.max(80,window.innerHeight-16);};window.addEventListener("message",function(event){if(event.source!==frame.contentWindow||!event.data||event.data.type!=="ctcw:size"||String(event.data.id)!=="' . e((string) $widget['id']) . '"){return;}var width=Math.min(maxWidth(),Math.max(60,parseInt(event.data.width,10)||' . (int) $size['width'] . '));var height=Math.min(maxHeight(),Math.max(60,parseInt(event.data.height,10)||' . (int) $size['height'] . '));frame.style.width=width+"px";frame.style.height=height+"px";});})();</script>';
 }
 
 function json_for_html($value): string

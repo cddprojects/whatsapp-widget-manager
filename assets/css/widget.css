@@ -79,7 +79,7 @@ body * {
 .ctcw-greeting {
     position: relative;
     display: none;
-    width: min(280px, calc(100vw - 32px));
+    width: 280px;
     padding: 16px 18px;
     border-radius: 18px;
     background: #ffffff;
@@ -288,7 +288,7 @@ body * {
     }
 
     .ctcw-greeting {
-        width: min(260px, calc(100vw - 24px));
+        width: 260px;
     }
 
     .style-5 .ctcw-hover-box {
