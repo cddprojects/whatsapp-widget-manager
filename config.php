@@ -18,7 +18,7 @@ define('DB_CHARSET', 'utf8mb4');
  * Set SYSTEM_BASE_URL to the public URL where this app is hosted, for example:
  * https://chat.example.com
  */
-define('SYSTEM_BASE_URL', rtrim(getenv('SYSTEM_BASE_URL') ?: 'http://localhost', '/'));
+define('SYSTEM_BASE_URL', rtrim(getenv('SYSTEM_BASE_URL') ?: 'http://localhost/click-to-chat-manager/whatsapp-widget-manager', '/'));
 
 date_default_timezone_set(getenv('APP_TIMEZONE') ?: 'Asia/Kuala_Lumpur');
 
