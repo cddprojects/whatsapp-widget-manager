@@ -8,6 +8,19 @@
     var closeGreeting = document.querySelector('[data-close-greeting]');
     var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-5', 'style-6', 'style-7', 'style-7-extend', 'style-8'];
     var isOpening = false;
+    var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
+    var sizeMap = {
+        'style-1': { normal: [240, 90], greeting: [380, 280] },
+        'style-2': { normal: [96, 96], animation: [120, 120] },
+        'style-3': { normal: [96, 96] },
+        'style-3-large': { normal: [130, 130] },
+        'style-4': { normal: [260, 90] },
+        'style-5': { normal: [120, 120], hover: [360, 220] },
+        'style-6': { normal: [220, 80] },
+        'style-7': { normal: [110, 110] },
+        'style-7-extend': { normal: [110, 110], hover: [320, 120] },
+        'style-8': { normal: [260, 90], greeting: [380, 280] }
+    };
 
     if (!container || !button) {
         return;
@@ -25,6 +38,7 @@
     function applyResponsiveState() {
         var mobile = isMobile();
         var activeStyle = mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle;
+        currentStyle = activeStyle || 'style-1';
 
         document.documentElement.classList.toggle('ctcw-mobile', mobile);
         styleNames.forEach(function (style) {
@@ -32,7 +46,27 @@
         });
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
+        reportMappedSize('normal');
         reportSize();
+    }
+
+    function sizeForState(state) {
+        var styleSizes = sizeMap[currentStyle] || sizeMap['style-1'];
+        return styleSizes[state] || styleSizes.normal || [120, 120];
+    }
+
+    function sendWidgetSize(width, height) {
+        window.parent.postMessage({
+            type: 'ctcw:size',
+            id: String(config.widgetId || ''),
+            width: width,
+            height: height
+        }, '*');
+    }
+
+    function reportMappedSize(state) {
+        var size = sizeForState(state);
+        sendWidgetSize(size[0], size[1]);
     }
 
     function reportSize() {
@@ -53,12 +87,7 @@
             var width = Math.ceil(maxX - minX + 16);
             var height = Math.ceil(maxY - minY + 16);
 
-            window.parent.postMessage({
-                type: 'ctcw:size',
-                id: String(config.widgetId || ''),
-                width: width,
-                height: height
-            }, '*');
+            sendWidgetSize(width, height);
         });
     }
 
@@ -142,6 +171,7 @@
 
     if (config.greetingEnabled && greeting) {
         window.setTimeout(function () {
+            reportMappedSize('greeting');
             greeting.classList.add('is-visible');
             reportSize();
         }, Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000);
@@ -150,15 +180,20 @@
     if (closeGreeting) {
         closeGreeting.addEventListener('click', function () {
             greeting.classList.remove('is-visible');
+            reportMappedSize('normal');
             reportSize();
         });
     }
 
     container.addEventListener('mouseenter', function () {
+        reportMappedSize('hover');
         window.setTimeout(reportSize, 80);
     });
 
     container.addEventListener('mouseleave', function () {
+        if (!greeting || !greeting.classList.contains('is-visible')) {
+            reportMappedSize('normal');
+        }
         window.setTimeout(reportSize, 120);
     });
 
@@ -178,6 +213,7 @@
         }, 1200);
 
         if (!config.online) {
+            reportMappedSize('animation');
             button.classList.add('is-shaking');
             window.setTimeout(function () { button.classList.remove('is-shaking'); }, 400);
             return;

@@ -78,31 +78,7 @@ In phpMyAdmin, open the `click_to_chat_manager` database, choose the **Import** 
 ## Example iframe embed code
 
 ```html
-<style>
-  #ctcw-frame-WIDGET_ID {
-    border: 0;
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    width: 90px;
-    height: 90px;
-    max-width: calc(100vw - 16px);
-    max-height: calc(100vh - 16px);
-    background: transparent;
-    pointer-events: auto;
-    z-index: 999999;
-  }
-</style>
-<iframe
-  id="ctcw-frame-WIDGET_ID"
-  src="https://YOUR-SYSTEM-DOMAIN.com/widget.php?id=WIDGET_ID&key=PUBLIC_KEY"
-  scrolling="no"
-  style="background:transparent;"
-  allowtransparency="true"></iframe>
-<script>
-  /* The dashboard-generated code includes a listener that resizes this iframe
-     to the visible widget area so the rest of the website remains clickable. */
-</script>
+<script src="https://YOUR-SYSTEM-DOMAIN.com/embed.js.php?id=WIDGET_ID&key=PUBLIC_KEY"></script>
 ```
 
 Paste this before the closing `</body>` tag of the client website.
@@ -119,6 +95,7 @@ dashboard.php
 create-widget.php
 edit-widget.php
 embed-code.php
+embed.js.php
 widget-preview.php
 widget.php
 includes/
