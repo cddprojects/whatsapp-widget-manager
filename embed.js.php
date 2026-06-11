@@ -32,8 +32,6 @@ $frameId = 'ctcw-frame-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $widget
 $widgetSrc = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
 $desktopSize = widget_style_frame_size((string) ($widget['desktop_style'] ?? 'style-1'));
 $mobileSize = widget_style_frame_size((string) ($widget['mobile_style'] ?? 'style-1'));
-$desktopExpandedSize = widget_style_expanded_frame_size((string) ($widget['desktop_style'] ?? 'style-1'), !empty($widget['greeting_enabled']));
-$mobileExpandedSize = widget_style_expanded_frame_size((string) ($widget['mobile_style'] ?? 'style-1'), !empty($widget['greeting_enabled']));
 $config = [
     'widgetId' => (string) $widget['id'],
     'frameId' => $frameId,
@@ -41,12 +39,10 @@ $config = [
     'desktop' => [
         'position' => iframe_position_settings($widget, 'desktop'),
         'size' => $desktopSize,
-        'expandedSize' => $desktopExpandedSize,
     ],
     'mobile' => [
         'position' => iframe_position_settings($widget, 'mobile'),
         'size' => $mobileSize,
-        'expandedSize' => $mobileExpandedSize,
     ],
 ];
 ?>
@@ -67,17 +63,17 @@ $config = [
     }
 
     function maxWidth() {
-        return Math.max(96, window.innerWidth - 16);
+        return Math.max(120, window.innerWidth - 16);
     }
 
     function maxHeight() {
-        return Math.max(96, window.innerHeight - 16);
+        return Math.max(120, window.innerHeight - 16);
     }
 
     function clampSize(width, height) {
         return {
-            width: Math.min(maxWidth(), Math.max(96, parseInt(width, 10) || 96)),
-            height: Math.min(maxHeight(), Math.max(96, parseInt(height, 10) || 96))
+            width: Math.min(maxWidth(), Math.max(90, parseInt(width, 10) || 120)),
+            height: Math.min(maxHeight(), Math.max(90, parseInt(height, 10) || 120))
         };
     }
 
@@ -110,10 +106,11 @@ $config = [
         iframe.style.zIndex = '999999';
         iframe.style.overflow = 'hidden';
         iframe.style.pointerEvents = 'auto';
+        iframe.style.boxShadow = 'none';
         iframe.style.maxWidth = 'calc(100vw - 16px)';
         iframe.style.maxHeight = 'calc(100vh - 16px)';
         applyPosition();
-        applySize(activeConfig().expandedSize.width, activeConfig().expandedSize.height);
+        applySize(activeConfig().size.width, activeConfig().size.height);
     }
 
     function mount() {
@@ -144,7 +141,7 @@ $config = [
         if (!iframe || event.source !== iframe.contentWindow) {
             return;
         }
-        if (!event.data || event.data.type !== 'ctcw:size' || String(event.data.id) !== config.widgetId) {
+        if (!event.data || (event.data.type !== 'ctcw' && event.data.type !== 'ctcw:size') || String(event.data.id) !== config.widgetId) {
             return;
         }
         applySize(event.data.width, event.data.height);
@@ -159,6 +156,13 @@ $config = [
             applySize(lastSize.width, lastSize.height);
             return;
         }
-        applySize(activeConfig().expandedSize.width, activeConfig().expandedSize.height);
+        applySize(activeConfig().size.width, activeConfig().size.height);
+        if (iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+                type: 'ctcw',
+                width: window.innerWidth,
+                height: window.innerHeight
+            }, '*');
+        }
     });
 })();

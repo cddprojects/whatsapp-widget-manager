@@ -11,16 +11,17 @@
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
     var currentState = 'normal';
     var sizeMap = {
-        'style-1': { normal: [240, 90], greeting: [380, 280] },
-        'style-2': { normal: [96, 96], animation: [120, 120] },
-        'style-3': { normal: [96, 96] },
-        'style-3-large': { normal: [130, 130] },
-        'style-4': { normal: [260, 90] },
-        'style-5': { normal: [120, 120], hover: [360, 220] },
-        'style-6': { normal: [220, 80] },
-        'style-7': { normal: [110, 110] },
-        'style-7-extend': { normal: [110, 110], hover: [320, 120] },
-        'style-8': { normal: [260, 90], greeting: [380, 280] }
+        'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
+        'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
+        'style-3': { normal: [120, 120], hover: [130, 130], greeting: [390, 300] },
+        'style-3-large': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
+        'style-3-extend': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
+        'style-4': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] },
+        'style-5': { normal: [130, 130], hover: [380, 240], greeting: [390, 300] },
+        'style-6': { normal: [260, 90], hover: [280, 100], greeting: [390, 300] },
+        'style-7': { normal: [130, 130], hover: [140, 140], greeting: [390, 300] },
+        'style-7-extend': { normal: [130, 130], hover: [360, 140], greeting: [390, 300] },
+        'style-8': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] }
     };
 
     if (!container || !button) {
@@ -61,7 +62,7 @@
 
     function sendWidgetSize(width, height) {
         window.parent.postMessage({
-            type: 'ctcw:size',
+            type: 'ctcw',
             id: String(config.widgetId || ''),
             width: width,
             height: height
@@ -197,10 +198,12 @@
     });
 
     container.addEventListener('mouseleave', function () {
-        if (!greeting || !greeting.classList.contains('is-visible')) {
-            reportMappedSize('normal');
-        }
-        window.setTimeout(reportSize, 120);
+        window.setTimeout(function () {
+            if (!greeting || !greeting.classList.contains('is-visible')) {
+                reportMappedSize('normal');
+            }
+            reportSize();
+        }, 250);
     });
 
     button.addEventListener('click', function (event) {
@@ -228,8 +231,13 @@
     }, true);
 
     applyResponsiveState();
+    reportMappedSize('normal');
     window.addEventListener('resize', applyResponsiveState);
     window.addEventListener('load', reportSize);
+    document.addEventListener('DOMContentLoaded', function () {
+        reportMappedSize('normal');
+        reportSize();
+    });
 
     var reportsRemaining = 8;
     var startupReporter = window.setInterval(function () {

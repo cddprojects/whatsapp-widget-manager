@@ -767,13 +767,13 @@ function enabled_label($value, string $enabled = 'Enabled', string $disabled = '
 function widget_style_frame_size(string $style): array
 {
     return match ($style) {
-        'style-1' => ['width' => 240, 'height' => 90],
-        'style-2', 'style-3' => ['width' => 96, 'height' => 96],
-        'style-3-large' => ['width' => 130, 'height' => 130],
-        'style-4', 'style-8' => ['width' => 260, 'height' => 90],
-        'style-5' => ['width' => 120, 'height' => 120],
-        'style-6' => ['width' => 220, 'height' => 80],
-        'style-7', 'style-7-extend' => ['width' => 110, 'height' => 110],
+        'style-1' => ['width' => 280, 'height' => 110],
+        'style-2', 'style-3' => ['width' => 120, 'height' => 120],
+        'style-3-large', 'style-3-extend' => ['width' => 150, 'height' => 150],
+        'style-4', 'style-8' => ['width' => 300, 'height' => 110],
+        'style-5' => ['width' => 130, 'height' => 130],
+        'style-6' => ['width' => 260, 'height' => 90],
+        'style-7', 'style-7-extend' => ['width' => 130, 'height' => 130],
         default => ['width' => 120, 'height' => 120],
     };
 }
@@ -785,8 +785,13 @@ function widget_style_expanded_frame_size(string $style, bool $greetingEnabled):
     }
 
     return match ($style) {
-        'style-5' => ['width' => 360, 'height' => 220],
-        'style-7-extend' => ['width' => 320, 'height' => 120],
+        'style-1', 'style-4', 'style-8' => ['width' => 320, 'height' => 130],
+        'style-2', 'style-3' => ['width' => 130, 'height' => 130],
+        'style-3-large', 'style-3-extend' => ['width' => 160, 'height' => 160],
+        'style-5' => ['width' => 380, 'height' => 240],
+        'style-6' => ['width' => 280, 'height' => 100],
+        'style-7' => ['width' => 140, 'height' => 140],
+        'style-7-extend' => ['width' => 360, 'height' => 140],
         default => widget_style_frame_size($style),
     };
 }
