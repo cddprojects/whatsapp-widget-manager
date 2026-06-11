@@ -52,6 +52,7 @@ $config = [
     var config = <?= json_for_html($config) ?>;
     var iframe = document.getElementById(config.frameId);
     var lastSize = null;
+    var lastState = 'normal';
 
     function isMobile() {
         return window.innerWidth <= 767;
@@ -59,6 +60,14 @@ $config = [
 
     function activeConfig() {
         return isMobile() ? config.mobile : config.desktop;
+    }
+
+    function activeMode() {
+        return isMobile() ? 'mobile' : 'desktop';
+    }
+
+    function iframeSrc() {
+        return config.src + '&mode=' + encodeURIComponent(activeMode());
     }
 
     function maxWidth() {
@@ -109,7 +118,11 @@ $config = [
 
     function applySize(width, height, state) {
         var size = clampSize(width, height, state);
+        if (lastSize && lastSize.width === size.width && lastSize.height === size.height && lastState === (state || 'normal')) {
+            return;
+        }
         lastSize = size;
+        lastState = state || 'normal';
         iframe.style.width = size.width + 'px';
         iframe.style.height = size.height + 'px';
     }
@@ -146,12 +159,14 @@ $config = [
         if (!iframe) {
             iframe = document.createElement('iframe');
             iframe.id = config.frameId;
-            iframe.src = config.src;
+            iframe.src = iframeSrc();
             iframe.addEventListener('load', function () {
                 sendViewport();
                 window.setTimeout(sendViewport, 100);
                 window.setTimeout(sendViewport, 500);
             });
+        } else if (!iframe.src || iframe.src.indexOf('mode=') === -1) {
+            iframe.src = iframeSrc();
         }
 
         applyBaseStyles();

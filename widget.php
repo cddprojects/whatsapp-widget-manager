@@ -38,6 +38,7 @@ if (!is_array($randomNumbers)) {
 
 $widgetConfig = [
     'widgetId' => (int) $widget['id'],
+    'initialMode' => in_array((string) ($_GET['mode'] ?? ''), ['desktop', 'mobile'], true) ? (string) $_GET['mode'] : '',
     'widgetName' => (string) $widget['widget_name'],
     'site' => (string) $widget['website_domain'],
     'countryCode' => (string) $widget['whatsapp_country_code'],

@@ -10,7 +10,7 @@
     var isOpening = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
     var currentState = 'normal';
-    var parentViewportWidth = null;
+    var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var sizeMap = {
         'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
         'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
@@ -50,7 +50,6 @@
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
         reportMappedSize('normal');
-        reportSize();
     }
 
     function sizeForState(state) {
@@ -204,8 +203,6 @@
 
     container.addEventListener('mouseenter', function () {
         reportMappedSize('hover');
-        window.setTimeout(reportSize, 80);
-        scheduleSizeReports();
     });
 
     container.addEventListener('mouseleave', function () {
@@ -213,8 +210,6 @@
             if (!greeting || !greeting.classList.contains('is-visible')) {
                 reportMappedSize('normal');
             }
-            reportSize();
-            scheduleSizeReports();
         }, 250);
     });
 
