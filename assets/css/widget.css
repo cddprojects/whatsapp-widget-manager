@@ -39,26 +39,26 @@ body * {
 
 .ctcw-anchor-bottom.ctcw-anchor-right,
 html.ctcw-mobile .ctcw-mobile-anchor-bottom.ctcw-mobile-anchor-right {
-    bottom: 0;
-    right: 0;
+    bottom: 16px;
+    right: 16px;
 }
 
 .ctcw-anchor-bottom.ctcw-anchor-left,
 html.ctcw-mobile .ctcw-mobile-anchor-bottom.ctcw-mobile-anchor-left {
-    bottom: 0;
-    left: 0;
+    bottom: 16px;
+    left: 16px;
 }
 
 .ctcw-anchor-top.ctcw-anchor-right,
 html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-right {
-    top: 0;
-    right: 0;
+    top: 16px;
+    right: 16px;
 }
 
 .ctcw-anchor-top.ctcw-anchor-left,
 html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
-    top: 0;
-    left: 0;
+    top: 16px;
+    left: 16px;
 }
 
 .ctcw-container.is-hidden {
@@ -342,12 +342,12 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
 
 @keyframes ctcwShake {
     0%, 100% {
-        transform: translateX(0);
+        transform: scale(1);
     }
     25% {
-        transform: translateX(-4px);
+        transform: scale(0.96);
     }
     75% {
-        transform: translateX(4px);
+        transform: scale(1.04);
     }
 }
