@@ -314,6 +314,48 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
     background: var(--ctcw-green);
 }
 
+.style-9-left-hover .ctcw-widget {
+    min-height: 58px;
+    padding: 0;
+    gap: 10px;
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.style-9-left-hover .ctcw-icon {
+    width: 58px;
+    height: 58px;
+    padding: 15px;
+    border-radius: 50%;
+    background: var(--ctcw-green);
+    color: #ffffff;
+}
+
+.style-9-left-hover .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    max-width: 0;
+    overflow: hidden;
+    padding: 0;
+    border-radius: 999px;
+    background: var(--ctcw-green);
+    color: #ffffff;
+    opacity: 0;
+    white-space: nowrap;
+    transition: max-width 0.24s ease, opacity 0.2s ease, padding 0.24s ease;
+}
+
+.style-9-left-hover.is-hovering .ctcw-text {
+    max-width: 240px;
+    padding: 0 18px;
+    opacity: 1;
+}
+
 @media (max-width: 767px) {
     .ctcw-container {
         max-width: calc(100vw - 24px);

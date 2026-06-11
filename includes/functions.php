@@ -196,6 +196,7 @@ function widget_styles(): array
         'style-7' => 'Style-7: Icon with Padding',
         'style-7-extend' => 'Style-7 Extend: Icon on Hover Extend',
         'style-8' => 'Style-8: Button',
+        'style-9-left-hover' => 'Style-9: Left Hover Text',
     ];
 }
 
@@ -774,7 +775,7 @@ function widget_style_frame_size(string $style): array
         'style-5' => ['width' => 420, 'height' => 260],
         'style-6' => ['width' => 260, 'height' => 90],
         'style-7' => ['width' => 130, 'height' => 130],
-        'style-7-extend' => ['width' => 420, 'height' => 160],
+        'style-7-extend', 'style-9-left-hover' => ['width' => 420, 'height' => 160],
         default => ['width' => 120, 'height' => 120],
     };
 }
@@ -792,7 +793,7 @@ function widget_style_expanded_frame_size(string $style, bool $greetingEnabled):
         'style-5' => ['width' => 420, 'height' => 260],
         'style-6' => ['width' => 280, 'height' => 100],
         'style-7' => ['width' => 140, 'height' => 140],
-        'style-7-extend' => ['width' => 420, 'height' => 160],
+        'style-7-extend', 'style-9-left-hover' => ['width' => 420, 'height' => 160],
         default => widget_style_frame_size($style),
     };
 }

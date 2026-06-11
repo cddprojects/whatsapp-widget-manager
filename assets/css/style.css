@@ -635,7 +635,8 @@ code {
 }
 
 .mini-widget.style-4,
-.mini-widget.style-7-extend {
+.mini-widget.style-7-extend,
+.mini-widget.style-9-left-hover {
     border-radius: 999px;
 }
 
@@ -648,6 +649,32 @@ code {
 
 .mini-widget.style-6 .ctcw-icon {
     display: none;
+}
+
+.mini-widget.style-9-left-hover {
+    gap: 8px;
+    color: #ffffff;
+    background: transparent;
+    box-shadow: none;
+    flex-direction: row-reverse;
+}
+
+.mini-widget.style-9-left-hover .ctcw-icon {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    padding: 10px;
+    border-radius: 50%;
+    background: var(--green);
+}
+
+.mini-widget.style-9-left-hover .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--green);
 }
 
 .position-grid {
