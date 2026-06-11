@@ -26,6 +26,7 @@
         var mobile = isMobile();
         var activeStyle = mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle;
 
+        document.documentElement.classList.toggle('ctcw-mobile', mobile);
         styleNames.forEach(function (style) {
             container.classList.remove(style);
         });

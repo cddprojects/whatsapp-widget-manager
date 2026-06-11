@@ -764,10 +764,58 @@ function enabled_label($value, string $enabled = 'Enabled', string $disabled = '
     return !empty($value) ? $enabled : $disabled;
 }
 
+function widget_style_frame_size(string $style): array
+{
+    return match ($style) {
+        'style-1', 'style-4', 'style-8', 'style-7-extend' => ['width' => 300, 'height' => 150],
+        'style-5' => ['width' => 380, 'height' => 170],
+        'style-6' => ['width' => 260, 'height' => 110],
+        'style-3-large' => ['width' => 140, 'height' => 140],
+        default => ['width' => 130, 'height' => 130],
+    };
+}
+
+function widget_frame_size(array $widget): array
+{
+    $desktop = widget_style_frame_size((string) ($widget['desktop_style'] ?? 'style-1'));
+    $mobile = widget_style_frame_size((string) ($widget['mobile_style'] ?? 'style-1'));
+    $width = max($desktop['width'], $mobile['width']);
+    $height = max($desktop['height'], $mobile['height']);
+
+    if (!empty($widget['greeting_enabled'])) {
+        $width = max($width, 380);
+        $height = max($height, 340);
+    }
+
+    return ['width' => $width, 'height' => $height];
+}
+
+function iframe_position_css(array $widget, string $device): string
+{
+    $positionType = enum_value((string) ($widget[$device . '_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed');
+    $verticalSide = enum_value((string) ($widget[$device . '_vertical_position_type'] ?? 'bottom'), ['top', 'bottom'], 'bottom');
+    $verticalValue = css_unit_value((string) ($widget[$device . '_vertical_position_value'] ?? '25px'), '25px');
+    $horizontalSide = enum_value((string) ($widget[$device . '_horizontal_position_type'] ?? 'right'), ['left', 'right'], 'right');
+    $horizontalValue = css_unit_value((string) ($widget[$device . '_horizontal_position_value'] ?? '25px'), '25px');
+
+    return 'position:' . $positionType . '; top:auto; bottom:auto; left:auto; right:auto; '
+        . $verticalSide . ':' . $verticalValue . '; '
+        . $horizontalSide . ':' . $horizontalValue . ';';
+}
+
 function embed_code(array $widget): string
 {
     $src = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
-    return '<iframe src="' . $src . '" style="border:0; position:fixed; bottom:0; right:0; width:100%; height:100%; pointer-events:auto; z-index:999999;" allowtransparency="true"></iframe>';
+    $frameId = 'ctcw-frame-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $widget['id']);
+    $size = widget_frame_size($widget);
+    $desktopCss = iframe_position_css($widget, 'desktop');
+    $mobileCss = iframe_position_css($widget, 'mobile');
+
+    return '<style>'
+        . '#' . $frameId . '{border:0; ' . $desktopCss . ' width:' . (int) $size['width'] . 'px; height:' . (int) $size['height'] . 'px; max-width:calc(100vw - 16px); max-height:calc(100vh - 16px); background:transparent; pointer-events:auto; z-index:999999;}'
+        . '@media (max-width:767px){#' . $frameId . '{' . $mobileCss . ' width:min(' . (int) $size['width'] . 'px, calc(100vw - 16px)); height:min(' . (int) $size['height'] . 'px, calc(100vh - 16px));}}'
+        . '</style>'
+        . '<iframe id="' . $frameId . '" src="' . $src . '" scrolling="no" style="background:transparent;" allowtransparency="true"></iframe>';
 }
 
 function json_for_html($value): string

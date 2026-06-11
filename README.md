@@ -78,9 +78,26 @@ In phpMyAdmin, open the `click_to_chat_manager` database, choose the **Import** 
 ## Example iframe embed code
 
 ```html
+<style>
+  #ctcw-frame-WIDGET_ID {
+    border: 0;
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 380px;
+    height: 340px;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    background: transparent;
+    pointer-events: auto;
+    z-index: 999999;
+  }
+</style>
 <iframe
+  id="ctcw-frame-WIDGET_ID"
   src="https://YOUR-SYSTEM-DOMAIN.com/widget.php?id=WIDGET_ID&key=PUBLIC_KEY"
-  style="border:0; position:fixed; bottom:0; right:0; width:100%; height:100%; pointer-events:auto; z-index:999999;"
+  scrolling="no"
+  style="background:transparent;"
   allowtransparency="true"></iframe>
 ```
 

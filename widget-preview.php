@@ -11,7 +11,6 @@ if (!$widget) {
     exit('Widget not found.');
 }
 
-$src = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
 ?>
 <!doctype html>
 <html lang="en">
@@ -33,11 +32,7 @@ $src = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']
             <div></div>
             <div></div>
         </section>
-        <iframe
-            src="<?= e($src) ?>"
-            title="Click to chat widget"
-            style="border:0; position:fixed; bottom:0; right:0; width:100%; height:100%; pointer-events:auto; z-index:999999;"
-            allowtransparency="true"></iframe>
+        <?= embed_code($widget) ?>
     </div>
 </body>
 </html>
