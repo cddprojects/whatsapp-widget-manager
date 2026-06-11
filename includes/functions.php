@@ -771,9 +771,10 @@ function widget_style_frame_size(string $style): array
         'style-2', 'style-3' => ['width' => 120, 'height' => 120],
         'style-3-large', 'style-3-extend' => ['width' => 150, 'height' => 150],
         'style-4', 'style-8' => ['width' => 300, 'height' => 110],
-        'style-5' => ['width' => 130, 'height' => 130],
+        'style-5' => ['width' => 420, 'height' => 260],
         'style-6' => ['width' => 260, 'height' => 90],
-        'style-7', 'style-7-extend' => ['width' => 130, 'height' => 130],
+        'style-7' => ['width' => 130, 'height' => 130],
+        'style-7-extend' => ['width' => 420, 'height' => 160],
         default => ['width' => 120, 'height' => 120],
     };
 }
