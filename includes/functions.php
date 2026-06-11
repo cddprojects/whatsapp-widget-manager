@@ -778,6 +778,19 @@ function widget_style_frame_size(string $style): array
     };
 }
 
+function widget_style_expanded_frame_size(string $style, bool $greetingEnabled): array
+{
+    if ($greetingEnabled) {
+        return ['width' => 380, 'height' => 280];
+    }
+
+    return match ($style) {
+        'style-5' => ['width' => 360, 'height' => 220],
+        'style-7-extend' => ['width' => 320, 'height' => 120],
+        default => widget_style_frame_size($style),
+    };
+}
+
 function widget_frame_size(array $widget): array
 {
     $desktop = widget_style_frame_size((string) ($widget['desktop_style'] ?? 'style-1'));

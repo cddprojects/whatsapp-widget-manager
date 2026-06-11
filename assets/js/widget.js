@@ -9,6 +9,7 @@
     var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-5', 'style-6', 'style-7', 'style-7-extend', 'style-8'];
     var isOpening = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
+    var currentState = 'normal';
     var sizeMap = {
         'style-1': { normal: [240, 90], greeting: [380, 280] },
         'style-2': { normal: [96, 96], animation: [120, 120] },
@@ -52,6 +53,9 @@
 
     function sizeForState(state) {
         var styleSizes = sizeMap[currentStyle] || sizeMap['style-1'];
+        if (state === 'greeting' && !styleSizes.greeting) {
+            return [380, 280];
+        }
         return styleSizes[state] || styleSizes.normal || [120, 120];
     }
 
@@ -65,6 +69,7 @@
     }
 
     function reportMappedSize(state) {
+        currentState = state;
         var size = sizeForState(state);
         sendWidgetSize(size[0], size[1]);
     }
@@ -84,8 +89,9 @@
             var minY = Math.min.apply(null, rects.map(function (rect) { return rect.top; }));
             var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
             var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
-            var width = Math.ceil(maxX - minX + 16);
-            var height = Math.ceil(maxY - minY + 16);
+            var minimum = sizeForState(currentState);
+            var width = Math.max(minimum[0], Math.ceil(maxX - minX + 16));
+            var height = Math.max(minimum[1], Math.ceil(maxY - minY + 16));
 
             sendWidgetSize(width, height);
         });
@@ -224,4 +230,13 @@
     applyResponsiveState();
     window.addEventListener('resize', applyResponsiveState);
     window.addEventListener('load', reportSize);
+
+    var reportsRemaining = 8;
+    var startupReporter = window.setInterval(function () {
+        reportSize();
+        reportsRemaining -= 1;
+        if (reportsRemaining <= 0) {
+            window.clearInterval(startupReporter);
+        }
+    }, 250);
 })();
