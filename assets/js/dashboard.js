@@ -56,6 +56,16 @@
         }
     }
 
+    function refreshSelectedStyleCards() {
+        var selectedStyles = Array.from(document.querySelectorAll('[data-style-select]')).map(function (select) {
+            return select.value;
+        });
+
+        document.querySelectorAll('[data-style-preview-card]').forEach(function (card) {
+            card.classList.toggle('is-selected', selectedStyles.indexOf(card.getAttribute('data-style-preview-card')) !== -1);
+        });
+    }
+
     document.addEventListener('click', function (event) {
         var copyButton = event.target.closest('[data-copy-target]');
         if (copyButton) {
@@ -131,6 +141,11 @@
         businessMode.addEventListener('change', refreshBusinessHours);
         refreshBusinessHours();
     }
+
+    document.querySelectorAll('[data-style-select]').forEach(function (select) {
+        select.addEventListener('change', refreshSelectedStyleCards);
+    });
+    refreshSelectedStyleCards();
 
     var initialSection = window.location.hash ? window.location.hash.slice(1) : '';
     showSettingsPanel(initialSection || 'whatsapp-number', false);
