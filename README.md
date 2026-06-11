@@ -65,6 +65,16 @@ A standalone PHP 8 + MySQL "Click to WhatsApp Chat" manager. Clients can registe
 
 5. Create or edit a widget, enter the website domain, save, then copy the generated iframe code from the edit page or `embed-code.php`.
 
+### Updating an existing database
+
+If you already imported an older version of the database, run the domain-lock migration once:
+
+```bash
+mysql -u root -p click_to_chat_manager < migrations/001_domain_lock.sql
+```
+
+In phpMyAdmin, open the `click_to_chat_manager` database, choose the **Import** tab, and import `migrations/001_domain_lock.sql`.
+
 ## Example iframe embed code
 
 ```html
@@ -122,5 +132,6 @@ Only trusted frontend HTML/CSS/JavaScript should be added. PHP tags are stripped
 - Dashboard forms include CSRF tokens.
 - Widget create/update/delete queries are scoped to the authenticated `user_id`.
 - Public widgets require both `id` and `public_key`.
+- Domain lock can restrict each public iframe to the registered domain, optional `www`, optional subdomains, and strict missing-referrer checks.
 - Normal dashboard text output is escaped with `htmlspecialchars()`.
 - Login attempts are rate-limited per session after repeated failures.

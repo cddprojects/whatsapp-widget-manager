@@ -18,7 +18,7 @@ $settingsSections = [
     ['id' => 'display-settings', 'number' => '6', 'label' => 'Display Settings'],
     ['id' => 'business-hours', 'number' => '7', 'label' => 'Business Hours'],
     ['id' => 'greeting-dialog', 'number' => '8', 'label' => 'Greeting Dialog'],
-    ['id' => 'domain-embed', 'number' => '9', 'label' => 'Domain & Embed Code'],
+    ['id' => 'domain-embed', 'number' => '9', 'label' => 'Domain Lock & Embed Code'],
     ['id' => 'custom-code', 'number' => '10', 'label' => 'Custom Code'],
 ];
 ?>
@@ -396,8 +396,8 @@ $settingsSections = [
         <div class="section-title">
             <span>9</span>
             <div>
-                <h2>Domain & Embed Code</h2>
-                <p>Normalize the client website domain and copy the iframe code after saving.</p>
+                <h2>Domain Lock & Embed Code</h2>
+                <p>Lock this iframe widget to the approved website domain before sharing the embed code.</p>
             </div>
         </div>
         <label>
@@ -405,12 +405,32 @@ $settingsSections = [
             <input type="text" name="website_domain" value="<?= e($widget['website_domain']) ?>" placeholder="example.com">
             <small>Accepted formats: example.com, www.example.com, https://example.com.</small>
         </label>
+        <div class="toggle-grid domain-lock-grid">
+            <label class="toggle-row">
+                <input type="checkbox" name="domain_lock_enabled" value="1"<?= checked($widget['domain_lock_enabled']) ?>>
+                <span>Enable domain lock</span>
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" name="allow_www" value="1"<?= checked($widget['allow_www']) ?>>
+                <span>Allow www version</span>
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" name="allow_subdomains" value="1"<?= checked($widget['allow_subdomains']) ?>>
+                <span>Allow subdomains</span>
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" name="strict_domain_check" value="1"<?= checked($widget['strict_domain_check']) ?>>
+                <span>Strict domain check</span>
+            </label>
+        </div>
+        <div class="notice-box compact">Strict domain check blocks the widget when the browser does not send a referrer. Recommended default: enabled.</div>
         <?php if ($embed !== ''): ?>
             <div class="embed-box">
                 <div class="panel-heading">
                     <h3>Iframe embed code</h3>
                     <button type="button" class="btn btn-small btn-primary" data-copy-target="#embed-code">Copy code</button>
                 </div>
+                <div class="alert alert-warning">This iframe widget is locked to your registered domain. It will not work if copied to another website.</div>
                 <textarea id="embed-code" readonly rows="5"><?= e($embed) ?></textarea>
                 <div class="preview-frame-wrap large">
                     <iframe src="widget-preview.php?id=<?= (int) $widget['id'] ?>" title="Widget preview" class="preview-frame"></iframe>

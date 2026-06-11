@@ -9,14 +9,23 @@ $widget = $widgetId > 0 && $publicKey !== '' ? find_public_widget($widgetId, $pu
 
 if (!$widget) {
     http_response_code(404);
-    exit('Widget not found.');
+    exit;
 }
 
 $referrer = $_SERVER['HTTP_REFERER'] ?? null;
 $systemDomain = normalize_domain(SYSTEM_BASE_URL);
-$referrerDomain = $referrer ? normalize_domain($referrer) : '';
-$isSystemPreview = $referrerDomain !== '' && $systemDomain !== '' && $referrerDomain === $systemDomain;
-$domainAllowed = $isSystemPreview || domain_matches_referrer((string) $widget['website_domain'], $referrer);
+$systemHost = referrer_host(SYSTEM_BASE_URL);
+$referrerDomain = referrer_host($referrer);
+$isSystemPreview = $referrerDomain !== ''
+    && ($referrerDomain === $systemHost || ($systemDomain !== '' && normalize_domain((string) $referrer) === $systemDomain));
+header('Content-Security-Policy: ' . csp_frame_ancestors($widget));
+
+$domainAllowed = $isSystemPreview || domain_matches_referrer($widget, $referrer);
+if (!$domainAllowed) {
+    http_response_code(403);
+    exit;
+}
+
 $showWidget = $domainAllowed && !empty($widget['show_global']);
 $isOnline = is_widget_online($widget);
 $randomNumbers = json_decode((string) ($widget['random_numbers_json'] ?? '[]'), true);

@@ -84,6 +84,27 @@ function normalize_domain(string $domain): string
     return rtrim((string) $host, '.');
 }
 
+function normalize_host_for_match(string $host): string
+{
+    $host = trim(strtolower($host));
+    $host = preg_replace('/:\d+$/', '', $host) ?? $host;
+    return rtrim($host, '.');
+}
+
+function referrer_host(?string $referrer): string
+{
+    if ($referrer === null || trim($referrer) === '') {
+        return '';
+    }
+
+    $host = parse_url($referrer, PHP_URL_HOST);
+    if (!is_string($host) || $host === '') {
+        return '';
+    }
+
+    return normalize_host_for_match($host);
+}
+
 function is_valid_domain(string $domain): bool
 {
     if ($domain === '') {
@@ -94,19 +115,61 @@ function is_valid_domain(string $domain): bool
         || $domain === 'localhost';
 }
 
-function domain_matches_referrer(string $allowedDomain, ?string $referrer): bool
+function domain_matches_referrer(array $widget, ?string $referrer): bool
 {
-    if ($referrer === null || trim($referrer) === '') {
+    if (empty($widget['domain_lock_enabled'])) {
         return true;
     }
 
-    $referrerDomain = normalize_domain($referrer);
-    if ($referrerDomain === '') {
+    $referrerHost = referrer_host($referrer);
+    if ($referrerHost === '') {
+        return empty($widget['strict_domain_check']);
+    }
+
+    $allowedDomain = normalize_domain((string) ($widget['website_domain'] ?? ''));
+    if ($allowedDomain === '') {
         return false;
     }
 
-    $allowedDomain = normalize_domain($allowedDomain);
-    return $referrerDomain === $allowedDomain || str_ends_with($referrerDomain, '.' . $allowedDomain);
+    if ($referrerHost === $allowedDomain) {
+        return true;
+    }
+
+    if ($referrerHost === 'www.' . $allowedDomain) {
+        return !empty($widget['allow_www']);
+    }
+
+    if (!empty($widget['allow_subdomains']) && str_ends_with($referrerHost, '.' . $allowedDomain)) {
+        return true;
+    }
+
+    return false;
+}
+
+function csp_frame_ancestors(array $widget): string
+{
+    if (empty($widget['domain_lock_enabled'])) {
+        return "frame-ancestors *";
+    }
+
+    $allowedDomain = normalize_domain((string) ($widget['website_domain'] ?? ''));
+    if ($allowedDomain === '') {
+        return "frame-ancestors 'self'";
+    }
+
+    $sources = ["'self'", 'https://' . $allowedDomain, 'http://' . $allowedDomain];
+
+    if (!empty($widget['allow_www'])) {
+        $sources[] = 'https://www.' . $allowedDomain;
+        $sources[] = 'http://www.' . $allowedDomain;
+    }
+
+    if (!empty($widget['allow_subdomains'])) {
+        $sources[] = 'https://*.' . $allowedDomain;
+        $sources[] = 'http://*.' . $allowedDomain;
+    }
+
+    return 'frame-ancestors ' . implode(' ', array_values(array_unique($sources)));
 }
 
 function clean_phone_number(string $number): string
@@ -436,6 +499,10 @@ function default_widget_data(): array
     return [
         'widget_name' => 'My WhatsApp Widget',
         'website_domain' => '',
+        'allow_www' => 1,
+        'allow_subdomains' => 0,
+        'domain_lock_enabled' => 1,
+        'strict_domain_check' => 1,
         'whatsapp_country_code' => '+60',
         'whatsapp_number' => '',
         'use_random_numbers' => 0,
@@ -550,6 +617,10 @@ function sanitize_widget_input(array $post): array
     $data = [
         'widget_name' => trim((string) ($post['widget_name'] ?? $defaults['widget_name'])),
         'website_domain' => $websiteDomain,
+        'allow_www' => post_checkbox('allow_www'),
+        'allow_subdomains' => post_checkbox('allow_subdomains'),
+        'domain_lock_enabled' => post_checkbox('domain_lock_enabled'),
+        'strict_domain_check' => post_checkbox('strict_domain_check'),
         'whatsapp_country_code' => $countryCode,
         'whatsapp_number' => clean_phone_number((string) ($post['whatsapp_number'] ?? '')),
         'use_random_numbers' => post_checkbox('use_random_numbers'),
@@ -686,6 +757,11 @@ function widget_status_label(array $widget): string
         return 'Offline';
     }
     return 'Active';
+}
+
+function enabled_label($value, string $enabled = 'Enabled', string $disabled = 'Disabled'): string
+{
+    return !empty($value) ? $enabled : $disabled;
 }
 
 function embed_code(array $widget): string

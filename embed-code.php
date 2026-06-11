@@ -30,6 +30,7 @@ require __DIR__ . '/includes/header.php';
             <h3>Copy iframe code</h3>
             <button type="button" class="btn btn-primary" data-copy-target="#embed-code">Copy code</button>
         </div>
+        <div class="alert alert-warning">This iframe widget is locked to your registered domain. It will not work if copied to another website.</div>
         <textarea id="embed-code" readonly rows="6"><?= e($code) ?></textarea>
     </div>
 
