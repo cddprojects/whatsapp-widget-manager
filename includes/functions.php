@@ -767,7 +767,7 @@ function enabled_label($value, string $enabled = 'Enabled', string $disabled = '
 function embed_code(array $widget): string
 {
     $src = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
-    return '<iframe src="' . $src . '" style="border:0; position:fixed; bottom:0; right:0; width:100%; height:100%; pointer-events:none; z-index:999999;" allowtransparency="true"></iframe>';
+    return '<iframe src="' . $src . '" style="border:0; position:fixed; bottom:0; right:0; width:100%; height:100%; pointer-events:auto; z-index:999999;" allowtransparency="true"></iframe>';
 }
 
 function json_for_html($value): string

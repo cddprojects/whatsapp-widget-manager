@@ -18,7 +18,8 @@
     }
 
     function isMobile() {
-        return window.matchMedia('(max-width: 767px)').matches;
+        var screenWidth = window.screen && window.screen.width ? window.screen.width : window.innerWidth;
+        return screenWidth <= 767;
     }
 
     function applyResponsiveState() {
