@@ -788,10 +788,10 @@ function widget_style_expanded_frame_size(string $style, bool $greetingEnabled):
         'style-1', 'style-4', 'style-8' => ['width' => 320, 'height' => 130],
         'style-2', 'style-3' => ['width' => 130, 'height' => 130],
         'style-3-large', 'style-3-extend' => ['width' => 160, 'height' => 160],
-        'style-5' => ['width' => 380, 'height' => 240],
+        'style-5' => ['width' => 420, 'height' => 260],
         'style-6' => ['width' => 280, 'height' => 100],
         'style-7' => ['width' => 140, 'height' => 140],
-        'style-7-extend' => ['width' => 360, 'height' => 140],
+        'style-7-extend' => ['width' => 420, 'height' => 160],
         default => widget_style_frame_size($style),
     };
 }

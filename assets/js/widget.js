@@ -11,6 +11,7 @@
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
     var currentState = 'normal';
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
+    var hoverTimer = null;
     var sizeMap = {
         'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
         'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
@@ -18,10 +19,10 @@
         'style-3-large': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
         'style-3-extend': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
         'style-4': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] },
-        'style-5': { normal: [130, 130], hover: [380, 240], greeting: [390, 300] },
+        'style-5': { normal: [130, 130], hover: [420, 260], greeting: [390, 300] },
         'style-6': { normal: [260, 90], hover: [280, 100], greeting: [390, 300] },
         'style-7': { normal: [130, 130], hover: [140, 140], greeting: [390, 300] },
-        'style-7-extend': { normal: [130, 130], hover: [360, 140], greeting: [390, 300] },
+        'style-7-extend': { normal: [130, 130], hover: [420, 160], greeting: [390, 300] },
         'style-8': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] }
     };
 
@@ -201,17 +202,29 @@
         });
     }
 
-    container.addEventListener('mouseenter', function () {
+    function startHover() {
+        window.clearTimeout(hoverTimer);
         reportMappedSize('hover');
-    });
+        hoverTimer = window.setTimeout(function () {
+            container.classList.add('is-hovering');
+            reportMappedSize('hover');
+        }, 40);
+    }
 
-    container.addEventListener('mouseleave', function () {
+    function endHover() {
+        window.clearTimeout(hoverTimer);
+        container.classList.remove('is-hovering');
         window.setTimeout(function () {
             if (!greeting || !greeting.classList.contains('is-visible')) {
                 reportMappedSize('normal');
             }
         }, 250);
-    });
+    }
+
+    container.addEventListener('mouseenter', startHover);
+    container.addEventListener('mouseleave', endHover);
+    button.addEventListener('mouseenter', startHover);
+    button.addEventListener('mouseleave', endHover);
 
     button.addEventListener('click', function (event) {
         event.preventDefault();

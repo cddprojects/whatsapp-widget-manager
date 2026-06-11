@@ -139,7 +139,7 @@ $config = [
         iframe.style.boxShadow = 'none';
         iframe.style.maxWidth = 'calc(100vw - 16px)';
         iframe.style.maxHeight = 'calc(100vh - 16px)';
-        iframe.style.transition = 'width 220ms ease, height 220ms ease';
+        iframe.style.transition = 'none';
         applyPosition();
         applySize(activeConfig().size.width, activeConfig().size.height, 'normal');
     }
