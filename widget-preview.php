@@ -23,13 +23,6 @@ $src = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']
 </head>
 <body class="preview-body">
     <div class="preview-site">
-        <div class="preview-banner">
-            <div>
-                <strong>Live preview</strong>
-                <span><?= e($widget['widget_name']) ?> on <?= e($widget['website_domain']) ?></span>
-            </div>
-            <a href="edit-widget.php?id=<?= (int) $widget['id'] ?>" class="btn btn-small btn-light">Back to editor</a>
-        </div>
         <section class="mock-hero">
             <p class="eyebrow">Example website</p>
             <h1>Sample landing page</h1>

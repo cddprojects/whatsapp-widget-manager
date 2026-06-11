@@ -106,14 +106,7 @@
             return;
         }
 
-        var opened = window.open(url, '_blank', 'noopener,noreferrer');
-        if (!opened) {
-            try {
-                window.top.location.href = url;
-            } catch (error) {
-                window.location.href = url;
-            }
-        }
+        window.open(url, '_blank');
     }
 
     if (config.greetingEnabled && greeting) {

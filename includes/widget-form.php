@@ -169,10 +169,15 @@ $settingsSections = [
 
         <div class="style-preview-grid">
             <?php foreach (widget_styles() as $key => $label): ?>
-                <div class="style-preview">
-                    <div class="mini-widget ctcw-widget <?= e($key) ?>">
-                        <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
-                        <span class="ctcw-text">WhatsApp us</span>
+                <div class="style-preview" data-style-preview-card="<?= e($key) ?>">
+                    <div class="style-preview-widget ctcw-container <?= e($key) ?>">
+                        <button class="ctcw-widget" type="button" tabindex="-1">
+                            <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
+                            <span class="ctcw-text">WhatsApp us</span>
+                            <?php if ($key === 'style-5'): ?>
+                                <span class="ctcw-hover-box">Chat with us on WhatsApp.</span>
+                            <?php endif; ?>
+                        </button>
                     </div>
                     <small><?= e($label) ?></small>
                 </div>
@@ -411,7 +416,7 @@ $settingsSections = [
                     <button type="button" class="btn btn-small btn-primary" data-copy-target="#embed-code">Copy code</button>
                 </div>
                 <textarea id="embed-code" readonly rows="5"><?= e($embed) ?></textarea>
-                <div class="preview-frame-wrap">
+                <div class="preview-frame-wrap large">
                     <iframe src="widget-preview.php?id=<?= (int) $widget['id'] ?>" title="Widget preview" class="preview-frame"></iframe>
                 </div>
             </div>
