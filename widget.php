@@ -70,6 +70,8 @@ $desktopVerticalValue = (string) ($widget['desktop_vertical_position_value'] ?? 
 $desktopHorizontalValue = (string) ($widget['desktop_horizontal_position_value'] ?? '25px');
 $mobileVerticalValue = (string) ($widget['mobile_vertical_position_value'] ?? '25px');
 $mobileHorizontalValue = (string) ($widget['mobile_horizontal_position_value'] ?? '25px');
+$desktopAlign = $desktopHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
+$mobileAlign = $mobileHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
 ?>
 <!doctype html>
 <html lang="en">
@@ -83,20 +85,23 @@ $mobileHorizontalValue = (string) ($widget['mobile_horizontal_position_value'] ?
         <?= $widget['custom_script_head'] ?? '' ?>
         <style>
             .ctcw-container {
-                position: <?= e($desktopPositionType) ?>;
-                <?= e($desktopVerticalSide) ?>: <?= e($desktopVerticalValue) ?>;
-                <?= e($desktopHorizontalSide) ?>: <?= e($desktopHorizontalValue) ?>;
+                position: absolute;
+                top: auto;
+                bottom: auto;
+                left: auto;
+                right: auto;
+                <?= e($desktopVerticalSide) ?>: 0;
+                <?= e($desktopHorizontalSide) ?>: 0;
+                align-items: <?= e($desktopAlign) ?>;
             }
-            @media (max-width: 767px) {
-                .ctcw-container {
-                    position: <?= e($mobilePositionType) ?>;
-                    top: auto;
-                    bottom: auto;
-                    left: auto;
-                    right: auto;
-                    <?= e($mobileVerticalSide) ?>: <?= e($mobileVerticalValue) ?>;
-                    <?= e($mobileHorizontalSide) ?>: <?= e($mobileHorizontalValue) ?>;
-                }
+            html.ctcw-mobile .ctcw-container {
+                top: auto;
+                bottom: auto;
+                left: auto;
+                right: auto;
+                <?= e($mobileVerticalSide) ?>: 0;
+                <?= e($mobileHorizontalSide) ?>: 0;
+                align-items: <?= e($mobileAlign) ?>;
             }
         </style>
         <?php if (!empty($widget['custom_css'])): ?>
