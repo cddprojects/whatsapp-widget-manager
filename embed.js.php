@@ -32,6 +32,8 @@ $frameId = 'ctcw-frame-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $widget
 $widgetSrc = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
 $desktopSize = widget_style_frame_size((string) ($widget['desktop_style'] ?? 'style-1'));
 $mobileSize = widget_style_frame_size((string) ($widget['mobile_style'] ?? 'style-1'));
+$desktopExpandedSize = widget_style_expanded_frame_size((string) ($widget['desktop_style'] ?? 'style-1'), !empty($widget['greeting_enabled']));
+$mobileExpandedSize = widget_style_expanded_frame_size((string) ($widget['mobile_style'] ?? 'style-1'), !empty($widget['greeting_enabled']));
 $config = [
     'widgetId' => (string) $widget['id'],
     'frameId' => $frameId,
@@ -39,10 +41,12 @@ $config = [
     'desktop' => [
         'position' => iframe_position_settings($widget, 'desktop'),
         'size' => $desktopSize,
+        'expandedSize' => $desktopExpandedSize,
     ],
     'mobile' => [
         'position' => iframe_position_settings($widget, 'mobile'),
         'size' => $mobileSize,
+        'expandedSize' => $mobileExpandedSize,
     ],
 ];
 ?>
@@ -109,7 +113,7 @@ $config = [
         iframe.style.maxWidth = 'calc(100vw - 16px)';
         iframe.style.maxHeight = 'calc(100vh - 16px)';
         applyPosition();
-        applySize(activeConfig().size.width, activeConfig().size.height);
+        applySize(activeConfig().expandedSize.width, activeConfig().expandedSize.height);
     }
 
     function mount() {
@@ -155,6 +159,6 @@ $config = [
             applySize(lastSize.width, lastSize.height);
             return;
         }
-        applySize(activeConfig().size.width, activeConfig().size.height);
+        applySize(activeConfig().expandedSize.width, activeConfig().expandedSize.height);
     });
 })();
