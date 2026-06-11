@@ -7,6 +7,7 @@
     var greeting = document.querySelector('[data-greeting]');
     var closeGreeting = document.querySelector('[data-close-greeting]');
     var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-5', 'style-6', 'style-7', 'style-7-extend', 'style-8'];
+    var isOpening = false;
 
     if (!container || !button) {
         return;
@@ -106,7 +107,14 @@
             return;
         }
 
-        window.open(url, '_blank');
+        var link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
     }
 
     if (config.greetingEnabled && greeting) {
@@ -121,14 +129,28 @@
         });
     }
 
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') {
+            event.stopImmediatePropagation();
+        }
+
+        if (isOpening) {
+            return;
+        }
+        isOpening = true;
+        window.setTimeout(function () {
+            isOpening = false;
+        }, 1200);
+
         if (!config.online) {
             button.classList.add('is-shaking');
             window.setTimeout(function () { button.classList.remove('is-shaking'); }, 400);
             return;
         }
         openUrl(buildUrl());
-    });
+    }, true);
 
     applyResponsiveState();
     window.addEventListener('resize', applyResponsiveState);

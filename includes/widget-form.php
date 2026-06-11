@@ -170,14 +170,9 @@ $settingsSections = [
         <div class="style-preview-grid">
             <?php foreach (widget_styles() as $key => $label): ?>
                 <div class="style-preview" data-style-preview-card="<?= e($key) ?>">
-                    <div class="style-preview-widget ctcw-container <?= e($key) ?>">
-                        <button class="ctcw-widget" type="button" tabindex="-1">
-                            <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
-                            <span class="ctcw-text">WhatsApp us</span>
-                            <?php if ($key === 'style-5'): ?>
-                                <span class="ctcw-hover-box">Chat with us on WhatsApp.</span>
-                            <?php endif; ?>
-                        </button>
+                    <div class="mini-widget ctcw-widget <?= e($key) ?>">
+                        <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
+                        <span class="ctcw-text">WhatsApp us</span>
                     </div>
                     <small><?= e($label) ?></small>
                 </div>
@@ -272,8 +267,8 @@ $settingsSections = [
             <label>
                 <span>Desktop open link in</span>
                 <select name="desktop_open_link_type">
-                    <option value="new_tab"<?= selected((string) $widget['desktop_open_link_type'], 'new_tab') ?>>New Tab</option>
-                    <option value="same_tab"<?= selected((string) $widget['desktop_open_link_type'], 'same_tab') ?>>Same Tab</option>
+                    <option value="new_tab"<?= selected((string) $widget['desktop_open_link_type'], 'new_tab') ?>>Open new tab only</option>
+                    <option value="same_tab"<?= selected((string) $widget['desktop_open_link_type'], 'same_tab') ?>>Redirect current page only</option>
                 </select>
             </label>
             <label>
@@ -288,8 +283,8 @@ $settingsSections = [
             <label>
                 <span>Mobile open link in</span>
                 <select name="mobile_open_link_type">
-                    <option value="new_tab"<?= selected((string) $widget['mobile_open_link_type'], 'new_tab') ?>>New Tab</option>
-                    <option value="same_tab"<?= selected((string) $widget['mobile_open_link_type'], 'same_tab') ?>>Same Tab</option>
+                    <option value="new_tab"<?= selected((string) $widget['mobile_open_link_type'], 'new_tab') ?>>Open new tab only</option>
+                    <option value="same_tab"<?= selected((string) $widget['mobile_open_link_type'], 'same_tab') ?>>Redirect current page only</option>
                 </select>
             </label>
             <label>
@@ -306,6 +301,7 @@ $settingsSections = [
                 <small>The encoded message is appended as a <code>text</code> query parameter.</small>
             </label>
         </div>
+        <div class="notice-box compact">Desktop and mobile open behavior are separate. Set both to "Open new tab only" if you want the widget to never redirect the current page.</div>
     </section>
 
     <section class="settings-card" data-settings-panel="display-settings">
