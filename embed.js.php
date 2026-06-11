@@ -54,8 +54,7 @@ $config = [
     var lastSize = null;
 
     function isMobile() {
-        var screenWidth = window.screen && window.screen.width ? window.screen.width : window.innerWidth;
-        return screenWidth <= 767;
+        return window.innerWidth <= 767;
     }
 
     function activeConfig() {
@@ -127,8 +126,20 @@ $config = [
         iframe.style.boxShadow = 'none';
         iframe.style.maxWidth = 'calc(100vw - 16px)';
         iframe.style.maxHeight = 'calc(100vh - 16px)';
+        iframe.style.transition = 'width 220ms ease, height 220ms ease';
         applyPosition();
         applySize(activeConfig().size.width, activeConfig().size.height, 'normal');
+    }
+
+    function sendViewport() {
+        if (!iframe || !iframe.contentWindow) {
+            return;
+        }
+        iframe.contentWindow.postMessage({
+            type: 'ctcw:viewport',
+            width: window.innerWidth,
+            height: window.innerHeight
+        }, '*');
     }
 
     function mount() {
@@ -136,6 +147,11 @@ $config = [
             iframe = document.createElement('iframe');
             iframe.id = config.frameId;
             iframe.src = config.src;
+            iframe.addEventListener('load', function () {
+                sendViewport();
+                window.setTimeout(sendViewport, 100);
+                window.setTimeout(sendViewport, 500);
+            });
         }
 
         applyBaseStyles();
@@ -143,6 +159,7 @@ $config = [
         if (!iframe.parentNode) {
             document.body.appendChild(iframe);
         }
+        sendViewport();
     }
 
     function ready(callback) {
@@ -170,6 +187,7 @@ $config = [
             return;
         }
         applyPosition();
+        sendViewport();
         if (lastSize) {
             applySize(lastSize.width, lastSize.height, 'normal');
             return;
@@ -177,7 +195,7 @@ $config = [
         applySize(activeConfig().size.width, activeConfig().size.height, 'normal');
         if (iframe.contentWindow) {
             iframe.contentWindow.postMessage({
-                type: 'ctcw',
+                type: 'ctcw:viewport',
                 width: window.innerWidth,
                 height: window.innerHeight
             }, '*');

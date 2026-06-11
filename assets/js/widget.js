@@ -10,6 +10,7 @@
     var isOpening = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
     var currentState = 'normal';
+    var parentViewportWidth = null;
     var sizeMap = {
         'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
         'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
@@ -33,8 +34,8 @@
     }
 
     function isMobile() {
-        var screenWidth = window.screen && window.screen.width ? window.screen.width : window.innerWidth;
-        return screenWidth <= 767;
+        var width = parentViewportWidth || (window.screen && window.screen.width ? window.screen.width : window.innerWidth);
+        return width <= 767;
     }
 
     function applyResponsiveState() {
@@ -241,6 +242,18 @@
         }
         openUrl(buildUrl());
     }, true);
+
+    window.addEventListener('message', function (event) {
+        if (!event.data) {
+            return;
+        }
+        if (event.data.type !== 'ctcw:viewport' && !(event.data.type === 'ctcw' && !event.data.id)) {
+            return;
+        }
+        parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
+        applyResponsiveState();
+        scheduleSizeReports();
+    });
 
     applyResponsiveState();
     reportMappedSize('normal');
