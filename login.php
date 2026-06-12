@@ -15,17 +15,23 @@ if (is_post()) {
     if (login_is_limited()) {
         $errors[] = 'Too many failed login attempts. Please wait a few minutes and try again.';
     } else {
-        $stmt = db()->prepare('SELECT id, password FROM users WHERE email = :email LIMIT 1');
+        $stmt = db()->prepare('SELECT id, password, role, status FROM users WHERE email = :email LIMIT 1');
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, (string) $user['password'])) {
+        if ($user && (string) $user['status'] === USER_STATUS_DISABLED) {
+            $errors[] = 'Your account has been disabled. Please contact support.';
+            record_failed_login();
+        } elseif ($user && password_verify($password, (string) $user['password'])) {
             login_user((int) $user['id']);
-            redirect('dashboard.php');
+            $loggedIn = current_user();
+            if ($loggedIn) {
+                redirect_after_login($loggedIn);
+            }
+        } else {
+            record_failed_login();
+            $errors[] = 'Invalid email or password.';
         }
-
-        record_failed_login();
-        $errors[] = 'Invalid email or password.';
     }
 }
 

@@ -34,15 +34,24 @@ if (is_post()) {
         if ($stmt->fetch()) {
             $errors[] = 'This email is already registered.';
         } else {
-            $stmt = db()->prepare('INSERT INTO users (name, email, password) VALUES (:name, :email, :password)');
+            $stmt = db()->prepare(
+                'INSERT INTO users (name, email, password, role, status, password_changed_at)
+                 VALUES (:name, :email, :password, :role, :status, NOW())'
+            );
             $stmt->execute([
                 'name' => $name,
                 'email' => $email,
                 'password' => password_hash($password, PASSWORD_DEFAULT),
+                'role' => ROLE_CLIENT,
+                'status' => USER_STATUS_ACTIVE,
             ]);
             login_user((int) db()->lastInsertId());
             flash('success', 'Welcome! Your account has been created.');
-            redirect('dashboard.php');
+            $loggedIn = current_user();
+            if ($loggedIn) {
+                redirect_after_login($loggedIn);
+            }
+            redirect('client-dashboard.php');
         }
     }
 }
@@ -53,7 +62,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="auth-card">
     <h1>Create your account</h1>
-    <p>Register to create and manage your WhatsApp click-to-chat widgets.</p>
+    <p>Register as a client to manage your WhatsApp numbers.</p>
     <?php if ($errors): ?>
         <div class="alert alert-error">
             <ul>

@@ -2,20 +2,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
-$user = require_login();
-
-if (is_post() && ($_POST['action'] ?? '') === 'delete_widget') {
-    verify_csrf();
-    $widgetId = (int) ($_POST['widget_id'] ?? 0);
-    $stmt = db()->prepare('DELETE FROM widgets WHERE id = :id AND user_id = :user_id');
-    $stmt->execute(['id' => $widgetId, 'user_id' => (int) $user['id']]);
-    flash('success', 'Widget deleted.');
-    redirect('dashboard.php');
-}
-
-$stmt = db()->prepare('SELECT * FROM widgets WHERE user_id = :user_id ORDER BY created_at DESC');
-$stmt->execute(['user_id' => (int) $user['id']]);
-$widgets = $stmt->fetchAll();
+$user = require_superadmin();
+$stats = dashboard_summary_stats();
+$recentClients = recent_clients(5);
+$recentWidgets = recent_widgets(5);
 
 $pageTitle = 'Dashboard';
 require __DIR__ . '/includes/header.php';
@@ -23,67 +13,107 @@ require __DIR__ . '/includes/header.php';
 
 <section class="dashboard-hero">
     <div>
-        <p class="eyebrow">Welcome back</p>
-        <h1><?= e($user['name']) ?></h1>
-        <p>Manage WhatsApp click-to-chat widgets for multiple client websites and domains.</p>
+        <p class="eyebrow">Super admin</p>
+        <h1>Welcome back, <?= e($user['name']) ?></h1>
+        <p>Manage client accounts, widgets, and WhatsApp configurations from one place.</p>
     </div>
-    <a class="btn btn-primary" href="create-widget.php">Create New Widget</a>
+    <a class="btn btn-primary" href="admin-clients.php">View All Clients</a>
+</section>
+
+<section class="summary-grid">
+    <article class="summary-card">
+        <span class="summary-label">Total clients</span>
+        <strong><?= (int) $stats['total_clients'] ?></strong>
+    </article>
+    <article class="summary-card">
+        <span class="summary-label">Active clients</span>
+        <strong><?= (int) $stats['active_clients'] ?></strong>
+    </article>
+    <article class="summary-card">
+        <span class="summary-label">Disabled clients</span>
+        <strong><?= (int) $stats['disabled_clients'] ?></strong>
+    </article>
+    <article class="summary-card">
+        <span class="summary-label">Total widgets</span>
+        <strong><?= (int) $stats['total_widgets'] ?></strong>
+    </article>
 </section>
 
 <section class="settings-card">
     <div class="card-header-row">
         <div>
-            <h2>Your widgets</h2>
-            <p>Each widget has its own domain settings, public key, embed code, and isolated iframe renderer.</p>
+            <h2>Recent clients</h2>
+            <p>Latest client accounts registered in the system.</p>
         </div>
+        <a class="btn btn-light" href="admin-clients.php">View all</a>
     </div>
-
-    <?php if (!$widgets): ?>
-        <div class="empty-state">
-            <h3>No widgets yet</h3>
-            <p>Create your first widget to generate an iframe embed code.</p>
-            <a class="btn btn-primary" href="create-widget.php">Create Widget</a>
+    <?php if (!$recentClients): ?>
+        <div class="empty-state compact-empty">
+            <p>No client accounts yet.</p>
         </div>
     <?php else: ?>
         <div class="table-wrap">
             <table class="widget-table">
                 <thead>
                     <tr>
-                        <th>Widget name</th>
-                        <th>Domain</th>
+                        <th>Client</th>
                         <th>Status</th>
+                        <th>Widgets</th>
                         <th>Created</th>
-                        <th>Actions</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($widgets as $widget): ?>
+                    <?php foreach ($recentClients as $client): ?>
                         <tr>
                             <td>
-                                <strong><?= e($widget['widget_name']) ?></strong>
-                                <small>ID #<?= (int) $widget['id'] ?></small>
+                                <strong><?= e($client['name']) ?></strong>
+                                <small><?= e($client['email']) ?></small>
                             </td>
-                            <td>
-                                <strong><?= e($widget['website_domain']) ?></strong>
-                                <small>Domain Lock: <?= e(enabled_label($widget['domain_lock_enabled'] ?? 1)) ?></small>
-                                <small>WWW: <?= e(enabled_label($widget['allow_www'] ?? 1, 'Allowed', 'Not Allowed')) ?></small>
-                                <small>Subdomains: <?= e(enabled_label($widget['allow_subdomains'] ?? 0, 'Allowed', 'Not Allowed')) ?></small>
-                            </td>
-                            <td><span class="status-pill"><?= e(widget_status_label($widget)) ?></span></td>
-                            <td><?= e(date('M j, Y', strtotime((string) $widget['created_at']))) ?></td>
-                            <td>
-                                <div class="action-list">
-                                    <a class="btn btn-small btn-light" href="edit-widget.php?id=<?= (int) $widget['id'] ?>">Edit</a>
-                                    <a class="btn btn-small btn-light" href="widget-preview.php?id=<?= (int) $widget['id'] ?>">Preview</a>
-                                    <a class="btn btn-small btn-primary-soft" href="embed-code.php?id=<?= (int) $widget['id'] ?>">Get Embed Code</a>
-                                    <form method="post" data-confirm="Delete this widget? This cannot be undone.">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="action" value="delete_widget">
-                                        <input type="hidden" name="widget_id" value="<?= (int) $widget['id'] ?>">
-                                        <button type="submit" class="btn btn-small btn-danger-soft">Delete</button>
-                                    </form>
-                                </div>
-                            </td>
+                            <td><span class="<?= e(user_status_badge_class((string) $client['status'])) ?>"><?= e(ucfirst((string) $client['status'])) ?></span></td>
+                            <td><?= (int) $client['widget_count'] ?></td>
+                            <td><?= e(date('M j, Y', strtotime((string) $client['created_at']))) ?></td>
+                            <td><a class="btn btn-small btn-light" href="admin-client-detail.php?id=<?= (int) $client['id'] ?>">View Client</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
+
+<section class="settings-card">
+    <div class="card-header-row">
+        <div>
+            <h2>Recent widgets</h2>
+            <p>Recently updated widgets across all clients.</p>
+        </div>
+        <a class="btn btn-light" href="admin-widgets.php">View all</a>
+    </div>
+    <?php if (!$recentWidgets): ?>
+        <div class="empty-state compact-empty">
+            <p>No widgets yet.</p>
+        </div>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table class="widget-table">
+                <thead>
+                    <tr>
+                        <th>Widget</th>
+                        <th>Client</th>
+                        <th>Domain</th>
+                        <th>Updated</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recentWidgets as $widget): ?>
+                        <tr>
+                            <td><strong><?= e($widget['widget_name']) ?></strong></td>
+                            <td><?= e($widget['owner_name']) ?></td>
+                            <td><?= e($widget['website_domain']) ?></td>
+                            <td><?= e(date('M j, Y', strtotime((string) $widget['updated_at']))) ?></td>
+                            <td><a class="btn btn-small btn-light" href="edit-widget.php?id=<?= (int) $widget['id'] ?>">Full Edit</a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

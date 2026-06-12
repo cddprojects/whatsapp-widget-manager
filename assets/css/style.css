@@ -937,3 +937,136 @@ code {
         top: 78px;
     }
 }
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.summary-card {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--card);
+}
+
+.summary-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 28px;
+    line-height: 1.1;
+}
+
+.summary-label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.admin-filter-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.search-field {
+    grid-column: span 2;
+}
+
+.results-meta {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.meta-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.status-pill.status-active {
+    color: var(--success);
+    background: var(--success-soft);
+}
+
+.status-pill.status-disabled {
+    color: #991b1b;
+    background: var(--danger-soft);
+}
+
+.tab-bar {
+    display: flex;
+    gap: 10px;
+    margin: 24px 0 18px;
+    border-bottom: 1px solid var(--line);
+}
+
+.tab-link {
+    display: inline-flex;
+    margin-bottom: -1px;
+    padding: 10px 14px;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.tab-link.is-active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.compact-empty {
+    padding: 28px 20px;
+    text-align: center;
+}
+
+.temp-password-box {
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg);
+}
+
+.temp-password-box code {
+    display: block;
+    margin-top: 8px;
+    padding: 12px;
+    font-size: 16px;
+}
+
+.widget-selector-form {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 800px) {
+    .summary-grid,
+    .admin-filter-bar {
+        grid-template-columns: 1fr;
+    }
+
+    .search-field {
+        grid-column: auto;
+    }
+}
