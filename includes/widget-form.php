@@ -36,6 +36,31 @@ $settingsSections = [
 
 <form method="post" class="settings-form" data-widget-form>
     <?= csrf_field() ?>
+
+    <?php if (!empty($showOwnerPicker)): ?>
+        <section class="settings-card">
+            <div class="section-title">
+                <span>+</span>
+                <div>
+                    <h2>Client assignment</h2>
+                    <p>Select which client account will own this widget.</p>
+                </div>
+            </div>
+            <label>
+                <span>Assign to client</span>
+                <select name="owner_user_id" required>
+                    <option value="">Select client…</option>
+                    <?php
+                    $clientOptions = db()->query("SELECT id, name, email FROM users WHERE role = '" . ROLE_CLIENT . "' ORDER BY name ASC")->fetchAll();
+                    foreach ($clientOptions as $clientOption):
+                    ?>
+                        <option value="<?= (int) $clientOption['id'] ?>"><?= e($clientOption['name']) ?> — <?= e($clientOption['email']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        </section>
+    <?php endif; ?>
+
     <div class="form-actions sticky-actions">
         <a class="btn btn-light" href="dashboard.php">Back</a>
         <button type="submit" class="btn btn-primary">Save Widget</button>

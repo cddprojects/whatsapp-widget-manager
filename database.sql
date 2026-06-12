@@ -9,8 +9,13 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(120) NOT NULL,
     email VARCHAR(190) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    role VARCHAR(30) NOT NULL DEFAULT 'client',
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    last_login_at DATETIME NULL,
+    password_changed_at DATETIME NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_users_role_status (role, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS widgets (
@@ -68,12 +73,14 @@ CREATE TABLE IF NOT EXISTS widgets (
     CONSTRAINT fk_widgets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO users (id, name, email, password)
+INSERT INTO users (id, name, email, password, role, status)
 VALUES
-    (1, 'Demo Client', 'demo@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi')
+    (1, 'Demo Client', 'demo@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi', 'client', 'active')
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
-    email = VALUES(email);
+    email = VALUES(email),
+    role = VALUES(role),
+    status = VALUES(status);
 
 INSERT INTO widgets (
     id,
