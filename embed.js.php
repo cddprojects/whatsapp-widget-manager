@@ -80,7 +80,7 @@ $config = [
 
     function minimumForState(state) {
         if (state === 'greeting') {
-            return { width: 400, height: 320 };
+            return { width: 400, height: 340 };
         }
 
         var active = activeConfig();

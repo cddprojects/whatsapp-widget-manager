@@ -113,11 +113,92 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
     display: none;
     width: 280px;
     padding: 16px 18px;
-    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
     background: #ffffff;
     color: var(--ctcw-text);
     box-shadow: none !important;
     pointer-events: auto;
+}
+
+.ctcw-greeting.has-capture {
+    width: min(400px, calc(100vw - 32px));
+    padding: 18px;
+}
+
+.ctcw-greeting-form {
+    display: grid;
+    gap: 12px;
+}
+
+.ctcw-phone-field {
+    display: grid;
+    gap: 6px;
+}
+
+.ctcw-phone-input {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 11px 12px;
+    color: var(--ctcw-text);
+    background: #ffffff;
+    font: inherit;
+    outline: none;
+    box-shadow: none !important;
+}
+
+.ctcw-phone-input:focus {
+    border-color: #2563eb;
+}
+
+.ctcw-phone-error {
+    color: #dc2626;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.ctcw-phone-error[hidden] {
+    display: none;
+}
+
+.ctcw-greeting-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #ffffff;
+    background: var(--ctcw-green);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+.ctcw-greeting-submit:disabled,
+.ctcw-greeting-submit.is-loading {
+    opacity: 0.75;
+    cursor: wait;
+}
+
+.ctcw-greeting-submit .ctcw-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.ctcw-greeting-success {
+    display: block;
+    color: #047857;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ctcw-greeting-success[hidden] {
+    display: none;
 }
 
 .ctcw-greeting.is-visible {
