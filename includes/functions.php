@@ -1164,8 +1164,12 @@ function search_clients(array $options): array
     $join = '';
     if ($query !== '') {
         $join = ' LEFT JOIN widgets w ON w.user_id = u.id';
-        $where[] = '(u.name LIKE :q OR u.email LIKE :q OR w.website_domain LIKE :q OR w.widget_name LIKE :q)';
-        $params['q'] = '%' . $query . '%';
+        $where[] = '(u.name LIKE :q_name OR u.email LIKE :q_email OR w.website_domain LIKE :q_domain OR w.widget_name LIKE :q_widget)';
+        $like = '%' . $query . '%';
+        $params['q_name'] = $like;
+        $params['q_email'] = $like;
+        $params['q_domain'] = $like;
+        $params['q_widget'] = $like;
     }
 
     $whereSql = implode(' AND ', $where);
@@ -1247,8 +1251,12 @@ function search_all_widgets(array $options): array
     $where = ['1=1'];
     $params = [];
     if ($query !== '') {
-        $where[] = '(w.widget_name LIKE :q OR w.website_domain LIKE :q OR u.name LIKE :q OR u.email LIKE :q)';
-        $params['q'] = '%' . $query . '%';
+            $where[] = '(w.widget_name LIKE :q_widget OR w.website_domain LIKE :q_domain OR u.name LIKE :q_name OR u.email LIKE :q_email)';
+            $like = '%' . $query . '%';
+            $params['q_widget'] = $like;
+            $params['q_domain'] = $like;
+            $params['q_name'] = $like;
+            $params['q_email'] = $like;
     }
 
     $whereSql = implode(' AND ', $where);
