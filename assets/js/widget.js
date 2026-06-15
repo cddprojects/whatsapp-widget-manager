@@ -17,6 +17,10 @@
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var hoverTimer = null;
     var greetingCaptureSize = [320, 340];
+    var pageContext = {
+        url: '',
+        title: ''
+    };
     var sizeMap = {
         'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
         'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
@@ -130,12 +134,43 @@
         phoneError.hidden = !message;
     }
 
-    function getPageTitle() {
-        try {
-            return window.parent.document.title || '';
-        } catch (error) {
-            return '';
+    function updatePageContext(data) {
+        if (!data) {
+            return;
         }
+        if (typeof data.url === 'string' && data.url !== '') {
+            pageContext.url = data.url;
+        }
+        if (typeof data.title === 'string' && data.title !== '') {
+            pageContext.title = data.title;
+        }
+    }
+
+    function getLeadPageContext() {
+        if (pageContext.url || pageContext.title) {
+            return {
+                url: pageContext.url,
+                title: pageContext.title
+            };
+        }
+
+        var url = document.referrer || '';
+        var title = '';
+        try {
+            if (window.parent && window.parent !== window) {
+                title = window.parent.document.title || '';
+                if (window.parent.location && window.parent.location.href) {
+                    url = window.parent.location.href;
+                }
+            }
+        } catch (error) {
+            // Cross-origin embed: parent page data arrives via postMessage.
+        }
+
+        return {
+            url: url,
+            title: title
+        };
     }
 
     function redirectToWhatsapp(url) {
@@ -167,6 +202,8 @@
             return;
         }
 
+        var leadPage = getLeadPageContext();
+
         fetch(config.saveLeadUrl, {
             method: 'POST',
             headers: {
@@ -176,8 +213,8 @@
                 widget_id: config.widgetId,
                 public_key: config.publicKey,
                 visitor_phone: phone,
-                source_url: document.referrer || '',
-                page_title: getPageTitle(),
+                source_url: leadPage.url,
+                page_title: leadPage.title,
                 whatsapp_redirect_url: url,
                 website: ''
             })
@@ -430,12 +467,16 @@
         if (!event.data) {
             return;
         }
-        if (event.data.type !== 'ctcw:viewport' && !(event.data.type === 'ctcw' && !event.data.id)) {
+        if (event.data.type === 'ctcw:viewport') {
+            parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
+            updatePageContext(event.data);
+            applyResponsiveState();
+            scheduleSizeReports();
             return;
         }
-        parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
-        applyResponsiveState();
-        scheduleSizeReports();
+        if (event.data.type === 'ctcw' && !event.data.id) {
+            return;
+        }
     });
 
     applyResponsiveState();

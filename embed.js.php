@@ -156,7 +156,9 @@ $config = [
         iframe.contentWindow.postMessage({
             type: 'ctcw:viewport',
             width: window.innerWidth,
-            height: window.innerHeight
+            height: window.innerHeight,
+            url: window.location.href,
+            title: document.title || ''
         }, '*');
     }
 
@@ -217,7 +219,9 @@ $config = [
             iframe.contentWindow.postMessage({
                 type: 'ctcw:viewport',
                 width: window.innerWidth,
-                height: window.innerHeight
+                height: window.innerHeight,
+                url: window.location.href,
+                title: document.title || ''
             }, '*');
         }
     });
