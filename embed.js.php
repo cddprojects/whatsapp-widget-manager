@@ -83,7 +83,7 @@ $config = [
     function minimumForState(state) {
         if (state === 'greeting') {
             if (config.greetingCapturePhone) {
-                return { width: 320, height: 300 };
+                return { width: 320, height: 340 };
             }
             return { width: 380, height: 280 };
         }
@@ -209,7 +209,7 @@ $config = [
         applyPosition();
         sendViewport();
         if (lastSize) {
-            applySize(lastSize.width, lastSize.height, 'normal');
+            applySize(lastSize.width, lastSize.height, lastState);
             return;
         }
         applySize(activeConfig().size.width, activeConfig().size.height, 'normal');
