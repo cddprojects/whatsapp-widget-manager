@@ -1041,24 +1041,48 @@ function build_phone_widget_update(array $numbers): ?array
     ];
 }
 
-function sanitize_client_phone_manual_input(array $post): array
+function sanitize_client_phone_manual_input(array $post): ?array
 {
-    $countryCode = (string) ($post['whatsapp_country_code'] ?? '+60');
-    if (!array_key_exists($countryCode, country_codes())) {
-        $countryCode = '+60';
+    $rows = $post['manual_numbers'] ?? [];
+    $numbers = [];
+    $seen = [];
+
+    if (is_array($rows) && $rows !== []) {
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $countryCode = (string) ($row['country_code'] ?? '+60');
+            if (!array_key_exists($countryCode, country_codes())) {
+                $countryCode = '+60';
+            }
+
+            $normalized = normalize_phone_number($countryCode, (string) ($row['number'] ?? ''));
+            if ($normalized === null) {
+                continue;
+            }
+
+            if (isset($seen[$normalized['full_number']])) {
+                continue;
+            }
+
+            $seen[$normalized['full_number']] = true;
+            $numbers[] = $normalized;
+        }
+    } else {
+        $countryCode = (string) ($post['whatsapp_country_code'] ?? '+60');
+        if (!array_key_exists($countryCode, country_codes())) {
+            $countryCode = '+60';
+        }
+
+        $normalized = normalize_phone_number($countryCode, (string) ($post['whatsapp_number'] ?? ''));
+        if ($normalized !== null) {
+            $numbers[] = $normalized;
+        }
     }
 
-    $normalized = normalize_phone_number($countryCode, (string) ($post['whatsapp_number'] ?? ''));
-    if ($normalized === null) {
-        return [];
-    }
-
-    return [
-        'whatsapp_country_code' => $normalized['country_code'],
-        'whatsapp_number' => $normalized['number'],
-        'use_random_numbers' => 0,
-        'random_numbers_json' => '[]',
-    ];
+    return build_phone_widget_update($numbers);
 }
 
 function update_widget_phone_fields(int $widgetId, array $data): void

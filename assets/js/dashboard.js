@@ -35,6 +35,14 @@
         });
     }
 
+    function renumberManualRows() {
+        document.querySelectorAll('[data-manual-number-list] .repeat-row').forEach(function (row, index) {
+            row.querySelectorAll('select, input').forEach(function (input) {
+                input.name = input.name.replace(/manual_numbers\[\d+\]/, 'manual_numbers[' + index + ']');
+            });
+        });
+    }
+
     function showSettingsPanel(sectionId, updateHash) {
         var workspace = document.querySelector('[data-settings-workspace]');
         if (!workspace) return;
@@ -93,12 +101,33 @@
             }
         }
 
+        var addManualButton = event.target.closest('[data-add-manual-number]');
+        if (addManualButton) {
+            var manualList = document.querySelector('[data-manual-number-list]');
+            var manualFirst = manualList && manualList.querySelector('.repeat-row');
+            if (manualList && manualFirst) {
+                var manualClone = manualFirst.cloneNode(true);
+                manualClone.querySelectorAll('input').forEach(function (input) { input.value = ''; });
+                manualList.appendChild(manualClone);
+                renumberManualRows();
+            }
+        }
+
         var removeButton = event.target.closest('[data-remove-row]');
         if (removeButton) {
             var rows = document.querySelectorAll('[data-random-number-list] .repeat-row');
             if (rows.length > 1) {
                 removeButton.closest('.repeat-row').remove();
                 renumberRandomRows();
+            }
+        }
+
+        var removeManualButton = event.target.closest('[data-remove-manual-row]');
+        if (removeManualButton) {
+            var manualRows = document.querySelectorAll('[data-manual-number-list] .repeat-row');
+            if (manualRows.length > 1) {
+                removeManualButton.closest('.repeat-row').remove();
+                renumberManualRows();
             }
         }
 

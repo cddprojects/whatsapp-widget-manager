@@ -15,7 +15,7 @@ $errors = [];
 if (is_post()) {
     verify_csrf();
     $data = sanitize_client_phone_manual_input($_POST);
-    if ($data === []) {
+    if ($data === null) {
         $errors[] = 'Please enter a valid phone number.';
     } else {
         update_widget_phone_fields($widgetId, $data);
