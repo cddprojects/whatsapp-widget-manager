@@ -119,6 +119,7 @@ require __DIR__ . '/includes/header.php';
                                     <a class="btn btn-small btn-light" href="widget-preview.php?id=<?= (int) $widget['id'] ?>">Preview</a>
                                     <a class="btn btn-small btn-primary-soft" href="edit-widget.php?id=<?= (int) $widget['id'] ?>">Full Edit</a>
                                     <a class="btn btn-small btn-light" href="edit-widget-phone.php?id=<?= (int) $widget['id'] ?>">Phone Number</a>
+                                    <a class="btn btn-small btn-light" href="admin-widget-leads.php?widget_id=<?= (int) $widget['id'] ?>">Leads</a>
                                     <a class="btn btn-small btn-light" href="embed-code.php?id=<?= (int) $widget['id'] ?>">Embed Code</a>
                                     <form method="post" data-confirm="Delete this widget?">
                                         <?= csrf_field() ?>

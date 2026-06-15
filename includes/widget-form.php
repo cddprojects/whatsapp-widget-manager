@@ -399,7 +399,7 @@ $settingsSections = [
         </div>
         <label class="toggle-row">
             <input type="checkbox" name="greeting_enabled" value="1"<?= checked($widget['greeting_enabled']) ?>>
-            <span>Enable greeting popup</span>
+            <span>Enable greeting dialog</span>
         </label>
         <div class="form-grid two-columns">
             <label>
@@ -407,12 +407,34 @@ $settingsSections = [
                 <input type="text" name="greeting_title" value="<?= e($widget['greeting_title']) ?>">
             </label>
             <label>
-                <span>Delay seconds</span>
+                <span>Greeting delay seconds</span>
                 <input type="number" min="0" max="120" name="greeting_delay_seconds" value="<?= e((string) $widget['greeting_delay_seconds']) ?>">
             </label>
             <label class="span-2">
                 <span>Greeting message</span>
                 <textarea name="greeting_message" rows="3"><?= e($widget['greeting_message']) ?></textarea>
+            </label>
+        </div>
+        <label class="toggle-row">
+            <input type="checkbox" name="greeting_capture_phone" value="1"<?= checked($widget['greeting_capture_phone'] ?? 0) ?>>
+            <span>Enable phone number capture</span>
+        </label>
+        <label class="toggle-row">
+            <input type="checkbox" name="greeting_phone_required" value="1"<?= checked($widget['greeting_phone_required'] ?? 1) ?>>
+            <span>Phone number required</span>
+        </label>
+        <div class="form-grid two-columns">
+            <label>
+                <span>Phone input placeholder</span>
+                <input type="text" name="greeting_phone_placeholder" value="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>">
+            </label>
+            <label>
+                <span>Submit button text</span>
+                <input type="text" name="greeting_submit_text" value="<?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?>">
+            </label>
+            <label class="span-2">
+                <span>Success message</span>
+                <input type="text" name="greeting_lead_success_message" value="<?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?>">
             </label>
         </div>
     </section>

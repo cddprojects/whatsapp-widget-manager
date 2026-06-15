@@ -6,6 +6,10 @@
     var button = document.querySelector('[data-widget-button]');
     var greeting = document.querySelector('[data-greeting]');
     var closeGreeting = document.querySelector('[data-close-greeting]');
+    var greetingSubmit = document.querySelector('[data-greeting-submit]');
+    var phoneInput = document.querySelector('[data-greeting-phone]');
+    var phoneError = document.querySelector('[data-greeting-phone-error]');
+    var greetingSuccess = document.querySelector('[data-greeting-success]');
     var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-5', 'style-6', 'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover'];
     var isOpening = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
@@ -56,10 +60,101 @@
 
     function sizeForState(state) {
         var styleSizes = sizeMap[currentStyle] || sizeMap['style-1'];
-        if (state === 'greeting' && !styleSizes.greeting) {
-            return [380, 280];
+        if (state === 'greeting') {
+            if (config.greetingCapturePhone) {
+                return [400, 340];
+            }
+            if (!styleSizes.greeting) {
+                return [380, 280];
+            }
+            return styleSizes.greeting;
         }
         return styleSizes[state] || styleSizes.normal || [120, 120];
+    }
+
+    function cleanPhone(phone) {
+        return String(phone || '').replace(/[^\d+]/g, '');
+    }
+
+    function isValidPhone(phone) {
+        var cleaned = cleanPhone(phone);
+        var digits = cleaned.replace(/\D/g, '');
+        return digits.length >= 8 && digits.length <= 15;
+    }
+
+    function showPhoneError(message) {
+        if (!phoneError) {
+            return;
+        }
+        phoneError.textContent = message;
+        phoneError.hidden = !message;
+    }
+
+    function getPageTitle() {
+        try {
+            return window.parent.document.title || '';
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function redirectToWhatsapp(url) {
+        openUrl(url);
+    }
+
+    function saveLeadAndRedirect(url, submitButton) {
+        var phone = phoneInput ? phoneInput.value.trim() : '';
+        var phoneRequired = !!config.greetingPhoneRequired;
+        var shouldSave = phone !== '' && isValidPhone(phone);
+
+        if (phoneRequired && !isValidPhone(phone)) {
+            showPhoneError('Please enter a valid phone number.');
+            return;
+        }
+
+        showPhoneError('');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.classList.add('is-loading');
+        }
+        if (greetingSuccess) {
+            greetingSuccess.hidden = false;
+        }
+
+        if (!shouldSave || !config.saveLeadUrl) {
+            redirectToWhatsapp(url);
+            return;
+        }
+
+        fetch(config.saveLeadUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                widget_id: config.widgetId,
+                public_key: config.publicKey,
+                visitor_phone: phone,
+                source_url: document.referrer || '',
+                page_title: getPageTitle(),
+                whatsapp_redirect_url: url,
+                website: ''
+            })
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    console.warn('Lead save failed:', data && data.message ? data.message : 'Unknown error');
+                }
+            })
+            .catch(function (error) {
+                console.warn('Lead save failed:', error);
+            })
+            .finally(function () {
+                redirectToWhatsapp(url);
+            });
     }
 
     function sendWidgetSize(width, height, state) {
@@ -197,9 +292,26 @@
     if (closeGreeting) {
         closeGreeting.addEventListener('click', function () {
             greeting.classList.remove('is-visible');
+            showPhoneError('');
             reportMappedSize('normal');
             reportSize();
             scheduleSizeReports();
+        });
+    }
+
+    if (greetingSubmit) {
+        greetingSubmit.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (!config.online) {
+                return;
+            }
+            saveLeadAndRedirect(buildUrl(), greetingSubmit);
+        });
+    }
+
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function () {
+            showPhoneError('');
         });
     }
 

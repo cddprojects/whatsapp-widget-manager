@@ -535,9 +535,14 @@ function default_widget_data(): array
         'business_hours_json' => json_encode(default_business_hours()),
         'offline_message' => 'We are currently offline. Please leave us a message later.',
         'greeting_enabled' => 1,
-        'greeting_title' => 'Need help?',
-        'greeting_message' => 'Chat with us on WhatsApp.',
+        'greeting_title' => 'Hi 👋',
+        'greeting_message' => 'Need Help? Contact Us !',
         'greeting_delay_seconds' => 2,
+        'greeting_capture_phone' => 0,
+        'greeting_phone_required' => 1,
+        'greeting_phone_placeholder' => 'Enter your phone number',
+        'greeting_submit_text' => 'Continue to WhatsApp',
+        'greeting_lead_success_message' => 'Redirecting to WhatsApp...',
         'custom_css' => '',
         'custom_script_head' => '',
         'custom_script_body' => '',
@@ -656,6 +661,11 @@ function sanitize_widget_input(array $post): array
         'greeting_title' => trim((string) ($post['greeting_title'] ?? $defaults['greeting_title'])),
         'greeting_message' => trim((string) ($post['greeting_message'] ?? $defaults['greeting_message'])),
         'greeting_delay_seconds' => max(0, min(120, (int) ($post['greeting_delay_seconds'] ?? 2))),
+        'greeting_capture_phone' => post_checkbox('greeting_capture_phone'),
+        'greeting_phone_required' => post_checkbox('greeting_phone_required'),
+        'greeting_phone_placeholder' => trim((string) ($post['greeting_phone_placeholder'] ?? $defaults['greeting_phone_placeholder'])),
+        'greeting_submit_text' => trim((string) ($post['greeting_submit_text'] ?? $defaults['greeting_submit_text'])),
+        'greeting_lead_success_message' => trim((string) ($post['greeting_lead_success_message'] ?? $defaults['greeting_lead_success_message'])),
         'custom_css' => strip_php_tags((string) ($post['custom_css'] ?? '')),
         'custom_script_head' => strip_php_tags((string) ($post['custom_script_head'] ?? '')),
         'custom_script_body' => strip_php_tags((string) ($post['custom_script_body'] ?? '')),
@@ -674,6 +684,15 @@ function sanitize_widget_input(array $post): array
     }
     if ($data['call_to_action'] === '') {
         $data['call_to_action'] = $defaults['call_to_action'];
+    }
+    if ($data['greeting_submit_text'] === '') {
+        $data['greeting_submit_text'] = $defaults['greeting_submit_text'];
+    }
+    if ($data['greeting_phone_placeholder'] === '') {
+        $data['greeting_phone_placeholder'] = $defaults['greeting_phone_placeholder'];
+    }
+    if ($data['greeting_lead_success_message'] === '') {
+        $data['greeting_lead_success_message'] = $defaults['greeting_lead_success_message'];
     }
     if ($sameMobile) {
         $data['mobile_position_type'] = $data['desktop_position_type'];
@@ -1349,5 +1368,259 @@ function validate_uploaded_phone_file(array $file): array
     }
 
     return [];
+}
+
+function normalize_visitor_phone(string $phone): ?array
+{
+    $raw = trim(strip_tags($phone));
+    if ($raw === '') {
+        return null;
+    }
+
+    $digits = clean_phone_number($raw);
+    if (strlen($digits) < 8 || strlen($digits) > 15) {
+        return null;
+    }
+
+    $display = preg_replace('/[^\d+]/', '', $raw) ?? $digits;
+    if ($display !== '' && $display[0] !== '+') {
+        $display = '+' . $digits;
+    }
+
+    return [
+        'visitor_phone' => $display,
+        'visitor_country_code' => null,
+        'visitor_full_phone' => $digits,
+    ];
+}
+
+function lead_recently_saved(int $widgetId, string $fullPhone): bool
+{
+    $stmt = db()->prepare(
+        'SELECT id FROM widget_leads
+         WHERE widget_id = :widget_id AND visitor_full_phone = :phone
+           AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+         LIMIT 1'
+    );
+    $stmt->execute(['widget_id' => $widgetId, 'phone' => $fullPhone]);
+    return (bool) $stmt->fetchColumn();
+}
+
+function insert_widget_lead(array $widget, array $lead): int
+{
+    $stmt = db()->prepare(
+        'INSERT INTO widget_leads (
+            widget_id, user_id, visitor_phone, visitor_country_code, visitor_full_phone,
+            source_domain, source_url, page_title, whatsapp_redirect_url, ip_address, user_agent
+         ) VALUES (
+            :widget_id, :user_id, :visitor_phone, :visitor_country_code, :visitor_full_phone,
+            :source_domain, :source_url, :page_title, :whatsapp_redirect_url, :ip_address, :user_agent
+         )'
+    );
+    $stmt->execute([
+        'widget_id' => (int) $widget['id'],
+        'user_id' => (int) $widget['user_id'],
+        'visitor_phone' => $lead['visitor_phone'],
+        'visitor_country_code' => $lead['visitor_country_code'],
+        'visitor_full_phone' => $lead['visitor_full_phone'],
+        'source_domain' => $lead['source_domain'],
+        'source_url' => $lead['source_url'],
+        'page_title' => $lead['page_title'],
+        'whatsapp_redirect_url' => $lead['whatsapp_redirect_url'],
+        'ip_address' => $lead['ip_address'],
+        'user_agent' => $lead['user_agent'],
+    ]);
+
+    return (int) db()->lastInsertId();
+}
+
+function search_widget_leads(int $widgetId, array $options): array
+{
+    $page = max(1, (int) ($options['page'] ?? 1));
+    $perPage = max(1, min(100, (int) ($options['per_page'] ?? 25)));
+    $offset = ($page - 1) * $perPage;
+    $query = trim((string) ($options['q'] ?? ''));
+    $dateFrom = trim((string) ($options['date_from'] ?? ''));
+    $dateTo = trim((string) ($options['date_to'] ?? ''));
+
+    $where = ['wl.widget_id = :widget_id'];
+    $params = ['widget_id' => $widgetId];
+
+    if ($query !== '') {
+        $where[] = '(wl.visitor_phone LIKE :q OR wl.visitor_full_phone LIKE :q OR wl.source_domain LIKE :q OR wl.source_url LIKE :q OR wl.page_title LIKE :q)';
+        $params['q'] = '%' . $query . '%';
+    }
+    if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+        $where[] = 'DATE(wl.created_at) >= :date_from';
+        $params['date_from'] = $dateFrom;
+    }
+    if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+        $where[] = 'DATE(wl.created_at) <= :date_to';
+        $params['date_to'] = $dateTo;
+    }
+
+    $whereSql = implode(' AND ', $where);
+    $countStmt = db()->prepare('SELECT COUNT(*) FROM widget_leads wl WHERE ' . $whereSql);
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
+
+    $sql = 'SELECT wl.*, w.widget_name, u.name AS owner_name, u.email AS owner_email
+            FROM widget_leads wl
+            INNER JOIN widgets w ON w.id = wl.widget_id
+            INNER JOIN users u ON u.id = wl.user_id
+            WHERE ' . $whereSql . '
+            ORDER BY wl.created_at DESC
+            LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    return [
+        'rows' => $stmt->fetchAll(),
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'pages' => (int) max(1, ceil($total / $perPage)),
+    ];
+}
+
+function widget_leads_for_export(int $widgetId, array $options): array
+{
+    $result = search_widget_leads($widgetId, array_merge($options, ['page' => 1, 'per_page' => 10000]));
+    return $result['rows'];
+}
+
+function json_response(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload);
+    exit;
+}
+
+function normalize_visitor_phone(string $phone): ?array
+{
+    $raw = trim(strip_tags($phone));
+    if ($raw === '') {
+        return null;
+    }
+
+    $digits = clean_phone_number($raw);
+    if (strlen($digits) < 8 || strlen($digits) > 15) {
+        return null;
+    }
+
+    $display = preg_replace('/[^\d+]/', '', $raw) ?? $digits;
+    if ($display !== '' && $display[0] !== '+') {
+        $display = '+' . $digits;
+    }
+
+    return [
+        'visitor_phone' => $display,
+        'visitor_country_code' => null,
+        'visitor_full_phone' => $digits,
+    ];
+}
+
+function lead_recently_saved(int $widgetId, string $fullPhone): bool
+{
+    $stmt = db()->prepare(
+        'SELECT id FROM widget_leads
+         WHERE widget_id = :widget_id AND visitor_full_phone = :phone
+           AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+         LIMIT 1'
+    );
+    $stmt->execute(['widget_id' => $widgetId, 'phone' => $fullPhone]);
+    return (bool) $stmt->fetchColumn();
+}
+
+function insert_widget_lead(array $widget, array $lead): int
+{
+    $stmt = db()->prepare(
+        'INSERT INTO widget_leads (
+            widget_id, user_id, visitor_phone, visitor_country_code, visitor_full_phone,
+            source_domain, source_url, page_title, whatsapp_redirect_url, ip_address, user_agent
+         ) VALUES (
+            :widget_id, :user_id, :visitor_phone, :visitor_country_code, :visitor_full_phone,
+            :source_domain, :source_url, :page_title, :whatsapp_redirect_url, :ip_address, :user_agent
+         )'
+    );
+    $stmt->execute([
+        'widget_id' => (int) $widget['id'],
+        'user_id' => (int) $widget['user_id'],
+        'visitor_phone' => $lead['visitor_phone'],
+        'visitor_country_code' => $lead['visitor_country_code'],
+        'visitor_full_phone' => $lead['visitor_full_phone'],
+        'source_domain' => $lead['source_domain'],
+        'source_url' => $lead['source_url'],
+        'page_title' => $lead['page_title'],
+        'whatsapp_redirect_url' => $lead['whatsapp_redirect_url'],
+        'ip_address' => $lead['ip_address'],
+        'user_agent' => $lead['user_agent'],
+    ]);
+
+    return (int) db()->lastInsertId();
+}
+
+function search_widget_leads(int $widgetId, array $options): array
+{
+    $page = max(1, (int) ($options['page'] ?? 1));
+    $perPage = max(1, min(100, (int) ($options['per_page'] ?? 25)));
+    $offset = ($page - 1) * $perPage;
+    $query = trim((string) ($options['q'] ?? ''));
+    $dateFrom = trim((string) ($options['date_from'] ?? ''));
+    $dateTo = trim((string) ($options['date_to'] ?? ''));
+
+    $where = ['wl.widget_id = :widget_id'];
+    $params = ['widget_id' => $widgetId];
+
+    if ($query !== '') {
+        $where[] = '(wl.visitor_phone LIKE :q OR wl.visitor_full_phone LIKE :q OR wl.source_domain LIKE :q OR wl.source_url LIKE :q OR wl.page_title LIKE :q)';
+        $params['q'] = '%' . $query . '%';
+    }
+    if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+        $where[] = 'DATE(wl.created_at) >= :date_from';
+        $params['date_from'] = $dateFrom;
+    }
+    if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+        $where[] = 'DATE(wl.created_at) <= :date_to';
+        $params['date_to'] = $dateTo;
+    }
+
+    $whereSql = implode(' AND ', $where);
+    $countStmt = db()->prepare('SELECT COUNT(*) FROM widget_leads wl WHERE ' . $whereSql);
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
+
+    $sql = 'SELECT wl.*, w.widget_name, u.name AS owner_name, u.email AS owner_email
+            FROM widget_leads wl
+            INNER JOIN widgets w ON w.id = wl.widget_id
+            INNER JOIN users u ON u.id = wl.user_id
+            WHERE ' . $whereSql . '
+            ORDER BY wl.created_at DESC
+            LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    return [
+        'rows' => $stmt->fetchAll(),
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'pages' => (int) max(1, ceil($total / $perPage)),
+    ];
+}
+
+function widget_leads_for_export(int $widgetId, array $options): array
+{
+    $result = search_widget_leads($widgetId, array_merge($options, ['page' => 1, 'per_page' => 10000]));
+    return $result['rows'];
+}
+
+function json_response(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload);
+    exit;
 }
 
