@@ -64,15 +64,6 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
     left: 16px;
 }
 
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root,
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-anchor-bottom,
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-anchor-top,
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-mobile-anchor-bottom,
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-mobile-anchor-top {
-    top: 16px !important;
-    bottom: auto !important;
-}
-
 .ctcw-container.is-hidden {
     display: none;
 }
