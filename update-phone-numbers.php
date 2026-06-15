@@ -22,27 +22,29 @@ if (($_POST['action'] ?? '') === 'remove_number') {
     $index = (int) ($_POST['number_index'] ?? -1);
     if (!isset($numbers[$index])) {
         flash('error', 'Number not found.');
-        redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
+        redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');
     }
 
     array_splice($numbers, $index, 1);
     $update = build_phone_widget_update($numbers);
     if ($update === null) {
         flash('error', 'At least one valid number is required.');
-        redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
+        redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');
     }
 
     update_widget_phone_fields($widgetId, $update);
     flash('success', 'Number removed.');
-    redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
+    redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');
 }
 
 $data = sanitize_client_phone_manual_input($_POST);
-if ($data === []) {
-    flash('error', 'Please enter a valid phone number.');
-    redirect('client-dashboard.php?widget_id=' . $widgetId);
+if ($data === null) {
+    flash('error', 'Please enter at least one valid phone number.');
+    redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');
 }
 
 update_widget_phone_fields($widgetId, $data);
-flash('success', 'WhatsApp number updated.');
-redirect('client-dashboard.php?widget_id=' . $widgetId);
+flash('success', count(decode_random_numbers($data['random_numbers_json'] ?? '[]')) > 1 || !empty($data['use_random_numbers'])
+    ? 'WhatsApp numbers updated. Random rotation is enabled.'
+    : 'WhatsApp number updated.');
+redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');

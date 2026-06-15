@@ -21,6 +21,13 @@ if (!$widget && $widgets !== []) {
 }
 
 $importedNumbers = $widget ? decode_random_numbers($widget['random_numbers_json'] ?? '[]') : [];
+$manualNumbers = $importedNumbers;
+if ($manualNumbers === [] && $widget) {
+    $manualNumbers = [[
+        'country_code' => (string) ($widget['whatsapp_country_code'] ?? '+60'),
+        'number' => (string) ($widget['whatsapp_number'] ?? ''),
+    ]];
+}
 $activeTab = (string) ($_GET['tab'] ?? 'manual');
 
 $pageTitle = 'My WhatsApp Number';
@@ -96,22 +103,26 @@ require __DIR__ . '/includes/header.php';
             <form class="settings-form" method="post" action="update-phone-numbers.php">
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
-                <div class="form-grid two-columns">
-                    <label>
-                        <span>Country code</span>
-                        <select name="whatsapp_country_code">
-                            <?php foreach (country_codes() as $code => $label): ?>
-                                <option value="<?= e($code) ?>"<?= selected((string) ($widget['whatsapp_country_code'] ?? '+60'), $code) ?>><?= e($label) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                    <label>
-                        <span>Phone number</span>
-                        <input type="text" name="whatsapp_number" value="<?= e((string) ($widget['whatsapp_number'] ?? '')) ?>" required>
-                    </label>
+                <div class="random-number-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <h3>Phone numbers</h3>
+                            <p>Add one or more numbers. Multiple numbers rotate randomly on each click.</p>
+                        </div>
+                        <button type="button" class="btn btn-small btn-light" data-add-manual-number>Add number</button>
+                    </div>
+                    <div data-manual-number-list>
+                        <?php foreach ($manualNumbers as $index => $row): ?>
+                            <div class="repeat-row">
+                                <select name="manual_numbers[<?= (int) $index ?>][country_code]"><?= render_country_options((string) ($row['country_code'] ?? '+60')) ?></select>
+                                <input type="tel" name="manual_numbers[<?= (int) $index ?>][number]" value="<?= e((string) ($row['number'] ?? '')) ?>" placeholder="123456789" required>
+                                <button type="button" class="btn btn-small btn-danger-soft" data-remove-manual-row>Remove</button>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save number</button>
+                    <button type="submit" class="btn btn-primary">Save numbers</button>
                     <a class="btn btn-light" href="widget-preview.php?id=<?= (int) $selectedWidgetId ?>">Preview</a>
                 </div>
             </form>
