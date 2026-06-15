@@ -1275,12 +1275,14 @@ function search_all_widgets(array $options): array
     $where = ['1=1'];
     $params = [];
     if ($query !== '') {
-        $where[] = '(w.widget_name LIKE :q_widget OR w.website_domain LIKE :q_domain OR u.name LIKE :q_name OR u.email LIKE :q_email)';
-        $like = '%' . $query . '%';
-        $params['q_widget'] = $like;
-        $params['q_domain'] = $like;
-        $params['q_name'] = $like;
-        $params['q_email'] = $like;
+
+            $where[] = '(w.widget_name LIKE :q_widget OR w.website_domain LIKE :q_domain OR u.name LIKE :q_name OR u.email LIKE :q_email)';
+            $like = '%' . $query . '%';
+            $params['q_widget'] = $like;
+            $params['q_domain'] = $like;
+            $params['q_name'] = $like;
+            $params['q_email'] = $like;
+
     }
 
     $whereSql = implode(' AND ', $where);
