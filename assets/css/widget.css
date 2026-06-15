@@ -29,7 +29,10 @@ body * {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 12px;
+    justify-content: flex-end;
+    gap: 10px;
+    width: max-content;
+    max-width: calc(100vw - 32px);
 }
 
 .ctcw-widget-root {
@@ -122,13 +125,13 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
 }
 
 .ctcw-greeting.has-capture {
-    width: min(400px, calc(100vw - 32px));
-    padding: 18px;
+    width: min(320px, calc(100vw - 32px));
+    padding: 16px;
 }
 
 .ctcw-greeting-form {
     display: grid;
-    gap: 12px;
+    gap: 10px;
 }
 
 .ctcw-phone-field {
@@ -136,11 +139,19 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
     gap: 6px;
 }
 
+.ctcw-phone-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
 .ctcw-phone-input {
+    flex: 1 1 auto;
+    min-width: 0;
     width: 100%;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 11px 12px;
+    padding: 10px 12px;
     color: var(--ctcw-text);
     background: #ffffff;
     font: inherit;
@@ -166,11 +177,13 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    width: 100%;
+    flex: 0 0 auto;
+    width: 44px;
+    min-width: 44px;
+    height: auto;
     border: 0;
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 0;
     color: #ffffff;
     background: var(--ctcw-green);
     font: inherit;
@@ -185,9 +198,8 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
     cursor: wait;
 }
 
-.ctcw-greeting-submit .ctcw-icon {
-    width: 18px;
-    height: 18px;
+.ctcw-greeting-submit svg {
+    display: block;
 }
 
 .ctcw-greeting-success {
@@ -208,15 +220,20 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
 
 .ctcw-greeting strong {
     display: block;
-    margin: 0 24px 6px 0;
+    margin: 0 24px 4px 0;
     font-size: 16px;
+    line-height: 1.3;
 }
 
 .ctcw-greeting p {
     margin: 0;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.45;
     color: #52606d;
+}
+
+.ctcw-greeting.has-capture .ctcw-greeting-form {
+    margin: 0;
 }
 
 .ctcw-close {

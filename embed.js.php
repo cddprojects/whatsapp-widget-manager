@@ -36,6 +36,8 @@ $config = [
     'widgetId' => (string) $widget['id'],
     'frameId' => $frameId,
     'src' => $widgetSrc,
+    'greetingCapturePhone' => !empty($widget['greeting_capture_phone']),
+    'greetingEnabled' => !empty($widget['greeting_enabled']),
     'desktop' => [
         'position' => iframe_position_settings($widget, 'desktop'),
         'size' => $desktopSize,
@@ -80,7 +82,10 @@ $config = [
 
     function minimumForState(state) {
         if (state === 'greeting') {
-            return { width: 400, height: 340 };
+            if (config.greetingCapturePhone) {
+                return { width: 320, height: 300 };
+            }
+            return { width: 380, height: 280 };
         }
 
         var active = activeConfig();
