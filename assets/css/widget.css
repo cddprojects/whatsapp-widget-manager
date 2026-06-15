@@ -64,15 +64,6 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
     left: 16px;
 }
 
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root,
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-anchor-bottom,
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-anchor-top,
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-mobile-anchor-bottom,
-html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-mobile-anchor-top {
-    top: 16px !important;
-    bottom: auto !important;
-}
-
 .ctcw-container.is-hidden {
     display: none;
 }
@@ -164,8 +155,14 @@ html.ctcw-greeting-open .ctcw-container.ctcw-widget-root.ctcw-mobile-anchor-top 
     color: var(--ctcw-text);
     background: #ffffff;
     font: inherit;
+    font-size: 13px;
     outline: none;
     box-shadow: none !important;
+}
+
+.ctcw-phone-input::placeholder {
+    font-size: 13px;
+    color: #829ab1;
 }
 
 .ctcw-phone-input:focus {

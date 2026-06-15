@@ -49,18 +49,31 @@
         return !!(greeting && greeting.classList.contains('is-visible'));
     }
 
-    function setGreetingOpen(isOpen) {
-        document.documentElement.classList.toggle('ctcw-greeting-open', isOpen);
+    function closeGreetingDialog() {
+        if (!greeting) {
+            return;
+        }
+        greeting.classList.remove('is-visible');
+        showPhoneError('');
+        if (greetingSuccess) {
+            greetingSuccess.hidden = true;
+        }
+        if (greetingSubmit) {
+            greetingSubmit.disabled = false;
+            greetingSubmit.classList.remove('is-loading');
+        }
+        currentState = 'normal';
+        reportMappedSize('normal');
+        reportSize();
+        scheduleSizeReports();
     }
 
     function syncWidgetSize() {
         if (isGreetingVisible()) {
             currentState = 'greeting';
-            setGreetingOpen(true);
             reportSize();
             return;
         }
-        setGreetingOpen(false);
         reportMappedSize('normal');
     }
 
@@ -146,9 +159,8 @@
             submitButton.disabled = true;
             submitButton.classList.add('is-loading');
         }
-        if (greetingSuccess) {
-            greetingSuccess.hidden = false;
-        }
+
+        closeGreetingDialog();
 
         if (!shouldSave || !config.saveLeadUrl) {
             redirectToWhatsapp(url);
@@ -217,8 +229,9 @@
 
             if (isGreetingVisible()) {
                 currentState = 'greeting';
-                width = Math.max(minimum[0], Math.ceil(container.offsetWidth + pad));
-                height = Math.max(minimum[1], Math.ceil(container.offsetHeight + pad));
+                var rect = container.getBoundingClientRect();
+                width = Math.max(minimum[0], Math.ceil(rect.width + pad));
+                height = Math.max(minimum[1], Math.ceil(rect.height + pad));
                 sendWidgetSize(width, height, 'greeting');
                 return;
             }
@@ -324,7 +337,6 @@
         sendWidgetSize(size[0], size[1], 'greeting');
         window.requestAnimationFrame(function () {
             greeting.classList.add('is-visible');
-            setGreetingOpen(true);
             window.requestAnimationFrame(function () {
                 reportSize();
                 scheduleSizeReports();
@@ -340,15 +352,7 @@
     }
 
     if (closeGreeting) {
-        closeGreeting.addEventListener('click', function () {
-            greeting.classList.remove('is-visible');
-            setGreetingOpen(false);
-            showPhoneError('');
-            currentState = 'normal';
-            reportMappedSize('normal');
-            reportSize();
-            scheduleSizeReports();
-        });
+        closeGreeting.addEventListener('click', closeGreetingDialog);
     }
 
     if (greetingSubmit) {
