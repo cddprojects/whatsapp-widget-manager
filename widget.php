@@ -140,19 +140,27 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
                         <strong><?= e($widget['greeting_title']) ?></strong>
                         <p><?= e($widget['greeting_message']) ?></p>
                         <div class="ctcw-phone-field">
-                            <input
-                                class="ctcw-phone-input"
-                                type="tel"
-                                data-greeting-phone
-                                placeholder="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>"
-                                autocomplete="tel"
-                            >
+                            <div class="ctcw-phone-row">
+                                <input
+                                    class="ctcw-phone-input"
+                                    type="tel"
+                                    data-greeting-phone
+                                    placeholder="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>"
+                                    autocomplete="tel"
+                                >
+                                <button
+                                    type="button"
+                                    class="ctcw-greeting-submit"
+                                    data-greeting-submit
+                                    aria-label="<?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?>"
+                                >
+                                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                                        <path fill="currentColor" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
+                                    </svg>
+                                </button>
+                            </div>
                             <span class="ctcw-phone-error" data-greeting-phone-error hidden></span>
                         </div>
-                        <button type="button" class="ctcw-greeting-submit" data-greeting-submit>
-                            <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
-                            <span><?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?></span>
-                        </button>
                         <span class="ctcw-greeting-success" data-greeting-success hidden><?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?></span>
                     </div>
                 <?php else: ?>

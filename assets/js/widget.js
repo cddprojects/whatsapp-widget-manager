@@ -16,6 +16,7 @@
     var currentState = 'normal';
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var hoverTimer = null;
+    var greetingCaptureSize = [320, 300];
     var sizeMap = {
         'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
         'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
@@ -62,7 +63,7 @@
         var styleSizes = sizeMap[currentStyle] || sizeMap['style-1'];
         if (state === 'greeting') {
             if (config.greetingCapturePhone) {
-                return [400, 340];
+                return greetingCaptureSize;
             }
             if (!styleSizes.greeting) {
                 return [380, 280];
@@ -70,6 +71,13 @@
             return styleSizes.greeting;
         }
         return styleSizes[state] || styleSizes.normal || [120, 120];
+    }
+
+    function contentPadding() {
+        if (currentState === 'greeting' && config.greetingCapturePhone) {
+            return 24;
+        }
+        return 32;
     }
 
     function cleanPhone(phone) {
@@ -195,8 +203,9 @@
             var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
             var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
             var minimum = sizeForState(currentState);
-            var width = Math.max(minimum[0], Math.ceil(maxX - minX + 32));
-            var height = Math.max(minimum[1], Math.ceil(maxY - minY + 32));
+            var pad = contentPadding();
+            var width = Math.max(minimum[0], Math.ceil(maxX - minX + pad));
+            var height = Math.max(minimum[1], Math.ceil(maxY - minY + pad));
 
             sendWidgetSize(width, height, currentState);
         });
@@ -280,13 +289,24 @@
         window.open(url, '_blank', 'noopener,noreferrer');
     }
 
-    if (config.greetingEnabled && greeting) {
-        window.setTimeout(function () {
-            reportMappedSize('greeting');
+    function revealGreeting() {
+        currentState = 'greeting';
+        var size = sizeForState('greeting');
+        sendWidgetSize(size[0], size[1], 'greeting');
+        window.requestAnimationFrame(function () {
             greeting.classList.add('is-visible');
-            reportSize();
-            scheduleSizeReports();
-        }, Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000);
+            window.requestAnimationFrame(function () {
+                reportSize();
+                scheduleSizeReports();
+            });
+        });
+    }
+
+    if (config.greetingEnabled && greeting) {
+        window.setTimeout(
+            revealGreeting,
+            Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000
+        );
     }
 
     if (closeGreeting) {
