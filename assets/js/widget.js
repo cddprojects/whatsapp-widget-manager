@@ -16,7 +16,7 @@
     var currentState = 'normal';
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var hoverTimer = null;
-    var greetingCaptureSize = [320, 300];
+    var greetingCaptureSize = [320, 340];
     var sizeMap = {
         'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
         'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
@@ -45,6 +45,25 @@
         return width <= 767;
     }
 
+    function isGreetingVisible() {
+        return !!(greeting && greeting.classList.contains('is-visible'));
+    }
+
+    function setGreetingOpen(isOpen) {
+        document.documentElement.classList.toggle('ctcw-greeting-open', isOpen);
+    }
+
+    function syncWidgetSize() {
+        if (isGreetingVisible()) {
+            currentState = 'greeting';
+            setGreetingOpen(true);
+            reportSize();
+            return;
+        }
+        setGreetingOpen(false);
+        reportMappedSize('normal');
+    }
+
     function applyResponsiveState() {
         var mobile = isMobile();
         var activeStyle = mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle;
@@ -56,7 +75,7 @@
         });
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
-        reportMappedSize('normal');
+        syncWidgetSize();
     }
 
     function sizeForState(state) {
@@ -74,8 +93,8 @@
     }
 
     function contentPadding() {
-        if (currentState === 'greeting' && config.greetingCapturePhone) {
-            return 24;
+        if (isGreetingVisible()) {
+            return 32;
         }
         return 32;
     }
@@ -117,6 +136,8 @@
 
         if (phoneRequired && !isValidPhone(phone)) {
             showPhoneError('Please enter a valid phone number.');
+            reportSize();
+            scheduleSizeReports();
             return;
         }
 
@@ -189,11 +210,21 @@
 
     function reportSize() {
         window.requestAnimationFrame(function () {
+            var minimum = sizeForState(isGreetingVisible() ? 'greeting' : currentState);
+            var pad = contentPadding();
+            var width;
+            var height;
+
+            if (isGreetingVisible()) {
+                currentState = 'greeting';
+                width = Math.max(minimum[0], Math.ceil(container.offsetWidth + pad));
+                height = Math.max(minimum[1], Math.ceil(container.offsetHeight + pad));
+                sendWidgetSize(width, height, 'greeting');
+                return;
+            }
+
             var rects = [container.getBoundingClientRect()];
             var hoverBox = container.querySelector('.ctcw-hover-box');
-            if (greeting && greeting.classList.contains('is-visible')) {
-                rects.push(greeting.getBoundingClientRect());
-            }
             if (hoverBox && window.getComputedStyle(hoverBox).opacity !== '0') {
                 rects.push(hoverBox.getBoundingClientRect());
             }
@@ -202,10 +233,8 @@
             var minY = Math.min.apply(null, rects.map(function (rect) { return rect.top; }));
             var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
             var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
-            var minimum = sizeForState(currentState);
-            var pad = contentPadding();
-            var width = Math.max(minimum[0], Math.ceil(maxX - minX + pad));
-            var height = Math.max(minimum[1], Math.ceil(maxY - minY + pad));
+            width = Math.max(minimum[0], Math.ceil(maxX - minX + pad));
+            height = Math.max(minimum[1], Math.ceil(maxY - minY + pad));
 
             sendWidgetSize(width, height, currentState);
         });
@@ -295,6 +324,7 @@
         sendWidgetSize(size[0], size[1], 'greeting');
         window.requestAnimationFrame(function () {
             greeting.classList.add('is-visible');
+            setGreetingOpen(true);
             window.requestAnimationFrame(function () {
                 reportSize();
                 scheduleSizeReports();
@@ -312,7 +342,9 @@
     if (closeGreeting) {
         closeGreeting.addEventListener('click', function () {
             greeting.classList.remove('is-visible');
+            setGreetingOpen(false);
             showPhoneError('');
+            currentState = 'normal';
             reportMappedSize('normal');
             reportSize();
             scheduleSizeReports();
@@ -336,6 +368,9 @@
     }
 
     function startHover() {
+        if (isGreetingVisible()) {
+            return;
+        }
         window.clearTimeout(hoverTimer);
         reportMappedSize('hover');
         hoverTimer = window.setTimeout(function () {
@@ -345,10 +380,13 @@
     }
 
     function endHover() {
+        if (isGreetingVisible()) {
+            return;
+        }
         window.clearTimeout(hoverTimer);
         container.classList.remove('is-hovering');
         window.setTimeout(function () {
-            if (!greeting || !greeting.classList.contains('is-visible')) {
+            if (!isGreetingVisible()) {
                 reportMappedSize('normal');
             }
         }, 250);
