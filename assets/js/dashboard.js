@@ -219,4 +219,252 @@
             topnavMain.classList.toggle('is-open');
         });
     }
+
+    var countryDataNode = document.getElementById('country-code-data');
+    var countryOptions = [];
+    if (countryDataNode) {
+        try {
+            countryOptions = JSON.parse(countryDataNode.textContent || '[]');
+        } catch (error) {
+            countryOptions = [];
+        }
+    }
+
+    function cleanDigits(value) {
+        return String(value || '').replace(/\D+/g, '');
+    }
+
+    function resolveCountryCode(searchValue, fallbackCode) {
+        var query = String(searchValue || '').trim().toLowerCase();
+        if (query === '') {
+            return fallbackCode || '+60';
+        }
+
+        var exact = countryOptions.find(function (option) {
+            return option.code === searchValue || option.label === searchValue;
+        });
+        if (exact) {
+            return exact.code;
+        }
+
+        var digitQuery = cleanDigits(query);
+        var matches = countryOptions.filter(function (option) {
+            var codeDigits = cleanDigits(option.code);
+            var label = String(option.label || '').toLowerCase();
+            var name = String(option.name || '').toLowerCase();
+            return label.indexOf(query) !== -1
+                || name.indexOf(query) !== -1
+                || (digitQuery !== '' && codeDigits.indexOf(digitQuery) === 0)
+                || (digitQuery !== '' && digitQuery.indexOf(codeDigits) === 0);
+        });
+
+        if (matches.length === 1) {
+            return matches[0].code;
+        }
+
+        if (matches.length > 1) {
+            var best = matches.find(function (option) {
+                return String(option.label || '').toLowerCase() === query
+                    || String(option.name || '').toLowerCase() === query
+                    || cleanDigits(option.code) === digitQuery;
+            });
+            if (best) {
+                return best.code;
+            }
+        }
+
+        return fallbackCode || '+60';
+    }
+
+    function syncCountryField(field, code) {
+        var match = countryOptions.find(function (option) {
+            return option.code === code;
+        });
+        var searchInput = field.querySelector('[data-country-search]');
+        var hiddenInput = field.querySelector('[data-country-value]');
+        if (hiddenInput) {
+            hiddenInput.value = code;
+        }
+        if (searchInput) {
+            searchInput.value = match ? match.label : code;
+        }
+    }
+
+    function bindCountrySearch(field) {
+        var searchInput = field.querySelector('[data-country-search]');
+        var hiddenInput = field.querySelector('[data-country-value]');
+        if (!searchInput || !hiddenInput) {
+            return;
+        }
+
+        searchInput.addEventListener('change', function () {
+            var resolved = resolveCountryCode(searchInput.value, hiddenInput.value || '+60');
+            syncCountryField(field, resolved);
+        });
+
+        searchInput.addEventListener('blur', function () {
+            var resolved = resolveCountryCode(searchInput.value, hiddenInput.value || '+60');
+            syncCountryField(field, resolved);
+        });
+    }
+
+    document.querySelectorAll('[data-country-code-field]').forEach(bindCountrySearch);
+
+    function renumberClientNumbers(form) {
+        var items = form.querySelectorAll('[data-client-number-item]');
+        items.forEach(function (item, index) {
+            var countryInput = item.querySelector('[data-number-country]');
+            var phoneInput = item.querySelector('[data-number-phone]');
+            if (countryInput) {
+                countryInput.name = 'manual_numbers[' + index + '][country_code]';
+            }
+            if (phoneInput) {
+                phoneInput.name = 'manual_numbers[' + index + '][number]';
+            }
+        });
+    }
+
+    function hideClientEmptyState(form) {
+        var emptyState = form.querySelector('[data-client-empty-state]');
+        if (emptyState) {
+            emptyState.remove();
+        }
+    }
+
+    function showClientDraft(form) {
+        var draft = form.querySelector('[data-client-number-draft]');
+        if (!draft) {
+            return;
+        }
+        draft.hidden = false;
+        draft.querySelectorAll('[data-country-code-field]').forEach(function (field) {
+            syncCountryField(field, '+60');
+        });
+        var phoneInput = draft.querySelector('[data-client-draft-phone]');
+        if (phoneInput) {
+            phoneInput.value = '';
+            phoneInput.focus();
+        }
+    }
+
+    function hideClientDraft(form) {
+        var draft = form.querySelector('[data-client-number-draft]');
+        if (draft) {
+            draft.hidden = true;
+        }
+    }
+
+    function addClientNumber(form, countryCode, phoneNumber) {
+        var list = form.querySelector('[data-client-number-list]');
+        var template = document.getElementById('client-number-item-template');
+        if (!list || !template) {
+            return false;
+        }
+
+        var digits = cleanDigits(phoneNumber);
+        if (digits.length < 7) {
+            window.alert('Please enter a valid phone number.');
+            return false;
+        }
+
+        var duplicate = false;
+        list.querySelectorAll('[data-client-number-item]').forEach(function (item) {
+            var existingCountry = item.querySelector('[data-number-country]');
+            var existingPhone = item.querySelector('[data-number-phone]');
+            if (!existingCountry || !existingPhone) {
+                return;
+            }
+            var existingFull = cleanDigits(existingCountry.value) + cleanDigits(existingPhone.value);
+            var nextFull = cleanDigits(countryCode) + digits;
+            if (existingFull === nextFull) {
+                duplicate = true;
+            }
+        });
+        if (duplicate) {
+            window.alert('This number is already in your list.');
+            return false;
+        }
+
+        hideClientEmptyState(form);
+        var item = template.content.firstElementChild.cloneNode(true);
+        item.querySelector('[data-display-country]').textContent = countryCode;
+        item.querySelector('[data-display-phone]').textContent = phoneNumber.trim();
+        item.querySelector('[data-number-country]').value = countryCode;
+        item.querySelector('[data-number-phone]').value = phoneNumber.trim();
+        list.appendChild(item);
+        renumberClientNumbers(form);
+        return true;
+    }
+
+    document.addEventListener('click', function (event) {
+        var manualForm = document.querySelector('[data-client-manual-form]');
+        if (!manualForm) {
+            return;
+        }
+
+        if (event.target.closest('[data-client-add-number]')) {
+            showClientDraft(manualForm);
+            return;
+        }
+
+        if (event.target.closest('[data-client-cancel-number]')) {
+            hideClientDraft(manualForm);
+            return;
+        }
+
+        if (event.target.closest('[data-client-confirm-number]')) {
+            var draft = manualForm.querySelector('[data-client-number-draft]');
+            if (!draft) {
+                return;
+            }
+            var countryField = draft.querySelector('[data-country-code-field]');
+            var phoneInput = draft.querySelector('[data-client-draft-phone]');
+            var countryCode = '+60';
+            if (countryField) {
+                var searchInput = countryField.querySelector('[data-country-search]');
+                var hiddenInput = countryField.querySelector('[data-country-value]');
+                countryCode = resolveCountryCode(
+                    searchInput ? searchInput.value : '',
+                    hiddenInput ? hiddenInput.value : '+60'
+                );
+                syncCountryField(countryField, countryCode);
+            }
+            if (addClientNumber(manualForm, countryCode, phoneInput ? phoneInput.value : '')) {
+                hideClientDraft(manualForm);
+            }
+            return;
+        }
+
+        if (event.target.closest('[data-client-remove-number]')) {
+            var item = event.target.closest('[data-client-number-item]');
+            if (!item) {
+                return;
+            }
+            if (!window.confirm('Remove this number from your list?')) {
+                return;
+            }
+            item.remove();
+            renumberClientNumbers(manualForm);
+            if (!manualForm.querySelector('[data-client-number-item]')) {
+                var list = manualForm.querySelector('[data-client-number-list]');
+                if (list && !list.querySelector('[data-client-empty-state]')) {
+                    var empty = document.createElement('div');
+                    empty.className = 'empty-state compact-empty';
+                    empty.setAttribute('data-client-empty-state', '');
+                    empty.innerHTML = '<p>No numbers added yet. Click Add Number to get started.</p>';
+                    list.appendChild(empty);
+                }
+            }
+        }
+    });
+
+    var manualClientForm = document.querySelector('[data-client-manual-form]');
+    if (manualClientForm) {
+        manualClientForm.addEventListener('submit', function (event) {
+            if (!manualClientForm.querySelector('[data-client-number-item]')) {
+                event.preventDefault();
+                window.alert('Please add at least one phone number before saving.');
+            }
+        });
+    }
 })();

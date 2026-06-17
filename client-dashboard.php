@@ -20,14 +20,7 @@ if (!$widget && $widgets !== []) {
     $selectedWidgetId = (int) $widget['id'];
 }
 
-$importedNumbers = $widget ? decode_random_numbers($widget['random_numbers_json'] ?? '[]') : [];
-$manualNumbers = $importedNumbers;
-if ($manualNumbers === [] && $widget) {
-    $manualNumbers = [[
-        'country_code' => (string) ($widget['whatsapp_country_code'] ?? '+60'),
-        'number' => (string) ($widget['whatsapp_number'] ?? ''),
-    ]];
-}
+$activeNumbers = $widget ? client_active_phone_numbers($widget) : [];
 $activeTab = (string) ($_GET['tab'] ?? 'manual');
 
 $pageTitle = 'My WhatsApp Number';
@@ -37,7 +30,7 @@ require __DIR__ . '/includes/header.php';
 <section class="page-heading">
     <p class="eyebrow">Client account</p>
     <h1>My WhatsApp Number</h1>
-    <p>Update the WhatsApp number used by your widget. Advanced settings are managed by your administrator.</p>
+    <p>Update the WhatsApp number used by your widget.</p>
 </section>
 
 <?php if (!$widgets): ?>
@@ -48,7 +41,7 @@ require __DIR__ . '/includes/header.php';
         </div>
     </section>
 <?php else: ?>
-    <section class="settings-card">
+    <section class="settings-card client-summary-card">
         <?php if (count($widgets) > 1): ?>
             <form method="get" class="widget-selector-form">
                 <label>
@@ -69,109 +62,107 @@ require __DIR__ . '/includes/header.php';
             <div><span class="meta-label">Widget name</span><strong><?= e($widget['widget_name']) ?></strong></div>
             <div><span class="meta-label">Domain</span><strong><?= e($widget['website_domain']) ?></strong></div>
             <div><span class="meta-label">Current WhatsApp number</span><strong><?= format_whatsapp_display($widget) ?></strong></div>
-            <div><span class="meta-label">Random numbers</span><strong><?= e(enabled_label($widget['use_random_numbers'] ?? 0)) ?></strong></div>
+            <div><span class="meta-label">Random numbers</span><strong><?= feature_status_pill($widget['use_random_numbers'] ?? 0) ?></strong></div>
         </div>
+    </section>
 
+    <section class="settings-card client-phone-card">
         <div class="tab-bar">
             <a class="tab-link<?= $activeTab === 'manual' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=manual">Manual Entry</a>
             <a class="tab-link<?= $activeTab === 'upload' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=upload">Upload Numbers</a>
         </div>
 
         <?php if ($activeTab === 'upload'): ?>
-            <form class="settings-form" method="post" action="upload-phone-numbers.php" enctype="multipart/form-data">
+            <form class="settings-form client-upload-form" method="post" action="upload-phone-numbers.php" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
                 <label>
                     <span>Upload CSV or TXT</span>
-                    <small>Max 1MB. CSV columns: country_code, phone_number, label. TXT: one number per line.</small>
                     <input type="file" name="phone_file" accept=".csv,.txt,text/csv,text/plain" required>
                 </label>
-                <label>
-                    <span>Default country code</span>
-                    <select name="default_country_code">
-                        <?php foreach (country_codes() as $code => $label): ?>
-                            <option value="<?= e($code) ?>"<?= selected((string) ($widget['whatsapp_country_code'] ?? '+60'), $code) ?>><?= e($label) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
+                <div class="format-helper">
+                    <strong>CSV format</strong>
+                    <code>country_code,phone_number</code>
+                    <pre>+60,123456789
++65,81234567</pre>
+                    <strong>TXT format</strong>
+                    <p>One full international number per line:</p>
+                    <pre>+60123456789
++6581234567</pre>
+                </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Upload numbers</button>
-                    <a class="btn btn-light" href="widget-preview.php?id=<?= (int) $selectedWidgetId ?>">Preview</a>
+                    <button type="submit" class="btn btn-primary">Upload Numbers</button>
                 </div>
             </form>
         <?php else: ?>
-            <form class="settings-form" method="post" action="update-phone-numbers.php">
+            <form class="settings-form client-manual-form" method="post" action="update-phone-numbers.php" data-client-manual-form>
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
-                <div class="random-number-panel">
+
+                <div class="client-number-panel">
                     <div class="panel-heading">
                         <div>
-                            <h3>Phone numbers</h3>
-                            <p>Add one or more numbers. Multiple numbers rotate randomly on each click.</p>
+                            <h3>Active numbers</h3>
+                            <p>Add numbers one at a time, then save your list.</p>
                         </div>
-                        <button type="button" class="btn btn-small btn-light" data-add-manual-number>Add number</button>
+                        <button type="button" class="btn btn-small btn-light" data-client-add-number>Add Number</button>
                     </div>
-                    <div data-manual-number-list>
-                        <?php foreach ($manualNumbers as $index => $row): ?>
-                            <div class="repeat-row">
-                                <select name="manual_numbers[<?= (int) $index ?>][country_code]"><?= render_country_options((string) ($row['country_code'] ?? '+60')) ?></select>
-                                <input type="tel" name="manual_numbers[<?= (int) $index ?>][number]" value="<?= e((string) ($row['number'] ?? '')) ?>" placeholder="123456789" required>
-                                <button type="button" class="btn btn-small btn-danger-soft" data-remove-manual-row>Remove</button>
+
+                    <div class="client-number-list" data-client-number-list>
+                        <?php if ($activeNumbers === []): ?>
+                            <div class="empty-state compact-empty" data-client-empty-state>
+                                <p>No numbers added yet. Click Add Number to get started.</p>
                             </div>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($activeNumbers as $index => $row): ?>
+                                <div class="client-number-item" data-client-number-item>
+                                    <div class="client-number-display">
+                                        <strong><?= e((string) $row['country_code']) ?></strong>
+                                        <span><?= e((string) $row['number']) ?></span>
+                                    </div>
+                                    <input type="hidden" name="manual_numbers[<?= (int) $index ?>][country_code]" value="<?= e((string) $row['country_code']) ?>" data-number-country>
+                                    <input type="hidden" name="manual_numbers[<?= (int) $index ?>][number]" value="<?= e((string) $row['number']) ?>" data-number-phone>
+                                    <button type="button" class="btn btn-small btn-light" data-client-remove-number>Remove</button>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <template id="client-number-item-template">
+                        <div class="client-number-item" data-client-number-item>
+                            <div class="client-number-display">
+                                <strong data-display-country></strong>
+                                <span data-display-phone></span>
+                            </div>
+                            <input type="hidden" name="" value="" data-number-country>
+                            <input type="hidden" name="" value="" data-number-phone>
+                            <button type="button" class="btn btn-small btn-light" data-client-remove-number>Remove</button>
+                        </div>
+                    </template>
+
+                    <div class="client-number-draft" data-client-number-draft hidden>
+                        <div class="client-number-draft-row">
+                            <?= render_country_code_search_input('client-draft-country', '+60') ?>
+                            <label class="client-phone-input">
+                                <span class="sr-only">Phone number</span>
+                                <input type="tel" data-client-draft-phone placeholder="123456789" autocomplete="tel">
+                            </label>
+                            <div class="client-number-draft-actions">
+                                <button type="button" class="btn btn-small btn-primary" data-client-confirm-number>Confirm</button>
+                                <button type="button" class="btn btn-small btn-light" data-client-cancel-number>Cancel</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save numbers</button>
-                    <a class="btn btn-light" href="widget-preview.php?id=<?= (int) $selectedWidgetId ?>">Preview</a>
+                    <button type="submit" class="btn btn-primary">Save Numbers</button>
                 </div>
             </form>
         <?php endif; ?>
-
-        <?php if ($importedNumbers !== []): ?>
-            <div class="embed-box">
-                <div class="panel-heading">
-                    <h3>Imported numbers</h3>
-                </div>
-                <div class="table-wrap">
-                    <table class="widget-table">
-                        <thead>
-                            <tr>
-                                <th>Country</th>
-                                <th>Number</th>
-                                <th>Label</th>
-                                <th>Full number</th>
-                                <?php if (!empty($widget['use_random_numbers'])): ?>
-                                    <th></th>
-                                <?php endif; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($importedNumbers as $index => $number): ?>
-                                <tr>
-                                    <td><?= e((string) ($number['country_code'] ?? '')) ?></td>
-                                    <td><?= e((string) ($number['number'] ?? '')) ?></td>
-                                    <td><?= e((string) ($number['label'] ?? '')) ?></td>
-                                    <td><?= e((string) ($number['full_number'] ?? '')) ?></td>
-                                    <?php if (!empty($widget['use_random_numbers'])): ?>
-                                        <td>
-                                            <form method="post" action="update-phone-numbers.php">
-                                                <?= csrf_field() ?>
-                                                <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
-                                                <input type="hidden" name="action" value="remove_number">
-                                                <input type="hidden" name="number_index" value="<?= (int) $index ?>">
-                                                <button type="submit" class="btn btn-small btn-danger-soft">Remove</button>
-                                            </form>
-                                        </td>
-                                    <?php endif; ?>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        <?php endif; ?>
     </section>
+
+    <script type="application/json" id="country-code-data"><?= json_for_html(country_code_options()) ?></script>
 <?php endif; ?>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

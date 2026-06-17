@@ -32,14 +32,6 @@ $currentPage = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
         <?php elseif ($isClient): ?>
             <nav class="topnav-main" aria-label="Main navigation">
                 <a class="<?= nav_link_class('client-dashboard.php') ?>" href="client-dashboard.php">My WhatsApp Number</a>
-                <?php
-                $previewStmt = db()->prepare('SELECT id FROM widgets WHERE user_id = :user_id ORDER BY id ASC LIMIT 1');
-                $previewStmt->execute(['user_id' => (int) $user['id']]);
-                $previewWidgetId = (int) ($previewStmt->fetchColumn() ?: 0);
-                if ($previewWidgetId > 0):
-                ?>
-                    <a class="<?= nav_link_class('widget-preview.php') ?>" href="widget-preview.php?id=<?= $previewWidgetId ?>">Preview</a>
-                <?php endif; ?>
             </nav>
         <?php endif; ?>
 

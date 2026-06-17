@@ -480,6 +480,139 @@ function render_country_options(string $selectedCode): string
     return $html;
 }
 
+function country_code_search_label(string $code): string
+{
+    foreach (country_code_options() as $option) {
+        if ($option['code'] === $code) {
+            return (string) $option['label'];
+        }
+    }
+
+    return $code;
+}
+
+function render_country_code_search_input(string $inputId, string $selectedCode = '+60'): string
+{
+    $listId = $inputId . '-list';
+    $displayValue = country_code_search_label($selectedCode);
+    $html = '<div class="country-code-field" data-country-code-field>'
+        . '<input type="text" class="country-code-search" id="' . e($inputId) . '" list="' . e($listId) . '" value="' . e($displayValue) . '" placeholder="Search country or code" autocomplete="off" data-country-search>'
+        . '<input type="hidden" value="' . e($selectedCode) . '" data-country-value>'
+        . '<datalist id="' . e($listId) . '">';
+
+    foreach (country_code_options() as $option) {
+        $html .= '<option value="' . e($option['label']) . '"></option>';
+    }
+
+    $html .= '</datalist></div>';
+
+    return $html;
+}
+
+function country_code_prefixes_longest_first(): array
+{
+    static $prefixes = null;
+    if ($prefixes !== null) {
+        return $prefixes;
+    }
+
+    $prefixes = [];
+    foreach (country_code_options() as $option) {
+        $prefixes[] = clean_phone_number((string) $option['code']);
+    }
+
+    usort($prefixes, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+    $prefixes = array_values(array_unique(array_filter($prefixes)));
+
+    return $prefixes;
+}
+
+function parse_international_phone_line(string $line): ?array
+{
+    $raw = trim($line);
+    if ($raw === '') {
+        return null;
+    }
+
+    $digits = clean_phone_number($raw);
+    if ($digits === '') {
+        return null;
+    }
+
+    if (str_starts_with($digits, '00')) {
+        $digits = substr($digits, 2);
+    }
+
+    foreach (country_code_prefixes_longest_first() as $prefix) {
+        if ($prefix === '' || !str_starts_with($digits, $prefix) || strlen($digits) <= strlen($prefix)) {
+            continue;
+        }
+
+        $localDigits = substr($digits, strlen($prefix));
+        $fullNumber = $prefix . $localDigits;
+        if (!validate_phone_number($fullNumber)) {
+            continue;
+        }
+
+        return [
+            'country_code' => '+' . $prefix,
+            'number' => $localDigits,
+            'full_number' => $fullNumber,
+        ];
+    }
+
+    return null;
+}
+
+function strip_phone_number_entry(array $number): array
+{
+    return [
+        'country_code' => (string) ($number['country_code'] ?? '+60'),
+        'number' => (string) ($number['number'] ?? ''),
+        'full_number' => (string) ($number['full_number'] ?? ''),
+    ];
+}
+
+function client_active_phone_numbers(array $widget): array
+{
+    if (!empty($widget['use_random_numbers'])) {
+        $numbers = [];
+        foreach (decode_random_numbers($widget['random_numbers_json'] ?? '[]') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $entry = strip_phone_number_entry($row);
+            if ($entry['number'] === '') {
+                continue;
+            }
+            if ($entry['full_number'] === '') {
+                $entry['full_number'] = clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+            }
+            $numbers[] = $entry;
+        }
+
+        return $numbers;
+    }
+
+    $number = clean_phone_number((string) ($widget['whatsapp_number'] ?? ''));
+    if ($number === '') {
+        return [];
+    }
+
+    $countryCode = (string) ($widget['whatsapp_country_code'] ?? '+60');
+    $countryDigits = clean_phone_number($countryCode);
+    $localDigits = $number;
+    if ($countryDigits !== '' && str_starts_with($number, $countryDigits) && strlen($number) > strlen($countryDigits)) {
+        $localDigits = substr($number, strlen($countryDigits));
+    }
+
+    return [[
+        'country_code' => $countryCode,
+        'number' => $localDigits,
+        'full_number' => $countryDigits . $localDigits,
+    ]];
+}
+
 function default_business_hours(): array
 {
     $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -915,12 +1048,11 @@ function normalize_phone_number(string $countryCode, string $phone): ?array
     return [
         'country_code' => '+' . $countryDigits,
         'number' => $localDigits,
-        'label' => '',
         'full_number' => $fullNumber,
     ];
 }
 
-function parse_phone_upload(string $filePath, string $defaultCountryCode = '+60'): array
+function parse_phone_upload(string $filePath): array
 {
     $stats = [
         'total_rows' => 0,
@@ -958,27 +1090,25 @@ function parse_phone_upload(string $filePath, string $defaultCountryCode = '+60'
                 foreach ($rows[0] as $index => $header) {
                     $map[strtolower(trim((string) $header))] = $row[$index] ?? '';
                 }
-                $country = (string) ($map['country_code'] ?? $defaultCountryCode);
-                $phone = (string) ($map['phone_number'] ?? $map['number'] ?? '');
-                $label = trim((string) ($map['label'] ?? ''));
+                $country = trim((string) ($map['country_code'] ?? ''));
+                $phone = trim((string) ($map['phone_number'] ?? $map['number'] ?? ''));
             } elseif (count($row) >= 2) {
-                $country = trim((string) ($row[0] ?? $defaultCountryCode));
+                $country = trim((string) ($row[0] ?? ''));
                 $phone = trim((string) ($row[1] ?? ''));
-                $label = trim((string) ($row[2] ?? ''));
             } else {
-                $country = $defaultCountryCode;
-                $phone = trim((string) ($row[0] ?? ''));
-                $label = '';
-            }
-
-            $normalized = normalize_phone_number($country !== '' ? $country : $defaultCountryCode, $phone);
-            if ($normalized === null) {
                 $stats['skipped_invalid']++;
                 continue;
             }
 
-            if ($label !== '') {
-                $normalized['label'] = $label;
+            if ($country === '' || $phone === '') {
+                $stats['skipped_invalid']++;
+                continue;
+            }
+
+            $normalized = normalize_phone_number($country, $phone);
+            if ($normalized === null) {
+                $stats['skipped_invalid']++;
+                continue;
             }
 
             if (isset($seen[$normalized['full_number']])) {
@@ -1005,10 +1135,7 @@ function parse_phone_upload(string $filePath, string $defaultCountryCode = '+60'
         }
 
         $stats['total_rows']++;
-        $normalized = normalize_phone_number($defaultCountryCode, $line);
-        if ($normalized === null && str_starts_with($line, '+')) {
-            $normalized = normalize_phone_number('', ltrim($line, '+'));
-        }
+        $normalized = parse_international_phone_line($line);
         if ($normalized === null) {
             $stats['skipped_invalid']++;
             continue;
@@ -1044,12 +1171,7 @@ function build_phone_widget_update(array $numbers): ?array
     }
 
     $payload = array_map(static function (array $number): array {
-        return [
-            'country_code' => $number['country_code'],
-            'number' => $number['number'],
-            'label' => $number['label'] ?? '',
-            'full_number' => $number['full_number'],
-        ];
+        return strip_phone_number_entry($number);
     }, $numbers);
 
     return [
@@ -1066,39 +1188,40 @@ function sanitize_client_phone_manual_input(array $post): ?array
     $numbers = [];
     $seen = [];
 
-    if (is_array($rows) && $rows !== []) {
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-
-            $countryCode = (string) ($row['country_code'] ?? '+60');
+    if (!is_array($rows) || $rows === []) {
+        if (isset($post['whatsapp_country_code'], $post['whatsapp_number'])) {
+            $countryCode = trim((string) $post['whatsapp_country_code']);
             if (!array_key_exists($countryCode, country_codes())) {
                 $countryCode = '+60';
             }
-
-            $normalized = normalize_phone_number($countryCode, (string) ($row['number'] ?? ''));
-            if ($normalized === null) {
-                continue;
-            }
-
-            if (isset($seen[$normalized['full_number']])) {
-                continue;
-            }
-
-            $seen[$normalized['full_number']] = true;
-            $numbers[] = $normalized;
+            $normalized = normalize_phone_number($countryCode, (string) $post['whatsapp_number']);
+            return build_phone_widget_update($normalized !== null ? [$normalized] : []);
         }
-    } else {
-        $countryCode = (string) ($post['whatsapp_country_code'] ?? '+60');
+
+        return null;
+    }
+
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $countryCode = trim((string) ($row['country_code'] ?? '+60'));
         if (!array_key_exists($countryCode, country_codes())) {
             $countryCode = '+60';
         }
 
-        $normalized = normalize_phone_number($countryCode, (string) ($post['whatsapp_number'] ?? ''));
-        if ($normalized !== null) {
-            $numbers[] = $normalized;
+        $normalized = normalize_phone_number($countryCode, (string) ($row['number'] ?? ''));
+        if ($normalized === null) {
+            continue;
         }
+
+        if (isset($seen[$normalized['full_number']])) {
+            continue;
+        }
+
+        $seen[$normalized['full_number']] = true;
+        $numbers[] = $normalized;
     }
 
     return build_phone_widget_update($numbers);

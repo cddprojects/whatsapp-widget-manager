@@ -1132,6 +1132,16 @@ code {
         grid-template-columns: 1fr;
     }
 
+    .client-number-draft-row {
+        grid-template-columns: 1fr;
+    }
+
+    .client-number-item,
+    .client-number-draft-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
     .summary-grid,
     .admin-filter-bar {
         grid-template-columns: 1fr;
@@ -1303,4 +1313,119 @@ code {
 
 .widget-selector-form {
     margin-bottom: 20px;
+}
+
+.client-summary-card,
+.client-phone-card {
+    border-radius: 16px;
+}
+
+.client-number-panel {
+    display: grid;
+    gap: 16px;
+}
+
+.client-number-list {
+    display: grid;
+    gap: 10px;
+}
+
+.client-number-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fafbfc;
+}
+
+.client-number-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.client-number-display strong {
+    color: var(--text);
+}
+
+.client-number-display span {
+    color: var(--muted);
+}
+
+.client-number-draft {
+    padding: 16px;
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+    background: #fafbfc;
+}
+
+.client-number-draft-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.2fr) minmax(140px, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.client-number-draft-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.country-code-field {
+    display: grid;
+    gap: 6px;
+}
+
+.country-code-search,
+.client-phone-input input {
+    width: 100%;
+}
+
+.format-helper {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fafbfc;
+}
+
+.format-helper strong {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text);
+}
+
+.format-helper p,
+.format-helper pre {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.format-helper pre {
+    padding: 12px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid var(--line);
+    white-space: pre-wrap;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.profile-grid .status-pill {
+    display: inline-flex;
 }
