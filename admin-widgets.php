@@ -6,19 +6,43 @@ require_superadmin();
 
 $query = trim((string) ($_GET['q'] ?? ''));
 $page = max(1, (int) ($_GET['page'] ?? 1));
+
+if (is_post() && ($_POST['action'] ?? '') === 'delete_widget') {
+    verify_csrf();
+    $widgetId = (int) ($_POST['widget_id'] ?? 0);
+    $widget = find_widget_by_id($widgetId);
+    if ($widget) {
+        $stmt = db()->prepare('DELETE FROM widgets WHERE id = :id');
+        $stmt->execute(['id' => $widgetId]);
+        flash('success', 'Widget deleted.');
+    }
+    $returnQuery = trim((string) ($_POST['return_q'] ?? ''));
+    redirect('admin-widgets.php' . ($returnQuery !== '' ? '?q=' . urlencode($returnQuery) : ''));
+}
+
 $result = search_all_widgets(['q' => $query, 'page' => $page, 'per_page' => 20]);
 
 $pageTitle = 'Widgets';
 require __DIR__ . '/includes/header.php';
 ?>
 
-<section class="page-heading">
-    <p class="eyebrow">Super admin</p>
-    <h1>All widgets</h1>
-    <p>Browse widgets across every client account.</p>
+<section class="page-heading page-heading-row">
+    <div>
+        <p class="eyebrow">Super admin</p>
+        <h1>All widgets</h1>
+        <p>Browse widgets across every client account.</p>
+    </div>
+    <a class="btn btn-primary" href="create-widget.php">Create Widget</a>
 </section>
 
-<section class="settings-card">
+<section class="settings-card table-card">
+    <div class="card-header-row">
+        <div>
+            <h2>Widget directory</h2>
+            <p class="results-meta inline-meta"><?= (int) $result['total'] ?> widget<?= $result['total'] === 1 ? '' : 's' ?> found</p>
+        </div>
+    </div>
+
     <form class="admin-filter-bar" method="get">
         <label class="search-field span-2">
             <span>Search</span>
@@ -29,8 +53,6 @@ require __DIR__ . '/includes/header.php';
             <a class="btn btn-light" href="admin-widgets.php">Reset</a>
         </div>
     </form>
-
-    <p class="results-meta"><?= (int) $result['total'] ?> widget<?= $result['total'] === 1 ? '' : 's' ?> found</p>
 
     <?php if (!$result['rows']): ?>
         <div class="empty-state compact-empty"><p>No widgets found.</p></div>
@@ -43,8 +65,10 @@ require __DIR__ . '/includes/header.php';
                         <th>Client</th>
                         <th>Domain</th>
                         <th>WhatsApp</th>
+                        <th>Random numbers</th>
+                        <th>Global display</th>
                         <th>Updated</th>
-                        <th></th>
+                        <th class="col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,12 +81,11 @@ require __DIR__ . '/includes/header.php';
                             </td>
                             <td><?= e($widget['website_domain']) ?></td>
                             <td><?= format_whatsapp_display($widget) ?></td>
+                            <td><?= feature_status_pill($widget['use_random_numbers'] ?? 0) ?></td>
+                            <td><?= feature_status_pill($widget['show_global'] ?? 0) ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $widget['updated_at']))) ?></td>
-                            <td>
-                                <div class="action-list">
-                                    <a class="btn btn-small btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>">View Client</a>
-                                    <a class="btn btn-small btn-primary-soft" href="edit-widget.php?id=<?= (int) $widget['id'] ?>">Full Edit</a>
-                                </div>
+                            <td class="col-actions">
+                                <?php render_widget_action_menu($widget, ['show_delete' => true]); ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

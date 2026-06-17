@@ -178,4 +178,45 @@
 
     var initialSection = window.location.hash ? window.location.hash.slice(1) : '';
     showSettingsPanel(initialSection || 'whatsapp-number', false);
+
+    document.querySelectorAll('[data-user-menu], [data-action-menu]').forEach(function (menu) {
+        var toggle = menu.querySelector('.user-menu-toggle, .action-menu-toggle');
+        if (!toggle) {
+            return;
+        }
+        toggle.addEventListener('click', function (event) {
+            event.stopPropagation();
+            document.querySelectorAll('.user-menu.is-open, .action-menu.is-open').forEach(function (openMenu) {
+                if (openMenu !== menu) {
+                    openMenu.classList.remove('is-open');
+                }
+            });
+            menu.classList.toggle('is-open');
+            toggle.setAttribute('aria-expanded', menu.classList.contains('is-open') ? 'true' : 'false');
+        });
+    });
+
+    document.addEventListener('click', function () {
+        document.querySelectorAll('.user-menu.is-open, .action-menu.is-open').forEach(function (menu) {
+            menu.classList.remove('is-open');
+            var toggle = menu.querySelector('.user-menu-toggle, .action-menu-toggle');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+
+    document.querySelectorAll('.dropdown-menu, .action-menu-panel').forEach(function (panel) {
+        panel.addEventListener('click', function (event) {
+            event.stopPropagation();
+        });
+    });
+
+    var mobileToggle = document.querySelector('[data-mobile-nav-toggle]');
+    var topnavMain = document.querySelector('.topnav-main');
+    if (mobileToggle && topnavMain) {
+        mobileToggle.addEventListener('click', function () {
+            topnavMain.classList.toggle('is-open');
+        });
+    }
 })();

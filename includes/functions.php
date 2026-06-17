@@ -1332,6 +1332,59 @@ function user_status_badge_class(string $status): string
     return $status === USER_STATUS_ACTIVE ? 'status-pill status-active' : 'status-pill status-disabled';
 }
 
+function feature_status_pill($value): string
+{
+    $enabled = !empty($value);
+
+    return '<span class="status-pill ' . ($enabled ? 'status-active' : 'status-disabled') . '">'
+        . e($enabled ? 'Enabled' : 'Disabled') . '</span>';
+}
+
+function nav_is_active(string $page): bool
+{
+    return basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === $page;
+}
+
+function nav_link_class(string $page, array $relatedPages = []): string
+{
+    $current = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $active = $current === $page || in_array($current, $relatedPages, true);
+
+    return $active ? 'topnav-link is-active' : 'topnav-link';
+}
+
+function render_widget_action_menu(array $widget, array $options = []): void
+{
+    $widgetId = (int) $widget['id'];
+    $showDelete = !empty($options['show_delete']);
+    $deleteClientId = (int) ($options['delete_client_id'] ?? 0);
+    ?>
+    <div class="row-actions">
+        <a class="btn btn-small btn-primary" href="edit-widget.php?id=<?= $widgetId ?>">Manage</a>
+        <a class="btn btn-small btn-light" href="widget-preview.php?id=<?= $widgetId ?>">Preview</a>
+        <div class="action-menu" data-action-menu>
+            <button type="button" class="btn btn-small btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="More actions">⋯</button>
+            <div class="action-menu-panel" role="menu">
+                <a role="menuitem" href="edit-widget-phone.php?id=<?= $widgetId ?>">Phone Number</a>
+                <a role="menuitem" href="admin-widget-leads.php?widget_id=<?= $widgetId ?>">Leads</a>
+                <a role="menuitem" href="embed-code.php?id=<?= $widgetId ?>">Embed Code</a>
+                <?php if ($showDelete): ?>
+                    <form method="post" data-confirm="Delete this widget?">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="delete_widget">
+                        <input type="hidden" name="widget_id" value="<?= $widgetId ?>">
+                        <?php if ($deleteClientId > 0): ?>
+                            <input type="hidden" name="client_id" value="<?= $deleteClientId ?>">
+                        <?php endif; ?>
+                        <button type="submit" class="action-menu-danger" role="menuitem">Delete</button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+
 function format_datetime(?string $value, string $fallback = 'Never'): string
 {
     if ($value === null || trim($value) === '') {

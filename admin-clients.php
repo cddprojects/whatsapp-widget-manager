@@ -21,13 +21,23 @@ $pageTitle = 'Clients';
 require __DIR__ . '/includes/header.php';
 ?>
 
-<section class="page-heading">
-    <p class="eyebrow">Super admin</p>
-    <h1>Clients</h1>
-    <p>Search and manage all client accounts.</p>
+<section class="page-heading page-heading-row">
+    <div>
+        <p class="eyebrow">Super admin</p>
+        <h1>Clients</h1>
+        <p>Search and manage all client accounts.</p>
+    </div>
+    <a class="btn btn-primary" href="admin-client-create.php">Add Client</a>
 </section>
 
-<section class="settings-card">
+<section class="settings-card table-card">
+    <div class="card-header-row">
+        <div>
+            <h2>All clients</h2>
+            <p class="results-meta inline-meta"><?= (int) $result['total'] ?> client<?= $result['total'] === 1 ? '' : 's' ?> found</p>
+        </div>
+    </div>
+
     <form class="admin-filter-bar" method="get">
         <label class="search-field span-2">
             <span>Search</span>
@@ -61,8 +71,6 @@ require __DIR__ . '/includes/header.php';
         </div>
     </form>
 
-    <p class="results-meta"><?= (int) $result['total'] ?> client<?= $result['total'] === 1 ? '' : 's' ?> found</p>
-
     <?php if (!$result['rows']): ?>
         <div class="empty-state compact-empty">
             <p>No clients matched your search.</p>
@@ -78,7 +86,7 @@ require __DIR__ . '/includes/header.php';
                         <th>Total widgets</th>
                         <th>Last login</th>
                         <th>Created</th>
-                        <th></th>
+                        <th class="col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -90,7 +98,9 @@ require __DIR__ . '/includes/header.php';
                             <td><?= (int) $client['widget_count'] ?></td>
                             <td><?= e(format_datetime($client['last_login_at'] ?? null)) ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $client['created_at']))) ?></td>
-                            <td><a class="btn btn-small btn-primary-soft" href="admin-client-detail.php?id=<?= (int) $client['id'] ?>">View Client</a></td>
+                            <td class="col-actions">
+                                <a class="btn btn-small btn-primary" href="admin-client-detail.php?id=<?= (int) $client['id'] ?>">Manage</a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

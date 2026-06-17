@@ -63,7 +63,6 @@ require __DIR__ . '/includes/header.php';
         </label>
         <button type="submit" class="btn btn-primary btn-full">Login</button>
     </form>
-    <p class="auth-link">Need an account? <a href="register.php">Register</a></p>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
