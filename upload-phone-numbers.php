@@ -5,7 +5,7 @@ require_once __DIR__ . '/includes/auth.php';
 $user = require_client();
 
 if (!is_post()) {
-    redirect(is_client() ? 'client-dashboard.php' : 'dashboard.php');
+    redirect('client-dashboard.php');
 }
 
 verify_csrf();
@@ -29,13 +29,8 @@ if ($errors !== []) {
     redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
 }
 
-$defaultCountry = (string) ($_POST['default_country_code'] ?? '+60');
-if (!array_key_exists($defaultCountry, country_codes())) {
-    $defaultCountry = '+60';
-}
-
 $tmpPath = (string) $file['tmp_name'];
-$result = parse_phone_upload($tmpPath, $defaultCountry);
+$result = parse_phone_upload($tmpPath);
 @unlink($tmpPath);
 
 $update = build_phone_widget_update($result['numbers']);
@@ -45,13 +40,8 @@ if ($update === null) {
 }
 
 update_widget_phone_fields($widgetId, $update);
-
-$stats = $result['stats'];
-flash(
-    'success',
-    'Import complete. Total rows: ' . (int) $stats['total_rows']
-    . ', imported: ' . (int) $stats['imported']
-    . ', skipped invalid: ' . (int) $stats['skipped_invalid']
-    . ', duplicates: ' . (int) $stats['duplicates'] . '.'
-);
+$activeCount = !empty($update['use_random_numbers'])
+    ? count(decode_random_numbers($update['random_numbers_json'] ?? '[]'))
+    : 1;
+flash('success', 'Numbers uploaded successfully. ' . $activeCount . ' number' . ($activeCount === 1 ? ' is' : 's are') . ' now active.');
 redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
