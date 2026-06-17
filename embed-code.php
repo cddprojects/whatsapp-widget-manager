@@ -2,11 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
-require_login();
-
-if (is_client()) {
-    redirect('client-dashboard.php');
-}
+require_superadmin();
 
 $widgetId = (int) ($_GET['id'] ?? 0);
 $widget = require_widget_access($widgetId);

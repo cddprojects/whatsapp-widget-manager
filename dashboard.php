@@ -11,13 +11,16 @@ $pageTitle = 'Dashboard';
 require __DIR__ . '/includes/header.php';
 ?>
 
-<section class="dashboard-hero">
+<section class="dashboard-hero page-heading-row">
     <div>
         <p class="eyebrow">Super admin</p>
         <h1>Welcome back, <?= e($user['name']) ?></h1>
         <p>Manage client accounts, widgets, and WhatsApp configurations from one place.</p>
     </div>
-    <a class="btn btn-primary" href="admin-clients.php">View All Clients</a>
+    <div class="hero-actions">
+        <a class="btn btn-light" href="admin-client-create.php">Add Client</a>
+        <a class="btn btn-primary" href="create-widget.php">Create Widget</a>
+    </div>
 </section>
 
 <section class="summary-grid">
@@ -39,7 +42,7 @@ require __DIR__ . '/includes/header.php';
     </article>
 </section>
 
-<section class="settings-card">
+<section class="settings-card table-card">
     <div class="card-header-row">
         <div>
             <h2>Recent clients</h2>
@@ -50,6 +53,7 @@ require __DIR__ . '/includes/header.php';
     <?php if (!$recentClients): ?>
         <div class="empty-state compact-empty">
             <p>No client accounts yet.</p>
+            <a class="btn btn-primary" href="admin-client-create.php">Add Client</a>
         </div>
     <?php else: ?>
         <div class="table-wrap">
@@ -60,7 +64,7 @@ require __DIR__ . '/includes/header.php';
                         <th>Status</th>
                         <th>Widgets</th>
                         <th>Created</th>
-                        <th></th>
+                        <th class="col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,7 +77,9 @@ require __DIR__ . '/includes/header.php';
                             <td><span class="<?= e(user_status_badge_class((string) $client['status'])) ?>"><?= e(ucfirst((string) $client['status'])) ?></span></td>
                             <td><?= (int) $client['widget_count'] ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $client['created_at']))) ?></td>
-                            <td><a class="btn btn-small btn-light" href="admin-client-detail.php?id=<?= (int) $client['id'] ?>">View Client</a></td>
+                            <td class="col-actions">
+                                <a class="btn btn-small btn-primary" href="admin-client-detail.php?id=<?= (int) $client['id'] ?>">Manage</a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -82,7 +88,7 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </section>
 
-<section class="settings-card">
+<section class="settings-card table-card">
     <div class="card-header-row">
         <div>
             <h2>Recent widgets</h2>
@@ -93,6 +99,7 @@ require __DIR__ . '/includes/header.php';
     <?php if (!$recentWidgets): ?>
         <div class="empty-state compact-empty">
             <p>No widgets yet.</p>
+            <a class="btn btn-primary" href="create-widget.php">Create Widget</a>
         </div>
     <?php else: ?>
         <div class="table-wrap">
@@ -103,7 +110,7 @@ require __DIR__ . '/includes/header.php';
                         <th>Client</th>
                         <th>Domain</th>
                         <th>Updated</th>
-                        <th></th>
+                        <th class="col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -113,7 +120,9 @@ require __DIR__ . '/includes/header.php';
                             <td><?= e($widget['owner_name']) ?></td>
                             <td><?= e($widget['website_domain']) ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $widget['updated_at']))) ?></td>
-                            <td><a class="btn btn-small btn-light" href="edit-widget.php?id=<?= (int) $widget['id'] ?>">Full Edit</a></td>
+                            <td class="col-actions">
+                                <?php render_widget_action_menu($widget, ['show_delete' => false]); ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

@@ -39,16 +39,33 @@ if (is_post() && ($_POST['action'] ?? '') === 'toggle_status') {
 
 $widgets = widgets_for_user($clientId);
 $widgetCount = count($widgets);
+$createdPassword = $_SESSION['created_client_password'] ?? null;
+unset($_SESSION['created_client_password']);
 
 $pageTitle = 'Client Profile';
 require __DIR__ . '/includes/header.php';
 ?>
 
-<section class="page-heading">
-    <p class="eyebrow">Client profile</p>
-    <h1><?= e($client['name']) ?></h1>
-    <p>Manage this client account and their widgets.</p>
+<section class="page-heading page-heading-row">
+    <div>
+        <p class="eyebrow">Client profile</p>
+        <h1><?= e($client['name']) ?></h1>
+        <p>Manage this client account and their widgets.</p>
+    </div>
+    <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>">Create Widget for This Client</a>
 </section>
+
+<?php if ($createdPassword !== null): ?>
+    <div class="alert alert-warning">
+        Copy this temporary password now. It will not be shown again.
+    </div>
+    <section class="settings-card">
+        <div class="temp-password-box">
+            <span class="meta-label">Temporary password</span>
+            <code><?= e((string) $createdPassword) ?></code>
+        </div>
+    </section>
+<?php endif; ?>
 
 <section class="settings-card profile-card">
     <div class="card-header-row">
@@ -77,13 +94,12 @@ require __DIR__ . '/includes/header.php';
     </div>
 </section>
 
-<section class="settings-card">
+<section class="settings-card table-card">
     <div class="card-header-row">
         <div>
             <h2>Client widgets</h2>
             <p>Widgets owned by this client only.</p>
         </div>
-        <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>">Create Widget for This Client</a>
     </div>
 
     <?php if (!$widgets): ?>
@@ -102,7 +118,7 @@ require __DIR__ . '/includes/header.php';
                         <th>Random numbers</th>
                         <th>Global display</th>
                         <th>Updated</th>
-                        <th>Actions</th>
+                        <th class="col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -111,23 +127,14 @@ require __DIR__ . '/includes/header.php';
                             <td><strong><?= e($widget['widget_name']) ?></strong></td>
                             <td><?= e($widget['website_domain']) ?></td>
                             <td><?= format_whatsapp_display($widget) ?></td>
-                            <td><?= e(enabled_label($widget['use_random_numbers'] ?? 0)) ?></td>
-                            <td><?= e(enabled_label($widget['show_global'] ?? 0)) ?></td>
+                            <td><?= feature_status_pill($widget['use_random_numbers'] ?? 0) ?></td>
+                            <td><?= feature_status_pill($widget['show_global'] ?? 0) ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $widget['updated_at']))) ?></td>
-                            <td>
-                                <div class="action-list">
-                                    <a class="btn btn-small btn-light" href="widget-preview.php?id=<?= (int) $widget['id'] ?>">Preview</a>
-                                    <a class="btn btn-small btn-primary-soft" href="edit-widget.php?id=<?= (int) $widget['id'] ?>">Full Edit</a>
-                                    <a class="btn btn-small btn-light" href="edit-widget-phone.php?id=<?= (int) $widget['id'] ?>">Phone Number</a>
-                                    <a class="btn btn-small btn-light" href="admin-widget-leads.php?widget_id=<?= (int) $widget['id'] ?>">Leads</a>
-                                    <a class="btn btn-small btn-light" href="embed-code.php?id=<?= (int) $widget['id'] ?>">Embed Code</a>
-                                    <form method="post" data-confirm="Delete this widget?">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="action" value="delete_widget">
-                                        <input type="hidden" name="widget_id" value="<?= (int) $widget['id'] ?>">
-                                        <button type="submit" class="btn btn-small btn-danger-soft">Delete</button>
-                                    </form>
-                                </div>
+                            <td class="col-actions">
+                                <?php render_widget_action_menu($widget, [
+                                    'show_delete' => true,
+                                    'delete_client_id' => $clientId,
+                                ]); ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
