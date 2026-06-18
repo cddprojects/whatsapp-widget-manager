@@ -13,14 +13,22 @@
     var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-5', 'style-6', 'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover'];
     var isOpening = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
-    var currentState = 'normal';
+    var currentState = 'button';
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var hoverTimer = null;
     var pageContext = {
         url: '',
         title: ''
     };
-    var sizePadding = 24;
+    var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-5', 'style-7'];
+    var stateMinimums = {
+        icon: { width: 110, height: 110 },
+        button: { width: 260, height: 110 },
+        hover: { width: 260, height: 110 },
+        greeting: { width: 380, height: 300 },
+        'greeting-phone': { width: 390, height: 340 }
+    };
+    var measureSelectors = '.ctcw-widget-root, .ctcw-greeting, .ctcw-widget, .ctcw-hover-box';
 
     if (!container || !button) {
         return;
@@ -57,6 +65,71 @@
         submitButton.classList.remove('is-loading');
     }
 
+    function isIconOnlyStyle() {
+        return iconOnlyStyles.indexOf(currentStyle) !== -1;
+    }
+
+    function resolveSizeState() {
+        if (isGreetingVisible()) {
+            if (config.greetingCapturePhone && greeting && greeting.classList.contains('has-capture')) {
+                return 'greeting-phone';
+            }
+            return 'greeting';
+        }
+        if (currentState === 'hover') {
+            return isIconOnlyStyle() ? 'icon' : 'button';
+        }
+        if (isIconOnlyStyle()) {
+            return 'icon';
+        }
+        return 'button';
+    }
+
+    function isElementVisible(el) {
+        if (!el) {
+            return false;
+        }
+        var style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden') {
+            return false;
+        }
+        if (el.classList.contains('ctcw-greeting') && !el.classList.contains('is-visible')) {
+            return false;
+        }
+        if (el.classList.contains('ctcw-hover-box')) {
+            if (style.opacity === '0') {
+                return false;
+            }
+        }
+        var rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+    }
+
+    function getVisibleWidgetBounds() {
+        var elements = Array.from(document.querySelectorAll(measureSelectors)).filter(isElementVisible);
+        if (!elements.length) {
+            return { width: 120, height: 120 };
+        }
+
+        var minX = Infinity;
+        var minY = Infinity;
+        var maxX = -Infinity;
+        var maxY = -Infinity;
+
+        elements.forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            minX = Math.min(minX, rect.left);
+            minY = Math.min(minY, rect.top);
+            maxX = Math.max(maxX, rect.right);
+            maxY = Math.max(maxY, rect.bottom);
+        });
+
+        return {
+            width: Math.ceil(maxX - minX + 32),
+            height: Math.ceil(maxY - minY + 32)
+        };
+    }
+
     function sendActualWidgetSize() {
         window.requestAnimationFrame(function () {
             var root = document.querySelector('.ctcw-widget-root');
@@ -64,28 +137,18 @@
                 return;
             }
 
-            var rects = [root.getBoundingClientRect()];
-            var hoverBox = root.querySelector('.ctcw-hover-box');
-            if (hoverBox) {
-                var hoverStyle = window.getComputedStyle(hoverBox);
-                if (hoverStyle.opacity !== '0' && hoverStyle.visibility !== 'hidden' && hoverStyle.display !== 'none') {
-                    rects.push(hoverBox.getBoundingClientRect());
-                }
-            }
-
-            var minX = Math.min.apply(null, rects.map(function (rect) { return rect.left; }));
-            var minY = Math.min.apply(null, rects.map(function (rect) { return rect.top; }));
-            var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
-            var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
-            var width = Math.ceil(maxX - minX + sizePadding);
-            var height = Math.ceil(maxY - minY + sizePadding);
+            var state = resolveSizeState();
+            var bounds = getVisibleWidgetBounds();
+            var minimum = stateMinimums[state] || stateMinimums.icon;
+            var width = Math.max(minimum.width, bounds.width);
+            var height = Math.max(minimum.height, bounds.height);
 
             window.parent.postMessage({
                 type: 'ctcw:size',
                 id: String(config.widgetId || window.CTCW_WIDGET_ID || ''),
                 width: width,
                 height: height,
-                state: isGreetingVisible() ? 'greeting' : currentState
+                state: state
             }, '*');
         });
     }
@@ -106,7 +169,7 @@
             greetingSuccess.hidden = true;
         }
         resetSubmitButton(greetingSubmit);
-        currentState = 'normal';
+        currentState = isIconOnlyStyle() ? 'icon' : 'button';
         sendActualWidgetSize();
         scheduleSizeReports();
     }
@@ -367,7 +430,9 @@
         if (!greeting) {
             return;
         }
-        currentState = 'greeting';
+        currentState = config.greetingCapturePhone && greeting.classList.contains('has-capture')
+            ? 'greeting-phone'
+            : 'greeting';
         window.requestAnimationFrame(function () {
             greeting.classList.add('is-visible');
             window.requestAnimationFrame(function () {
@@ -418,7 +483,7 @@
             scheduleSizeReports();
             window.setTimeout(function () {
                 button.classList.remove('is-shaking');
-                currentState = 'normal';
+                currentState = isIconOnlyStyle() ? 'icon' : 'button';
                 sendActualWidgetSize();
             }, 400);
             return;
@@ -478,7 +543,7 @@
         container.classList.remove('is-hovering');
         window.setTimeout(function () {
             if (!isGreetingVisible()) {
-                currentState = 'normal';
+                currentState = isIconOnlyStyle() ? 'icon' : 'button';
                 sendActualWidgetSize();
                 scheduleSizeReports();
             }

@@ -48,7 +48,8 @@ $config = [
     var config = <?= json_for_html($config) ?>;
     var iframe = document.getElementById(config.frameId);
     var lastSize = null;
-    var defaultSize = { width: 120, height: 120 };
+    var lastState = 'icon';
+    var defaultSize = { width: 110, height: 110 };
 
     function isMobile() {
         return window.innerWidth <= 767;
@@ -66,10 +67,24 @@ $config = [
         return config.src + '&mode=' + encodeURIComponent(activeMode());
     }
 
-    function clampSize(width, height) {
+    function minimumForState(state) {
+        if (state === 'greeting-phone') {
+            return { width: 390, height: 340 };
+        }
+        if (state === 'greeting') {
+            return { width: 380, height: 300 };
+        }
+        if (state === 'button' || state === 'hover') {
+            return { width: 260, height: 110 };
+        }
+        return { width: 110, height: 110 };
+    }
+
+    function clampSize(width, height, state) {
+        var minimum = minimumForState(state || lastState || 'icon');
         return {
-            width: Math.min(window.innerWidth - 16, Math.max(80, parseInt(width, 10) || defaultSize.width)),
-            height: Math.min(window.innerHeight - 16, Math.max(80, parseInt(height, 10) || defaultSize.height))
+            width: Math.min(window.innerWidth - 16, Math.max(minimum.width, parseInt(width, 10) || minimum.width)),
+            height: Math.min(window.innerHeight - 16, Math.max(minimum.height, parseInt(height, 10) || minimum.height))
         };
     }
 
@@ -86,12 +101,14 @@ $config = [
         iframe.style[position.horizontalSide] = position.horizontalValue;
     }
 
-    function applySize(width, height) {
-        var size = clampSize(width, height);
-        if (lastSize && lastSize.width === size.width && lastSize.height === size.height) {
+    function applySize(width, height, state) {
+        var size = clampSize(width, height, state);
+        var nextState = state || lastState || 'icon';
+        if (lastSize && lastSize.width === size.width && lastSize.height === size.height && lastState === nextState) {
             return;
         }
         lastSize = size;
+        lastState = nextState;
         iframe.style.width = size.width + 'px';
         iframe.style.height = size.height + 'px';
     }
@@ -110,7 +127,7 @@ $config = [
         iframe.style.maxHeight = 'calc(100vh - 16px)';
         iframe.style.transition = 'none';
         applyPosition();
-        applySize(defaultSize.width, defaultSize.height);
+        applySize(defaultSize.width, defaultSize.height, 'icon');
     }
 
     function sendViewport() {
@@ -165,7 +182,7 @@ $config = [
         if (!event.data || (event.data.type !== 'ctcw:size' && event.data.type !== 'ctcw') || String(event.data.id) !== config.widgetId) {
             return;
         }
-        applySize(event.data.width, event.data.height);
+        applySize(event.data.width, event.data.height, event.data.state || 'icon');
     });
 
     window.addEventListener('resize', function () {
@@ -175,7 +192,7 @@ $config = [
         applyPosition();
         sendViewport();
         if (lastSize) {
-            applySize(lastSize.width, lastSize.height);
+            applySize(lastSize.width, lastSize.height, lastState);
         }
     });
 })();
