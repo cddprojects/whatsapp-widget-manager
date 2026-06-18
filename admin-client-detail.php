@@ -40,7 +40,8 @@ if (is_post() && ($_POST['action'] ?? '') === 'toggle_status') {
 $widgets = widgets_for_user($clientId);
 $widgetCount = count($widgets);
 $createdPassword = $_SESSION['created_client_password'] ?? null;
-unset($_SESSION['created_client_password']);
+$createdClientEmail = $_SESSION['created_client_email'] ?? null;
+unset($_SESSION['created_client_password'], $_SESSION['created_client_email']);
 
 $pageTitle = 'Client Profile';
 require __DIR__ . '/includes/header.php';
@@ -56,12 +57,15 @@ require __DIR__ . '/includes/header.php';
 </section>
 
 <?php if ($createdPassword !== null): ?>
+    <div class="alert alert-success">
+        Client created successfully<?= $createdClientEmail ? ' for ' . e((string) $createdClientEmail) : '' ?>.
+    </div>
     <div class="alert alert-warning">
-        Copy this temporary password now. It will not be shown again.
+        Copy this password now. It will not be shown again.
     </div>
     <section class="settings-card">
         <div class="temp-password-box">
-            <span class="meta-label">Temporary password</span>
+            <span class="meta-label">Password</span>
             <code><?= e((string) $createdPassword) ?></code>
         </div>
     </section>

@@ -333,6 +333,97 @@ code {
     grid-column: 1 / -1;
 }
 
+.password-field-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.password-field-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.password-field-row .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.btn-compact {
+    min-width: 72px;
+}
+
+.field-helper {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.field-error {
+    margin: 8px 0 0;
+    color: #dc2626;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.field-error[hidden] {
+    display: none;
+}
+
+.password-strength {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.password-strength-label {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.password-strength-label strong {
+    color: var(--text);
+}
+
+.password-strength-bar {
+    display: block;
+    width: 100%;
+    max-width: 220px;
+    height: 6px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+
+.password-strength-bar::after {
+    content: "";
+    display: block;
+    width: 33%;
+    height: 100%;
+    border-radius: inherit;
+    background: #ef4444;
+    transition: width 0.2s ease, background 0.2s ease;
+}
+
+.password-strength.is-normal .password-strength-bar::after {
+    width: 66%;
+    background: #f59e0b;
+}
+
+.password-strength.is-strong .password-strength-bar::after {
+    width: 100%;
+    background: #16a34a;
+}
+
+.password-strength.is-normal .password-strength-label strong {
+    color: #b45309;
+}
+
+.password-strength.is-strong .password-strength-label strong {
+    color: #15803d;
+}
+
 .checkbox-row {
     display: flex !important;
     align-items: center;
