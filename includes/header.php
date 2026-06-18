@@ -29,7 +29,7 @@ $currentPage = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
         <?php if ($isSuperAdmin): ?>
             <nav class="topnav-main" aria-label="Main navigation">
                 <a class="<?= nav_link_class('dashboard.php') ?>" href="dashboard.php">Dashboard</a>
-                <a class="<?= nav_link_class('admin-clients.php', ['admin-client-create.php', 'admin-client-detail.php', 'admin-client-edit.php', 'admin-client-reset-password.php']) ?>" href="admin-clients.php">Clients</a>
+                <a class="<?= nav_link_class('admin-clients.php', ['admin-client-create.php', 'admin-client-detail.php', 'admin-client-edit.php', 'admin-client-reset-password.php', 'admin-client-delete.php']) ?>" href="admin-clients.php">Clients</a>
                 <a class="<?= nav_link_class('admin-widgets.php', ['create-widget.php', 'edit-widget.php', 'edit-widget-phone.php', 'embed-code.php', 'admin-widget-leads.php']) ?>" href="admin-widgets.php">Widgets</a>
             </nav>
         <?php elseif ($isClient): ?>

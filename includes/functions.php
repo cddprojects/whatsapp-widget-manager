@@ -1453,6 +1453,119 @@ function validate_client_password(string $password, string $confirmPassword): ar
     return $errors;
 }
 
+function database_table_exists(string $table): bool
+{
+    static $cache = [];
+
+    if (array_key_exists($table, $cache)) {
+        return $cache[$table];
+    }
+
+    $stmt = db()->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.tables
+         WHERE table_schema = DATABASE() AND table_name = :table'
+    );
+    $stmt->execute(['table' => $table]);
+    $cache[$table] = (int) $stmt->fetchColumn() > 0;
+
+    return $cache[$table];
+}
+
+function client_widget_count(int $clientId): int
+{
+    $stmt = db()->prepare('SELECT COUNT(*) FROM widgets WHERE user_id = :user_id');
+    $stmt->execute(['user_id' => $clientId]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function client_lead_count(int $clientId): int
+{
+    if (!database_table_exists('widget_leads')) {
+        return 0;
+    }
+
+    $stmt = db()->prepare('SELECT COUNT(*) FROM widget_leads WHERE user_id = :user_id');
+    $stmt->execute(['user_id' => $clientId]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function delete_client_account(int $clientId, string $widgetMode, int $superadminId): array
+{
+    if (!in_array($widgetMode, ['delete_all', 'reassign'], true)) {
+        return ['success' => false, 'message' => 'Invalid delete option selected.'];
+    }
+
+    $client = find_client_user($clientId);
+    if (!$client) {
+        return ['success' => false, 'message' => 'Client account not found.'];
+    }
+
+    if ($clientId === $superadminId) {
+        return ['success' => false, 'message' => 'You cannot delete your own account from this action.'];
+    }
+
+    $pdo = db();
+
+    try {
+        $pdo->beginTransaction();
+
+        if ($widgetMode === 'reassign') {
+            $stmt = $pdo->prepare('UPDATE widgets SET user_id = :superadmin_id WHERE user_id = :client_id');
+            $stmt->execute([
+                'superadmin_id' => $superadminId,
+                'client_id' => $clientId,
+            ]);
+
+            if (database_table_exists('widget_leads')) {
+                $stmt = $pdo->prepare('UPDATE widget_leads SET user_id = :superadmin_id WHERE user_id = :client_id');
+                $stmt->execute([
+                    'superadmin_id' => $superadminId,
+                    'client_id' => $clientId,
+                ]);
+            }
+        } else {
+            if (database_table_exists('widget_leads')) {
+                $stmt = $pdo->prepare('DELETE FROM widget_leads WHERE user_id = :client_id');
+                $stmt->execute(['client_id' => $clientId]);
+            }
+
+            $stmt = $pdo->prepare('DELETE FROM widgets WHERE user_id = :client_id');
+            $stmt->execute(['client_id' => $clientId]);
+        }
+
+        $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id AND role = :role');
+        $stmt->execute([
+            'id' => $clientId,
+            'role' => ROLE_CLIENT,
+        ]);
+
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Client account could not be deleted.'];
+        }
+
+        $pdo->commit();
+
+        return [
+            'success' => true,
+            'mode' => $widgetMode,
+            'message' => $widgetMode === 'reassign'
+                ? 'Client deleted successfully. Their widgets were reassigned to superadmin.'
+                : 'Client and related widgets were deleted successfully.',
+        ];
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        return ['success' => false, 'message' => 'Unable to delete client account. Please try again.'];
+    }
+}
+
 function dashboard_summary_stats(): array
 {
     $clients = db()->query("SELECT COUNT(*) FROM users WHERE role = '" . ROLE_CLIENT . "'")->fetchColumn();
