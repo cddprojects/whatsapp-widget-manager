@@ -19,7 +19,7 @@ if (!$widget) {
 
 $data = sanitize_client_phone_manual_input($_POST);
 if ($data === null) {
-    flash('error', 'Please add at least one valid phone number.');
+    flash('error', 'Please add at least one WhatsApp number.');
     redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');
 }
 

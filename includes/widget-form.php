@@ -1,9 +1,6 @@
 <?php
 $widget = array_merge(default_widget_data(), $widget ?? []);
-$randomNumbers = json_decode((string) ($widget['random_numbers_json'] ?? '[]'), true);
-if (!is_array($randomNumbers) || count($randomNumbers) === 0) {
-    $randomNumbers = [['country_code' => $widget['whatsapp_country_code'] ?? '+60', 'number' => '']];
-}
+$phoneNumbers = widget_phone_list($widget);
 $businessHours = json_decode((string) ($widget['business_hours_json'] ?? ''), true);
 if (!is_array($businessHours)) {
     $businessHours = default_business_hours();
@@ -91,44 +88,17 @@ $settingsSections = [
             <span>1</span>
             <div>
                 <h2>WhatsApp Number</h2>
-                <p>Use a normal WhatsApp number, WhatsApp Business number, or rotate multiple numbers randomly.</p>
+                <p>Manage the WhatsApp destination numbers used by this widget.</p>
             </div>
         </div>
-        <div class="form-grid">
-            <label>
-                <span>Widget name</span>
-                <input type="text" name="widget_name" value="<?= e($widget['widget_name']) ?>">
-            </label>
-            <label>
-                <span>Country code</span>
-                <select name="whatsapp_country_code"><?= render_country_options((string) $widget['whatsapp_country_code']) ?></select>
-            </label>
-            <label>
-                <span>WhatsApp number</span>
-                <input type="tel" name="whatsapp_number" value="<?= e($widget['whatsapp_number']) ?>" placeholder="123456789">
-                <small>Digits only. Do not include spaces, symbols, or the country code.</small>
-            </label>
-            <label class="toggle-row">
-                <input type="checkbox" name="use_random_numbers" value="1"<?= checked($widget['use_random_numbers']) ?>>
-                <span>Enable random number selection on each click</span>
-            </label>
-        </div>
+        <label class="widget-name-field">
+            <span>Widget name</span>
+            <input type="text" name="widget_name" value="<?= e($widget['widget_name']) ?>">
+        </label>
 
-        <div class="random-number-panel">
-            <div class="panel-heading">
-                <h3>Random numbers</h3>
-                <button type="button" class="btn btn-small btn-light" data-add-random-number>Add number</button>
-            </div>
-            <div data-random-number-list>
-                <?php foreach ($randomNumbers as $index => $row): ?>
-                    <div class="repeat-row">
-                        <select name="random_numbers[<?= (int) $index ?>][country_code]"><?= render_country_options((string) ($row['country_code'] ?? '+60')) ?></select>
-                        <input type="tel" name="random_numbers[<?= (int) $index ?>][number]" value="<?= e((string) ($row['number'] ?? '')) ?>" placeholder="123456789">
-                        <button type="button" class="btn btn-small btn-danger-soft" data-remove-row>Remove</button>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
+        <?php
+        require __DIR__ . '/phone-number-list.php';
+        ?>
     </section>
 
     <section class="settings-card" data-settings-panel="prefilled-message">
@@ -552,4 +522,6 @@ $settingsSections = [
     </section>
         </div>
     </div>
+
+    <script type="application/json" id="country-code-data"><?= json_for_html(country_code_options()) ?></script>
 </form>

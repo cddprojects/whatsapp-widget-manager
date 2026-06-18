@@ -20,7 +20,7 @@ if (!$widget && $widgets !== []) {
     $selectedWidgetId = (int) $widget['id'];
 }
 
-$activeNumbers = $widget ? client_active_phone_numbers($widget) : [];
+$activeNumbers = $widget ? widget_phone_list($widget) : [];
 $activeTab = (string) ($_GET['tab'] ?? 'manual');
 
 $pageTitle = 'My WhatsApp Number';
@@ -30,7 +30,7 @@ require __DIR__ . '/includes/header.php';
 <section class="page-heading">
     <p class="eyebrow">Client account</p>
     <h1>My WhatsApp Number</h1>
-    <p>Update the WhatsApp number used by your widget.</p>
+    <p>Update the WhatsApp numbers used by your widget.</p>
 </section>
 
 <?php if (!$widgets): ?>
@@ -61,14 +61,13 @@ require __DIR__ . '/includes/header.php';
         <div class="profile-grid">
             <div><span class="meta-label">Widget name</span><strong><?= e($widget['widget_name']) ?></strong></div>
             <div><span class="meta-label">Domain</span><strong><?= e($widget['website_domain']) ?></strong></div>
-            <div><span class="meta-label">Current WhatsApp number</span><strong><?= format_whatsapp_display($widget) ?></strong></div>
-            <div><span class="meta-label">Random numbers</span><strong><?= feature_status_pill($widget['use_random_numbers'] ?? 0) ?></strong></div>
+            <div><span class="meta-label">Active numbers</span><strong><?= format_whatsapp_display($widget) ?></strong></div>
         </div>
     </section>
 
     <section class="settings-card client-phone-card">
         <div class="tab-bar">
-            <a class="tab-link<?= $activeTab === 'manual' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=manual">Manual Entry</a>
+            <a class="tab-link<?= $activeTab === 'manual' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=manual">Phone Numbers</a>
             <a class="tab-link<?= $activeTab === 'upload' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=upload">Upload Numbers</a>
         </div>
 
@@ -104,61 +103,12 @@ require __DIR__ . '/includes/header.php';
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
 
-                <div class="client-number-panel">
-                    <div class="panel-heading">
-                        <div>
-                            <h3>Active numbers</h3>
-                            <p>Add numbers one at a time, then save your list.</p>
-                        </div>
-                        <button type="button" class="btn btn-small btn-light" data-client-add-number>Add Number</button>
-                    </div>
-
-                    <div class="client-number-list" data-client-number-list>
-                        <?php if ($activeNumbers === []): ?>
-                            <div class="empty-state compact-empty" data-client-empty-state>
-                                <p>No numbers added yet. Click Add Number to get started.</p>
-                            </div>
-                        <?php else: ?>
-                            <?php foreach ($activeNumbers as $index => $row): ?>
-                                <div class="client-number-item" data-client-number-item>
-                                    <div class="client-number-display">
-                                        <strong><?= e((string) $row['country_code']) ?></strong>
-                                        <span><?= e((string) $row['number']) ?></span>
-                                    </div>
-                                    <input type="hidden" name="manual_numbers[<?= (int) $index ?>][country_code]" value="<?= e((string) $row['country_code']) ?>" data-number-country>
-                                    <input type="hidden" name="manual_numbers[<?= (int) $index ?>][number]" value="<?= e((string) $row['number']) ?>" data-number-phone>
-                                    <button type="button" class="btn btn-small btn-light" data-client-remove-number>Remove</button>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-
-                    <template id="client-number-item-template">
-                        <div class="client-number-item" data-client-number-item>
-                            <div class="client-number-display">
-                                <strong data-display-country></strong>
-                                <span data-display-phone></span>
-                            </div>
-                            <input type="hidden" name="" value="" data-number-country>
-                            <input type="hidden" name="" value="" data-number-phone>
-                            <button type="button" class="btn btn-small btn-light" data-client-remove-number>Remove</button>
-                        </div>
-                    </template>
-
-                    <div class="client-number-draft" data-client-number-draft hidden>
-                        <div class="client-number-draft-row">
-                            <?= render_country_code_search_input('client-draft-country', '+60') ?>
-                            <label class="client-phone-input">
-                                <span class="sr-only">Phone number</span>
-                                <input type="tel" data-client-draft-phone placeholder="123456789" autocomplete="tel">
-                            </label>
-                            <div class="client-number-draft-actions">
-                                <button type="button" class="btn btn-small btn-primary" data-client-confirm-number>Confirm</button>
-                                <button type="button" class="btn btn-small btn-light" data-client-cancel-number>Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <?php
+                $phoneNumbers = $activeNumbers;
+                $fieldPrefix = 'manual_numbers';
+                $listId = 'client-phone-number-list';
+                require __DIR__ . '/includes/phone-number-list.php';
+                ?>
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save Numbers</button>
