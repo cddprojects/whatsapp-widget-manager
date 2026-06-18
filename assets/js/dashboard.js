@@ -457,8 +457,9 @@ function initLiveWidgetPreview() {
     }
 
     var customCssStyle = document.getElementById('ctcwAdminLivePreviewCustomCss');
-    var frameDebugToggle = document.querySelector('[data-preview-frame-debug]');
-    var frameDebugStorageKey = 'ctcw_show_frame_debug';
+    var previewToggle = document.querySelector('[data-live-preview-toggle]');
+    var previewEnabledStorageKey = 'ctcw_admin_live_preview_enabled';
+    var debugFrameEnabled = new URLSearchParams(window.location.search).get('debug_preview_frame') === '1';
     var iconNode = document.getElementById('ctcw-preview-icon');
     var whatsappIcon = '';
 
@@ -470,29 +471,71 @@ function initLiveWidgetPreview() {
         }
     }
 
-    function updateFrameDebugState() {
-        var enabled = !!(frameDebugToggle && frameDebugToggle.checked);
-        previewRoot.classList.toggle('is-frame-debug', enabled);
+    function isLivePreviewEnabled() {
+        if (!previewToggle) {
+            return true;
+        }
+        return previewToggle.checked;
+    }
+
+    function setLivePreviewEnabled(enabled) {
         try {
-            window.localStorage.setItem(frameDebugStorageKey, enabled ? '1' : '0');
+            window.localStorage.setItem(previewEnabledStorageKey, enabled ? '1' : '0');
         } catch (error) {
             // Ignore storage failures in restricted browsers.
         }
-    }
 
-    function initFrameDebugToggle() {
-        if (!frameDebugToggle) {
+        if (previewRoot) {
+            previewRoot.style.display = enabled ? 'block' : 'none';
+            previewRoot.setAttribute('aria-hidden', enabled ? 'false' : 'true');
+        }
+
+        if (enabled) {
+            renderLiveWidgetPreview();
             return;
         }
 
-        try {
-            frameDebugToggle.checked = window.localStorage.getItem(frameDebugStorageKey) === '1';
-        } catch (error) {
-            frameDebugToggle.checked = false;
+        if (previewRoot) {
+            previewRoot.innerHTML = '';
+        }
+    }
+
+    function initLivePreviewToggle() {
+        if (!previewToggle) {
+            setLivePreviewEnabled(true);
+            return;
         }
 
-        frameDebugToggle.addEventListener('change', updateFrameDebugState);
-        updateFrameDebugState();
+        var saved = null;
+        try {
+            saved = window.localStorage.getItem(previewEnabledStorageKey);
+        } catch (error) {
+            saved = null;
+        }
+
+        var enabled = saved === null ? true : saved === '1';
+        previewToggle.checked = enabled;
+        previewToggle.addEventListener('change', function () {
+            setLivePreviewEnabled(this.checked);
+        });
+        setLivePreviewEnabled(enabled);
+    }
+
+    function updateDebugFrameState() {
+        if (!previewRoot || !debugFrameEnabled) {
+            if (previewRoot) {
+                previewRoot.classList.remove('is-frame-debug');
+            }
+            return;
+        }
+
+        previewRoot.classList.add('is-frame-debug');
+        if (!document.querySelector('style[data-preview-frame-debug]')) {
+            var debugStyle = document.createElement('style');
+            debugStyle.setAttribute('data-preview-frame-debug', 'true');
+            debugStyle.textContent = '#ctcwAdminLivePreview.is-frame-debug .ctcw-admin-live-preview-inner{outline:2px dashed rgba(37,99,235,.65);background:rgba(37,99,235,.08);}';
+            document.head.appendChild(debugStyle);
+        }
     }
 
     function getFieldValue(name) {
@@ -604,6 +647,10 @@ function initLiveWidgetPreview() {
     }
 
     function renderLiveWidgetPreview() {
+        if (!isLivePreviewEnabled()) {
+            return;
+        }
+
         var style = getFieldValue('desktop_style') || 'style-1';
         var verticalType = getFieldValue('desktop_vertical_position_type') || 'bottom';
         var horizontalType = getFieldValue('desktop_horizontal_position_type') || 'right';
@@ -624,7 +671,7 @@ function initLiveWidgetPreview() {
 
         updatePreviewPosition();
         updateCustomCssPreview();
-        updateFrameDebugState();
+        updateDebugFrameState();
     }
 
     var watchedNames = [
@@ -673,6 +720,5 @@ function initLiveWidgetPreview() {
         greetingForceToggle.addEventListener('change', renderLiveWidgetPreview);
     }
 
-    renderLiveWidgetPreview();
-    initFrameDebugToggle();
+    initLivePreviewToggle();
 }
