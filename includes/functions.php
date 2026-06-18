@@ -491,13 +491,14 @@ function country_code_search_label(string $code): string
     return $code;
 }
 
-function render_country_code_search_input(string $inputId, string $selectedCode = '+60'): string
+function render_country_code_search_input(string $inputId, string $selectedCode = '+60', ?string $hiddenName = null): string
 {
     $listId = $inputId . '-list';
     $displayValue = country_code_search_label($selectedCode);
+    $nameAttr = $hiddenName !== null ? ' name="' . e($hiddenName) . '"' : '';
     $html = '<div class="country-code-field" data-country-code-field>'
         . '<input type="text" class="country-code-search" id="' . e($inputId) . '" list="' . e($listId) . '" value="' . e($displayValue) . '" placeholder="Search country or code" autocomplete="off" data-country-search>'
-        . '<input type="hidden" value="' . e($selectedCode) . '" data-country-value>'
+        . '<input type="hidden" value="' . e($selectedCode) . '" data-country-value' . $nameAttr . '>'
         . '<datalist id="' . e($listId) . '">';
 
     foreach (country_code_options() as $option) {
@@ -575,22 +576,36 @@ function strip_phone_number_entry(array $number): array
 
 function client_active_phone_numbers(array $widget): array
 {
-    if (!empty($widget['use_random_numbers'])) {
-        $numbers = [];
-        foreach (decode_random_numbers($widget['random_numbers_json'] ?? '[]') as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            $entry = strip_phone_number_entry($row);
-            if ($entry['number'] === '') {
-                continue;
-            }
-            if ($entry['full_number'] === '') {
-                $entry['full_number'] = clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
-            }
-            $numbers[] = $entry;
+    return widget_phone_list($widget);
+}
+
+function widget_phone_list(array $widget): array
+{
+    $numbers = [];
+
+    foreach (decode_random_numbers($widget['random_numbers_json'] ?? '[]') as $row) {
+        if (!is_array($row)) {
+            continue;
         }
 
+        $entry = strip_phone_number_entry($row);
+        if ($entry['number'] === '') {
+            continue;
+        }
+
+        if ($entry['full_number'] === '') {
+            $entry['full_number'] = clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+        }
+
+        if (!validate_phone_number($entry['full_number'])) {
+            continue;
+        }
+
+        $numbers[] = $entry;
+    }
+
+    $numbers = remove_duplicate_phone_numbers($numbers);
+    if ($numbers !== []) {
         return $numbers;
     }
 
@@ -606,11 +621,51 @@ function client_active_phone_numbers(array $widget): array
         $localDigits = substr($number, strlen($countryDigits));
     }
 
+    $fullNumber = $countryDigits . $localDigits;
+    if (!validate_phone_number($fullNumber)) {
+        return [];
+    }
+
     return [[
         'country_code' => $countryCode,
         'number' => $localDigits,
-        'full_number' => $countryDigits . $localDigits,
+        'full_number' => $fullNumber,
     ]];
+}
+
+function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widget_numbers'): ?array
+{
+    $rows = $post[$fieldKey] ?? [];
+    if (!is_array($rows) || $rows === []) {
+        return null;
+    }
+
+    $numbers = [];
+
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $countryCode = trim((string) ($row['country_code'] ?? '+60'));
+        if (!array_key_exists($countryCode, country_codes())) {
+            $countryCode = '+60';
+        }
+
+        $normalized = normalize_phone_number($countryCode, (string) ($row['number'] ?? ''));
+        if ($normalized === null) {
+            continue;
+        }
+
+        $numbers[] = $normalized;
+    }
+
+    $numbers = remove_duplicate_phone_numbers($numbers);
+    if ($numbers === []) {
+        return null;
+    }
+
+    return build_phone_widget_update($numbers);
 }
 
 function get_widget_active_numbers(array $widget): array
@@ -818,31 +873,7 @@ function sanitize_widget_input(array $post): array
 {
     $defaults = default_widget_data();
     $websiteDomain = normalize_domain((string) ($post['website_domain'] ?? ''));
-    $countryCode = (string) ($post['whatsapp_country_code'] ?? '+60');
-    if (!array_key_exists($countryCode, country_codes())) {
-        $countryCode = '+60';
-    }
-
-    $randomRows = $post['random_numbers'] ?? [];
-    $randomNumbers = [];
-    if (is_array($randomRows)) {
-        foreach ($randomRows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            $rowCountry = (string) ($row['country_code'] ?? $countryCode);
-            if (!array_key_exists($rowCountry, country_codes())) {
-                $rowCountry = $countryCode;
-            }
-            $rowNumber = clean_phone_number((string) ($row['number'] ?? ''));
-            if ($rowNumber !== '' && validate_phone_number($rowNumber)) {
-                $randomNumbers[] = [
-                    'country_code' => $rowCountry,
-                    'number' => $rowNumber,
-                ];
-            }
-        }
-    }
+    $phoneUpdate = sanitize_phone_numbers_from_post($post, 'widget_numbers');
 
     $businessRows = $post['business_hours'] ?? [];
     $businessHours = default_business_hours();
@@ -866,10 +897,10 @@ function sanitize_widget_input(array $post): array
         'allow_subdomains' => post_checkbox('allow_subdomains'),
         'domain_lock_enabled' => post_checkbox('domain_lock_enabled'),
         'strict_domain_check' => post_checkbox('strict_domain_check'),
-        'whatsapp_country_code' => $countryCode,
-        'whatsapp_number' => clean_phone_number((string) ($post['whatsapp_number'] ?? '')),
-        'use_random_numbers' => post_checkbox('use_random_numbers'),
-        'random_numbers_json' => json_encode($randomNumbers),
+        'whatsapp_country_code' => (string) ($phoneUpdate['whatsapp_country_code'] ?? '+60'),
+        'whatsapp_number' => (string) ($phoneUpdate['whatsapp_number'] ?? ''),
+        'use_random_numbers' => (int) ($phoneUpdate['use_random_numbers'] ?? 0),
+        'random_numbers_json' => (string) ($phoneUpdate['random_numbers_json'] ?? '[]'),
         'prefilled_message' => trim((string) ($post['prefilled_message'] ?? $defaults['prefilled_message'])),
         'call_to_action' => trim((string) ($post['call_to_action'] ?? $defaults['call_to_action'])),
         'desktop_style' => enum_value((string) ($post['desktop_style'] ?? 'style-1'), array_keys(widget_styles()), 'style-1'),
@@ -975,9 +1006,13 @@ function validate_widget_data(array $data): array
     if (!is_valid_domain($data['website_domain'])) {
         $errors[] = 'Please enter a valid website domain.';
     }
-    if (!validate_phone_number($data['whatsapp_number'])) {
-        $errors[] = 'Please enter a valid WhatsApp number.';
+
+    $primaryFullNumber = clean_phone_number((string) ($data['whatsapp_country_code'] ?? ''))
+        . clean_phone_number((string) ($data['whatsapp_number'] ?? ''));
+    if ($primaryFullNumber === '' || !validate_phone_number($primaryFullNumber)) {
+        $errors[] = 'Please add at least one WhatsApp number.';
     }
+
     if ($data['custom_url'] !== '' && !filter_var($data['custom_url'], FILTER_VALIDATE_URL)) {
         $errors[] = 'Custom URL must be a valid full URL.';
     }
@@ -1321,47 +1356,7 @@ function save_widget_phone_numbers(int $widgetId, array $numbers): bool
 
 function sanitize_client_phone_manual_input(array $post): ?array
 {
-    $rows = $post['manual_numbers'] ?? [];
-    $numbers = [];
-    $seen = [];
-
-    if (!is_array($rows) || $rows === []) {
-        if (isset($post['whatsapp_country_code'], $post['whatsapp_number'])) {
-            $countryCode = trim((string) $post['whatsapp_country_code']);
-            if (!array_key_exists($countryCode, country_codes())) {
-                $countryCode = '+60';
-            }
-            $normalized = normalize_phone_number($countryCode, (string) $post['whatsapp_number']);
-            return build_phone_widget_update($normalized !== null ? [$normalized] : []);
-        }
-
-        return null;
-    }
-
-    foreach ($rows as $row) {
-        if (!is_array($row)) {
-            continue;
-        }
-
-        $countryCode = trim((string) ($row['country_code'] ?? '+60'));
-        if (!array_key_exists($countryCode, country_codes())) {
-            $countryCode = '+60';
-        }
-
-        $normalized = normalize_phone_number($countryCode, (string) ($row['number'] ?? ''));
-        if ($normalized === null) {
-            continue;
-        }
-
-        if (isset($seen[$normalized['full_number']])) {
-            continue;
-        }
-
-        $seen[$normalized['full_number']] = true;
-        $numbers[] = $normalized;
-    }
-
-    return build_phone_widget_update($numbers);
+    return sanitize_phone_numbers_from_post($post, 'manual_numbers');
 }
 
 function update_widget_phone_fields(int $widgetId, array $data): void
@@ -1411,12 +1406,18 @@ function decode_random_numbers(?string $json): array
 
 function format_whatsapp_display(array $widget): string
 {
-    if (!empty($widget['use_random_numbers'])) {
-        $count = count(decode_random_numbers($widget['random_numbers_json'] ?? '[]'));
-        return $count > 0 ? $count . ' rotating numbers' : 'Random numbers enabled';
+    $numbers = widget_phone_list($widget);
+    if ($numbers === []) {
+        return 'No number set';
     }
 
-    return '+' . clean_phone_number((string) ($widget['whatsapp_country_code'] ?? '')) . ' ' . e((string) ($widget['whatsapp_number'] ?? ''));
+    if (count($numbers) > 1) {
+        return count($numbers) . ' rotating numbers';
+    }
+
+    $number = $numbers[0];
+
+    return e((string) $number['country_code']) . ' ' . e((string) $number['number']);
 }
 
 function generate_temporary_password(int $length = 14): string
