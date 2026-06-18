@@ -509,6 +509,20 @@ code {
     line-height: 1.5;
 }
 
+.preview-frame-debug-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.preview-frame-debug-toggle input {
+    margin: 0;
+}
+
 .settings-sidebar {
     position: sticky;
     top: 152px;

@@ -62,6 +62,10 @@ $settingsSections = [
         <div class="sticky-actions-copy">
             <?php if (!empty($showLivePreview)): ?>
                 <p class="live-preview-helper">Floating preview shows unsaved changes. Save Widget to publish.</p>
+                <label class="preview-frame-debug-toggle">
+                    <input type="checkbox" id="ctcwShowFrameDebug" data-preview-frame-debug>
+                    Show widget frame area
+                </label>
             <?php endif; ?>
             <div class="sticky-actions-buttons">
                 <a class="btn btn-light" href="dashboard.php">Back</a>

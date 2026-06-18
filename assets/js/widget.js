@@ -2,7 +2,7 @@
     'use strict';
 
     var config = window.CTCW_WIDGET || {};
-    var container = document.querySelector('.ctcw-container');
+    var container = document.querySelector('.ctcw-widget-root');
     var button = document.querySelector('[data-widget-button]');
     var greeting = document.querySelector('[data-greeting]');
     var closeGreeting = document.querySelector('[data-close-greeting]');
@@ -16,25 +16,11 @@
     var currentState = 'normal';
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var hoverTimer = null;
-    var greetingCaptureSize = config.greetingForcePhoneCapture ? [420, 380] : [320, 340];
     var pageContext = {
         url: '',
         title: ''
     };
-    var sizeMap = {
-        'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
-        'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
-        'style-3': { normal: [120, 120], hover: [130, 130], greeting: [390, 300] },
-        'style-3-large': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
-        'style-3-extend': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
-        'style-4': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] },
-        'style-5': { normal: [420, 260], hover: [420, 260], greeting: [390, 300] },
-        'style-6': { normal: [260, 90], hover: [280, 100], greeting: [390, 300] },
-        'style-7': { normal: [130, 130], hover: [140, 140], greeting: [390, 300] },
-        'style-7-extend': { normal: [420, 160], hover: [420, 160], greeting: [390, 300] },
-        'style-8': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] },
-        'style-9-left-hover': { normal: [420, 160], hover: [420, 160], greeting: [390, 300] }
-    };
+    var sizePadding = 24;
 
     if (!container || !button) {
         return;
@@ -71,6 +57,45 @@
         submitButton.classList.remove('is-loading');
     }
 
+    function sendActualWidgetSize() {
+        window.requestAnimationFrame(function () {
+            var root = document.querySelector('.ctcw-widget-root');
+            if (!root || root.classList.contains('is-hidden')) {
+                return;
+            }
+
+            var rects = [root.getBoundingClientRect()];
+            var hoverBox = root.querySelector('.ctcw-hover-box');
+            if (hoverBox) {
+                var hoverStyle = window.getComputedStyle(hoverBox);
+                if (hoverStyle.opacity !== '0' && hoverStyle.visibility !== 'hidden' && hoverStyle.display !== 'none') {
+                    rects.push(hoverBox.getBoundingClientRect());
+                }
+            }
+
+            var minX = Math.min.apply(null, rects.map(function (rect) { return rect.left; }));
+            var minY = Math.min.apply(null, rects.map(function (rect) { return rect.top; }));
+            var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
+            var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
+            var width = Math.ceil(maxX - minX + sizePadding);
+            var height = Math.ceil(maxY - minY + sizePadding);
+
+            window.parent.postMessage({
+                type: 'ctcw:size',
+                id: String(config.widgetId || window.CTCW_WIDGET_ID || ''),
+                width: width,
+                height: height,
+                state: isGreetingVisible() ? 'greeting' : currentState
+            }, '*');
+        });
+    }
+
+    function scheduleSizeReports() {
+        [50, 300, 800].forEach(function (delay) {
+            window.setTimeout(sendActualWidgetSize, delay);
+        });
+    }
+
     function closeGreetingDialog() {
         if (!greeting) {
             return;
@@ -82,18 +107,8 @@
         }
         resetSubmitButton(greetingSubmit);
         currentState = 'normal';
-        reportMappedSize('normal');
-        reportSize();
+        sendActualWidgetSize();
         scheduleSizeReports();
-    }
-
-    function syncWidgetSize() {
-        if (isGreetingVisible()) {
-            currentState = 'greeting';
-            reportSize();
-            return;
-        }
-        reportMappedSize('normal');
     }
 
     function applyResponsiveState() {
@@ -107,28 +122,8 @@
         });
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
-        syncWidgetSize();
-    }
-
-    function sizeForState(state) {
-        var styleSizes = sizeMap[currentStyle] || sizeMap['style-1'];
-        if (state === 'greeting') {
-            if (config.greetingCapturePhone) {
-                return greetingCaptureSize;
-            }
-            if (!styleSizes.greeting) {
-                return [380, 280];
-            }
-            return styleSizes.greeting;
-        }
-        return styleSizes[state] || styleSizes.normal || [120, 120];
-    }
-
-    function contentPadding() {
-        if (isGreetingVisible()) {
-            return 32;
-        }
-        return 32;
+        sendActualWidgetSize();
+        scheduleSizeReports();
     }
 
     function cleanPhone(phone) {
@@ -236,7 +231,7 @@
         if (phone === '' || !isValidPhone(phone)) {
             if (forceMode || config.greetingPhoneRequired || phone !== '') {
                 showPhoneError(invalidMessage);
-                reportSize();
+                sendActualWidgetSize();
                 scheduleSizeReports();
                 return;
             }
@@ -253,7 +248,7 @@
         if (!config.saveLeadUrl) {
             if (forceMode) {
                 showPhoneError('We could not save your phone number. Please try again.');
-                reportSize();
+                sendActualWidgetSize();
                 scheduleSizeReports();
                 return;
             }
@@ -282,67 +277,12 @@
                 if (forceMode) {
                     resetSubmitButton(submitButton);
                     showPhoneError('We could not save your phone number. Please try again.');
-                    reportSize();
+                    sendActualWidgetSize();
                     scheduleSizeReports();
                     return;
                 }
                 redirectToWhatsapp(url);
             });
-    }
-
-    function sendWidgetSize(width, height, state) {
-        window.parent.postMessage({
-            type: 'ctcw',
-            id: String(config.widgetId || ''),
-            state: state || currentState,
-            width: width,
-            height: height
-        }, '*');
-    }
-
-    function reportMappedSize(state) {
-        currentState = state;
-        var size = sizeForState(state);
-        sendWidgetSize(size[0], size[1], state);
-    }
-
-    function scheduleSizeReports() {
-        [50, 300, 800].forEach(function (delay) {
-            window.setTimeout(reportSize, delay);
-        });
-    }
-
-    function reportSize() {
-        window.requestAnimationFrame(function () {
-            var minimum = sizeForState(isGreetingVisible() ? 'greeting' : currentState);
-            var pad = contentPadding();
-            var width;
-            var height;
-
-            if (isGreetingVisible()) {
-                currentState = 'greeting';
-                var rect = container.getBoundingClientRect();
-                width = Math.max(minimum[0], Math.ceil(rect.width + pad));
-                height = Math.max(minimum[1], Math.ceil(rect.height + pad));
-                sendWidgetSize(width, height, 'greeting');
-                return;
-            }
-
-            var rects = [container.getBoundingClientRect()];
-            var hoverBox = container.querySelector('.ctcw-hover-box');
-            if (hoverBox && window.getComputedStyle(hoverBox).opacity !== '0') {
-                rects.push(hoverBox.getBoundingClientRect());
-            }
-
-            var minX = Math.min.apply(null, rects.map(function (rect) { return rect.left; }));
-            var minY = Math.min.apply(null, rects.map(function (rect) { return rect.top; }));
-            var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
-            var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
-            width = Math.max(minimum[0], Math.ceil(maxX - minX + pad));
-            height = Math.max(minimum[1], Math.ceil(maxY - minY + pad));
-
-            sendWidgetSize(width, height, currentState);
-        });
     }
 
     function chooseNumber() {
@@ -428,12 +368,10 @@
             return;
         }
         currentState = 'greeting';
-        var size = sizeForState('greeting');
-        sendWidgetSize(size[0], size[1], 'greeting');
         window.requestAnimationFrame(function () {
             greeting.classList.add('is-visible');
             window.requestAnimationFrame(function () {
-                reportSize();
+                sendActualWidgetSize();
                 scheduleSizeReports();
             });
         });
@@ -453,7 +391,7 @@
             if (phoneInput) {
                 phoneInput.focus();
             }
-            reportSize();
+            sendActualWidgetSize();
             scheduleSizeReports();
         }, 60);
     }
@@ -474,10 +412,15 @@
         }, 1200);
 
         if (!config.online) {
-            reportMappedSize('animation');
+            currentState = 'animation';
             button.classList.add('is-shaking');
+            sendActualWidgetSize();
             scheduleSizeReports();
-            window.setTimeout(function () { button.classList.remove('is-shaking'); }, 400);
+            window.setTimeout(function () {
+                button.classList.remove('is-shaking');
+                currentState = 'normal';
+                sendActualWidgetSize();
+            }, 400);
             return;
         }
 
@@ -510,6 +453,7 @@
     if (phoneInput) {
         phoneInput.addEventListener('input', function () {
             showPhoneError('');
+            sendActualWidgetSize();
         });
     }
 
@@ -518,10 +462,11 @@
             return;
         }
         window.clearTimeout(hoverTimer);
-        reportMappedSize('hover');
+        currentState = 'hover';
         hoverTimer = window.setTimeout(function () {
             container.classList.add('is-hovering');
-            reportMappedSize('hover');
+            sendActualWidgetSize();
+            scheduleSizeReports();
         }, 40);
     }
 
@@ -533,7 +478,9 @@
         container.classList.remove('is-hovering');
         window.setTimeout(function () {
             if (!isGreetingVisible()) {
-                reportMappedSize('normal');
+                currentState = 'normal';
+                sendActualWidgetSize();
+                scheduleSizeReports();
             }
         }, 250);
     }
@@ -552,31 +499,23 @@
             parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
             updatePageContext(event.data);
             applyResponsiveState();
-            scheduleSizeReports();
-            return;
-        }
-        if (event.data.type === 'ctcw' && !event.data.id) {
             return;
         }
     });
+
+    if (typeof ResizeObserver !== 'undefined') {
+        var resizeObserver = new ResizeObserver(function () {
+            sendActualWidgetSize();
+        });
+        resizeObserver.observe(container);
+    }
 
     applyResponsiveState();
-    reportMappedSize('normal');
     scheduleSizeReports();
     window.addEventListener('resize', applyResponsiveState);
-    window.addEventListener('load', reportSize);
+    window.addEventListener('load', sendActualWidgetSize);
     document.addEventListener('DOMContentLoaded', function () {
-        reportMappedSize('normal');
-        reportSize();
+        sendActualWidgetSize();
         scheduleSizeReports();
     });
-
-    var reportsRemaining = 8;
-    var startupReporter = window.setInterval(function () {
-        reportSize();
-        reportsRemaining -= 1;
-        if (reportsRemaining <= 0) {
-            window.clearInterval(startupReporter);
-        }
-    }, 250);
 })();

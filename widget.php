@@ -102,8 +102,8 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
                 bottom: auto;
                 left: auto;
                 right: auto;
-                <?= e($desktopVerticalSide) ?>: 16px;
-                <?= e($desktopHorizontalSide) ?>: 16px;
+                <?= e($desktopVerticalSide) ?>: 12px;
+                <?= e($desktopHorizontalSide) ?>: 12px;
                 align-items: <?= e($desktopAlign) ?>;
             }
             html.ctcw-mobile .ctcw-container {
@@ -111,8 +111,8 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
                 bottom: auto;
                 left: auto;
                 right: auto;
-                <?= e($mobileVerticalSide) ?>: 16px;
-                <?= e($mobileHorizontalSide) ?>: 16px;
+                <?= e($mobileVerticalSide) ?>: 12px;
+                <?= e($mobileHorizontalSide) ?>: 12px;
                 align-items: <?= e($mobileAlign) ?>;
             }
         </style>
