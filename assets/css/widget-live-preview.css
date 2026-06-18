@@ -1,0 +1,329 @@
+.ctcw-live-preview-canvas {
+    --ctcw-green: #25d366;
+    --ctcw-green-dark: #128c7e;
+    --ctcw-text: #102a43;
+    position: relative;
+    height: 520px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+.ctcw-live-preview-canvas * {
+    box-sizing: border-box;
+    box-shadow: none !important;
+}
+
+.ctcw-live-widget-preview {
+    position: absolute;
+    z-index: 5;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    pointer-events: auto;
+}
+
+.ctcw-live-preview-canvas .ctcw-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 10px;
+    width: max-content;
+    max-width: 100%;
+    position: relative;
+}
+
+.ctcw-live-preview-canvas .ctcw-container.is-hidden {
+    display: none;
+}
+
+.ctcw-live-preview-canvas .ctcw-widget {
+    border: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 13px 18px;
+    color: #ffffff;
+    background: var(--ctcw-green);
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.ctcw-live-preview-canvas .ctcw-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.ctcw-live-preview-canvas .ctcw-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.ctcw-live-preview-canvas .ctcw-greeting {
+    position: relative;
+    display: none;
+    width: 280px;
+    max-width: 100%;
+    padding: 16px 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    background: #ffffff;
+    color: var(--ctcw-text);
+}
+
+.ctcw-live-preview-canvas .ctcw-greeting.has-capture {
+    width: min(320px, 100%);
+    padding: 16px;
+}
+
+.ctcw-live-preview-canvas .ctcw-greeting.is-visible {
+    display: block;
+}
+
+.ctcw-live-preview-canvas .ctcw-greeting-form {
+    display: grid;
+    gap: 10px;
+}
+
+.ctcw-live-preview-canvas .ctcw-phone-row {
+    display: flex;
+    gap: 8px;
+}
+
+.ctcw-live-preview-canvas .ctcw-phone-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.ctcw-live-preview-canvas .ctcw-greeting-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-width: 44px;
+    border: 0;
+    border-radius: 12px;
+    color: #ffffff;
+    background: var(--ctcw-green);
+    cursor: pointer;
+}
+
+.ctcw-live-preview-canvas .ctcw-greeting strong {
+    display: block;
+    margin: 0 24px 4px 0;
+    font-size: 16px;
+}
+
+.ctcw-live-preview-canvas .ctcw-greeting p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #52606d;
+}
+
+.ctcw-live-preview-canvas .ctcw-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    border: 0;
+    background: transparent;
+    color: #829ab1;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.ctcw-live-preview-canvas .is-offline .ctcw-widget {
+    background: #8795a1;
+}
+
+.ctcw-live-preview-canvas .style-1 .ctcw-widget {
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--ctcw-green), var(--ctcw-green-dark));
+}
+
+.ctcw-live-preview-canvas .style-2 .ctcw-widget {
+    width: 58px;
+    height: 58px;
+    min-height: 58px;
+    padding: 0;
+    border-radius: 10px;
+}
+
+.ctcw-live-preview-canvas .style-2 .ctcw-text,
+.ctcw-live-preview-canvas .style-3 .ctcw-text,
+.ctcw-live-preview-canvas .style-3-large .ctcw-text,
+.ctcw-live-preview-canvas .style-5 .ctcw-text {
+    display: none;
+}
+
+.ctcw-live-preview-canvas .style-3 .ctcw-widget {
+    width: 56px;
+    height: 56px;
+    min-height: 56px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.ctcw-live-preview-canvas .style-3-large .ctcw-widget {
+    width: 76px;
+    height: 76px;
+    min-height: 76px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.ctcw-live-preview-canvas .style-3-large .ctcw-icon {
+    width: 36px;
+    height: 36px;
+}
+
+.ctcw-live-preview-canvas .style-4 .ctcw-widget {
+    min-height: 52px;
+    border-radius: 999px;
+    padding: 14px 22px;
+}
+
+.ctcw-live-preview-canvas .style-5 .ctcw-widget {
+    position: relative;
+    width: 54px;
+    height: 54px;
+    min-height: 54px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.ctcw-live-preview-canvas .style-5 .ctcw-hover-box {
+    position: absolute;
+    right: 68px;
+    bottom: 0;
+    width: 220px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #ffffff;
+    color: var(--ctcw-text);
+    line-height: 1.4;
+    text-align: left;
+    white-space: normal;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ctcw-live-preview-canvas .style-5.is-hovering .ctcw-hover-box {
+    opacity: 1;
+}
+
+.ctcw-live-preview-canvas .style-6 .ctcw-widget {
+    min-height: auto;
+    padding: 0;
+    border-radius: 0;
+    color: var(--ctcw-green-dark);
+    background: transparent;
+    text-decoration: underline;
+}
+
+.ctcw-live-preview-canvas .style-6 .ctcw-icon {
+    display: none;
+}
+
+.ctcw-live-preview-canvas .style-7 .ctcw-widget {
+    width: 64px;
+    height: 64px;
+    min-height: 64px;
+    padding: 14px;
+    border-radius: 22px;
+    background: #ffffff;
+    color: var(--ctcw-green);
+}
+
+.ctcw-live-preview-canvas .style-7 .ctcw-text {
+    display: none;
+}
+
+.ctcw-live-preview-canvas .style-7-extend .ctcw-widget {
+    width: auto;
+    min-width: 58px;
+    max-width: 58px;
+    height: 58px;
+    min-height: 58px;
+    overflow: hidden;
+    padding: 0 17px;
+    border-radius: 999px;
+    justify-content: flex-start;
+}
+
+.ctcw-live-preview-canvas .style-7-extend .ctcw-text {
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+}
+
+.ctcw-live-preview-canvas .style-7-extend.is-hovering .ctcw-widget {
+    max-width: 320px;
+    padding: 0 20px;
+}
+
+.ctcw-live-preview-canvas .style-7-extend.is-hovering .ctcw-text {
+    max-width: 240px;
+    opacity: 1;
+}
+
+.ctcw-live-preview-canvas .style-8 .ctcw-widget {
+    min-height: 54px;
+    border-radius: 12px;
+    padding: 0 24px;
+}
+
+.ctcw-live-preview-canvas .style-9-left-hover .ctcw-widget {
+    min-height: 58px;
+    padding: 0;
+    gap: 10px;
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.ctcw-live-preview-canvas .style-9-left-hover .ctcw-icon {
+    width: 58px;
+    height: 58px;
+    padding: 15px;
+    border-radius: 50%;
+    background: var(--ctcw-green);
+}
+
+.ctcw-live-preview-canvas .style-9-left-hover .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    max-width: 0;
+    overflow: hidden;
+    padding: 0;
+    border-radius: 999px;
+    background: var(--ctcw-green);
+    opacity: 0;
+    white-space: nowrap;
+}
+
+.ctcw-live-preview-canvas .style-9-left-hover.is-hovering .ctcw-text {
+    max-width: 240px;
+    padding: 0 18px;
+    opacity: 1;
+}
