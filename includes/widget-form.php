@@ -59,11 +59,18 @@ $settingsSections = [
     <?php endif; ?>
 
     <div class="form-actions sticky-actions">
-        <a class="btn btn-light" href="dashboard.php">Back</a>
-        <button type="submit" class="btn btn-primary">Save Widget</button>
+        <div class="sticky-actions-copy">
+            <?php if (!empty($showLivePreview)): ?>
+                <p class="live-preview-helper">Floating preview shows unsaved changes. Save Widget to publish.</p>
+            <?php endif; ?>
+            <div class="sticky-actions-buttons">
+                <a class="btn btn-light" href="dashboard.php">Back</a>
+                <button type="submit" class="btn btn-primary">Save Widget</button>
+            </div>
+        </div>
     </div>
 
-    <div class="settings-workspace<?= !empty($showLivePreview) ? ' has-live-preview' : '' ?>" data-settings-workspace>
+    <div class="settings-workspace" data-settings-workspace>
         <aside class="settings-sidebar" aria-label="Widget settings sections">
             <div class="settings-sidebar-card">
                 <strong>Widget setup</strong>
@@ -521,10 +528,6 @@ $settingsSections = [
         <button type="submit" name="reset_custom_code" value="1" class="btn btn-light" data-reset-custom-code>Reset Custom Code</button>
     </section>
         </div>
-
-        <?php if (!empty($showLivePreview)): ?>
-            <?php require __DIR__ . '/live-widget-preview.php'; ?>
-        <?php endif; ?>
     </div>
 
     <script type="application/json" id="country-code-data"><?= json_for_html(country_code_options()) ?></script>

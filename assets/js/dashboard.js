@@ -451,20 +451,14 @@
 
 function initLiveWidgetPreview() {
     var form = document.querySelector('[data-widget-form]');
-    var canvas = document.getElementById('ctcwLivePreviewCanvas');
-    var previewRoot = document.getElementById('ctcwLiveWidgetPreview');
-    if (!form || !canvas || !previewRoot) {
+    var previewRoot = document.getElementById('ctcwAdminLivePreview');
+    if (!form || !previewRoot) {
         return;
     }
 
-    var toast = document.getElementById('ctcwLivePreviewToast');
-    var greetingToggle = document.getElementById('ctcwToggleGreetingPreview');
-    var badgesWrap = document.querySelector('[data-live-preview-badges]');
-    var customCssStyle = document.getElementById('ctcwLivePreviewCustomCss');
+    var customCssStyle = document.getElementById('ctcwAdminLivePreviewCustomCss');
     var iconNode = document.getElementById('ctcw-preview-icon');
     var whatsappIcon = '';
-    var greetingVisible = false;
-    var toastTimer = null;
 
     if (iconNode) {
         try {
@@ -505,37 +499,18 @@ function initLiveWidgetPreview() {
                 if (token === '') {
                     return token;
                 }
-                return '#ctcwLivePreviewCanvas ' + token;
+                return '#ctcwAdminLivePreview ' + token;
             }).join(', ');
 
             return before + scoped + '{';
         });
     }
 
-    function showPreviewToast(message) {
-        if (!toast) {
-            return;
-        }
-        toast.textContent = message;
-        toast.hidden = false;
-        window.clearTimeout(toastTimer);
-        toastTimer = window.setTimeout(function () {
-            toast.hidden = true;
-        }, 2600);
-    }
-
     function isPreviewOnline() {
-        var mode = getFieldValue('business_hours_mode');
-        if (mode === 'always_closed') {
-            return false;
-        }
-        if (mode === 'always_open') {
-            return true;
-        }
-        return true;
+        return getFieldValue('business_hours_mode') !== 'always_closed';
     }
 
-    function buildGreetingHtml() {
+    function buildGreetingHtml(verticalType, horizontalType) {
         if (!getFieldValue('greeting_enabled')) {
             return '';
         }
@@ -543,26 +518,30 @@ function initLiveWidgetPreview() {
         var title = escapeHtml(getFieldValue('greeting_title') || 'Hi 👋');
         var message = escapeHtml(getFieldValue('greeting_message') || 'Need Help? Contact Us !');
         var capturePhone = !!getFieldValue('greeting_capture_phone');
+        var forcePhone = !!getFieldValue('greeting_force_phone_capture');
         var placeholder = escapeHtml(getFieldValue('greeting_phone_placeholder') || 'Enter your phone number');
         var submitText = escapeHtml(getFieldValue('greeting_submit_text') || 'Continue to WhatsApp');
+        var forceNote = forcePhone
+            ? '<small class="ctcw-preview-force-note">Phone required before WhatsApp</small>'
+            : '';
 
         if (!capturePhone) {
-            return '<div class="ctcw-greeting' + (greetingVisible ? ' is-visible' : '') + '" data-preview-greeting>'
-                + '<button type="button" class="ctcw-close" aria-label="Close greeting" data-preview-close-greeting>&times;</button>'
+            return '<div class="ctcw-greeting is-visible">'
                 + '<strong>' + title + '</strong>'
                 + '<p>' + message + '</p>'
+                + forceNote
                 + '</div>';
         }
 
-        return '<div class="ctcw-greeting has-capture' + (greetingVisible ? ' is-visible' : '') + '" data-preview-greeting>'
-            + '<button type="button" class="ctcw-close" aria-label="Close greeting" data-preview-close-greeting>&times;</button>'
+        return '<div class="ctcw-greeting has-capture is-visible">'
             + '<div class="ctcw-greeting-form">'
             + '<strong>' + title + '</strong>'
             + '<p>' + message + '</p>'
+            + forceNote
             + '<div class="ctcw-phone-field">'
             + '<div class="ctcw-phone-row">'
-            + '<input class="ctcw-phone-input" type="tel" placeholder="' + placeholder + '" data-preview-phone>'
-            + '<button type="button" class="ctcw-greeting-submit" aria-label="' + submitText + '" data-preview-greeting-submit>'
+            + '<input class="ctcw-phone-input" type="tel" placeholder="' + placeholder + '" readonly tabindex="-1">'
+            + '<button type="button" class="ctcw-greeting-submit" aria-label="' + submitText + '" tabindex="-1">'
             + '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>'
             + '</button>'
             + '</div>'
@@ -577,7 +556,7 @@ function initLiveWidgetPreview() {
         var horizontalType = getFieldValue('desktop_horizontal_position_type') || 'right';
         var horizontalValue = getFieldValue('desktop_horizontal_position_value') || '25px';
 
-        previewRoot.style.position = 'absolute';
+        previewRoot.style.position = 'fixed';
         previewRoot.style.top = 'auto';
         previewRoot.style.bottom = 'auto';
         previewRoot.style.left = 'auto';
@@ -585,48 +564,8 @@ function initLiveWidgetPreview() {
         previewRoot.style[verticalType] = verticalValue;
         previewRoot.style[horizontalType] = horizontalValue;
 
-        var container = previewRoot.querySelector('.ctcw-container');
-        if (container) {
-            container.style.alignItems = horizontalType === 'left' ? 'flex-start' : 'flex-end';
-        }
-    }
-
-    function updatePreviewBadges() {
-        if (!badgesWrap) {
-            return;
-        }
-
-        badgesWrap.innerHTML = '';
-        var badges = [];
-
-        if (getFieldValue('greeting_force_phone_capture')) {
-            badges.push('Phone required before WhatsApp');
-        }
-        if (!getFieldValue('show_desktop')) {
-            badges.push('Hidden on desktop');
-        }
-        if (!getFieldValue('show_global')) {
-            badges.push('Hidden globally');
-        }
-
-        badges.forEach(function (label) {
-            var badge = document.createElement('span');
-            badge.className = 'ctcw-live-preview-badge';
-            badge.textContent = label;
-            badgesWrap.appendChild(badge);
-        });
-
-        badgesWrap.hidden = badges.length === 0;
-    }
-
-    function updateGreetingToggle() {
-        if (!greetingToggle) {
-            return;
-        }
-
-        var enabled = !!getFieldValue('greeting_enabled');
-        greetingToggle.hidden = !enabled;
-        greetingToggle.textContent = greetingVisible ? 'Hide greeting' : 'Show greeting';
+        previewRoot.classList.toggle('is-anchor-top', verticalType === 'top');
+        previewRoot.classList.toggle('is-anchor-left', horizontalType === 'left');
     }
 
     function updateCustomCssPreview() {
@@ -637,107 +576,37 @@ function initLiveWidgetPreview() {
         customCssStyle.textContent = scopePreviewCss(getFieldValue('custom_css'));
     }
 
-    function bindPreviewInteractions() {
-        var container = previewRoot.querySelector('.ctcw-container');
-        var button = previewRoot.querySelector('[data-preview-widget-button]');
-        if (!container || !button) {
-            return;
-        }
-
-        button.addEventListener('click', function (event) {
-            event.preventDefault();
-
-            if (!isPreviewOnline()) {
-                showPreviewToast('Preview mode: widget is offline.');
-                return;
-            }
-
-            if (getFieldValue('greeting_force_phone_capture') && getFieldValue('greeting_capture_phone')) {
-                greetingVisible = true;
-                renderLiveWidgetPreview();
-                showPreviewToast('Preview mode: enter phone number to continue.');
-                return;
-            }
-
-            showPreviewToast('Preview mode: WhatsApp redirect disabled.');
-        });
-
-        container.addEventListener('mouseenter', function () {
-            container.classList.add('is-hovering');
-        });
-        container.addEventListener('mouseleave', function () {
-            container.classList.remove('is-hovering');
-        });
-
-        var closeGreeting = previewRoot.querySelector('[data-preview-close-greeting]');
-        if (closeGreeting) {
-            closeGreeting.addEventListener('click', function (event) {
-                event.preventDefault();
-                greetingVisible = false;
-                renderLiveWidgetPreview();
-            });
-        }
-
-        var greetingSubmit = previewRoot.querySelector('[data-preview-greeting-submit]');
-        if (greetingSubmit) {
-            greetingSubmit.addEventListener('click', function (event) {
-                event.preventDefault();
-                showPreviewToast('Preview mode: lead capture disabled.');
-            });
-        }
-    }
-
     function renderLiveWidgetPreview() {
-        if (!getFieldValue('greeting_enabled')) {
-            greetingVisible = false;
-        }
-
         var style = getFieldValue('desktop_style') || 'style-1';
+        var verticalType = getFieldValue('desktop_vertical_position_type') || 'bottom';
+        var horizontalType = getFieldValue('desktop_horizontal_position_type') || 'right';
         var online = isPreviewOnline();
         var cta = escapeHtml(online ? (getFieldValue('call_to_action') || 'WhatsApp us') : (getFieldValue('offline_message') || 'We are currently offline.'));
-        var greetingMessage = escapeHtml(getFieldValue('greeting_message') || getFieldValue('call_to_action') || 'WhatsApp us');
-        var onlineClass = isPreviewOnline() ? 'is-online' : 'is-offline';
-        var hiddenClass = getFieldValue('show_desktop') ? '' : ' is-hidden';
-        var hoverBox = style === 'style-5'
-            ? '<span class="ctcw-hover-box">' + greetingMessage + '</span>'
-            : '';
+        var onlineClass = online ? 'is-online' : 'is-offline';
 
-        previewRoot.innerHTML = '<div class="ctcw-container ' + escapeHtml(style) + ' ' + onlineClass + hiddenClass + '">'
-            + buildGreetingHtml()
-            + '<button type="button" class="ctcw-widget" data-preview-widget-button>'
+        previewRoot.innerHTML = '<div class="ctcw-admin-live-preview-inner">'
+            + '<span class="ctcw-preview-badge">Preview</span>'
+            + '<div class="ctcw-container ' + escapeHtml(style) + ' ' + onlineClass + '">'
+            + buildGreetingHtml(verticalType, horizontalType)
+            + '<button type="button" class="ctcw-widget" tabindex="-1" aria-label="Widget preview">'
             + '<span class="ctcw-icon">' + whatsappIcon + '</span>'
             + '<span class="ctcw-text">' + cta + '</span>'
-            + hoverBox
             + '</button>'
+            + '</div>'
             + '</div>';
 
         updatePreviewPosition();
-        updatePreviewBadges();
-        updateGreetingToggle();
         updateCustomCssPreview();
-        bindPreviewInteractions();
-    }
-
-    if (greetingToggle) {
-        greetingToggle.addEventListener('click', function () {
-            if (!getFieldValue('greeting_enabled')) {
-                return;
-            }
-            greetingVisible = !greetingVisible;
-            renderLiveWidgetPreview();
-        });
     }
 
     var watchedNames = [
         'desktop_style',
         'mobile_style',
         'call_to_action',
-        'desktop_position_type',
         'desktop_vertical_position_type',
         'desktop_vertical_position_value',
         'desktop_horizontal_position_type',
         'desktop_horizontal_position_value',
-        'mobile_position_type',
         'mobile_vertical_position_type',
         'mobile_vertical_position_value',
         'mobile_horizontal_position_type',

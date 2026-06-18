@@ -486,113 +486,27 @@ code {
     gap: 24px;
 }
 
-.settings-workspace.has-live-preview {
-    grid-template-columns: 280px minmax(0, 1fr) 380px;
-}
-
-.ctcw-live-preview-column {
-    position: sticky;
-    top: 88px;
-}
-
-.ctcw-live-preview-card {
-    padding: 18px;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background: var(--card);
-    box-shadow: none;
-}
-
-.ctcw-live-preview-header {
+.sticky-actions-copy {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.sticky-actions-buttons {
+    display: flex;
+    align-items: center;
     gap: 12px;
-    margin-bottom: 14px;
+    flex-wrap: wrap;
 }
 
-.ctcw-live-preview-header h3 {
-    margin: 0 0 6px;
-    font-size: 18px;
-}
-
-.ctcw-live-preview-header p,
-.ctcw-live-preview-note {
+.live-preview-helper {
     margin: 0;
     color: var(--muted);
     font-size: 13px;
     line-height: 1.5;
-}
-
-.ctcw-live-preview-note {
-    display: block;
-    margin-top: 8px;
-}
-
-.ctcw-live-preview-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.ctcw-live-preview-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: var(--warning-soft);
-    color: var(--warning);
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.ctcw-fake-page {
-    position: absolute;
-    inset: 18px;
-    right: 42%;
-    pointer-events: none;
-}
-
-.ctcw-fake-header {
-    height: 18px;
-    width: 42%;
-    margin-bottom: 18px;
-    border-radius: 999px;
-    background: #dbeafe;
-}
-
-.ctcw-fake-line {
-    height: 12px;
-    margin-bottom: 10px;
-    border-radius: 999px;
-    background: #e2e8f0;
-}
-
-.ctcw-fake-line.short {
-    width: 72%;
-}
-
-.ctcw-fake-button {
-    width: 120px;
-    height: 36px;
-    margin-top: 18px;
-    border-radius: 12px;
-    background: #dbeafe;
-}
-
-.ctcw-live-preview-toast {
-    margin: 12px 0 0;
-    padding: 10px 12px;
-    border: 1px solid #bfdbfe;
-    border-radius: 12px;
-    background: #eff6ff;
-    color: var(--primary-dark);
-    font-size: 13px;
-}
-
-.ctcw-live-preview-toast[hidden] {
-    display: none;
 }
 
 .settings-sidebar {
@@ -1308,13 +1222,8 @@ code {
         grid-column: auto;
     }
 
-    .settings-workspace,
-    .settings-workspace.has-live-preview {
+    .settings-workspace {
         grid-template-columns: 1fr;
-    }
-
-    .ctcw-live-preview-column {
-        position: static;
     }
 
     .settings-sidebar {
