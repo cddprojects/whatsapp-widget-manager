@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS widgets (
     greeting_delay_seconds INT UNSIGNED NOT NULL DEFAULT 2,
     greeting_capture_phone TINYINT(1) NOT NULL DEFAULT 0,
     greeting_phone_required TINYINT(1) NOT NULL DEFAULT 1,
+    greeting_force_phone_capture TINYINT(1) NOT NULL DEFAULT 0,
     greeting_phone_placeholder VARCHAR(100) NOT NULL DEFAULT 'Enter your phone number',
     greeting_submit_text VARCHAR(100) NOT NULL DEFAULT 'Continue to WhatsApp',
     greeting_lead_success_message VARCHAR(255) NOT NULL DEFAULT 'Redirecting to WhatsApp...',

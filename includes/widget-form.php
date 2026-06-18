@@ -416,26 +416,45 @@ $settingsSections = [
             </label>
         </div>
         <label class="toggle-row">
-            <input type="checkbox" name="greeting_capture_phone" value="1"<?= checked($widget['greeting_capture_phone'] ?? 0) ?>>
+            <input type="checkbox" name="greeting_capture_phone" value="1" data-greeting-capture-toggle<?= checked($widget['greeting_capture_phone'] ?? 0) ?>>
             <span>Enable phone number capture</span>
         </label>
-        <label class="toggle-row">
-            <input type="checkbox" name="greeting_phone_required" value="1"<?= checked($widget['greeting_phone_required'] ?? 1) ?>>
-            <span>Phone number required</span>
-        </label>
-        <div class="form-grid two-columns">
-            <label>
-                <span>Phone input placeholder</span>
-                <input type="text" name="greeting_phone_placeholder" value="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>">
+        <div class="greeting-capture-options" data-greeting-capture-options>
+            <label class="toggle-row">
+                <input
+                    type="checkbox"
+                    name="greeting_force_phone_capture"
+                    value="1"
+                    data-greeting-force-toggle
+                    <?= checked($widget['greeting_force_phone_capture'] ?? 0) ?>
+                >
+                <span>Force user to insert phone number</span>
             </label>
-            <label>
-                <span>Submit button text</span>
-                <input type="text" name="greeting_submit_text" value="<?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?>">
+            <small class="field-helper">When enabled, visitors must enter their phone number before they can open WhatsApp.</small>
+            <label class="toggle-row">
+                <input
+                    type="checkbox"
+                    name="greeting_phone_required"
+                    value="1"
+                    data-greeting-phone-required
+                    <?= checked($widget['greeting_phone_required'] ?? 1) ?>
+                >
+                <span>Phone number required</span>
             </label>
-            <label class="span-2">
-                <span>Success message</span>
-                <input type="text" name="greeting_lead_success_message" value="<?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?>">
-            </label>
+            <div class="form-grid two-columns">
+                <label>
+                    <span>Phone input placeholder</span>
+                    <input type="text" name="greeting_phone_placeholder" value="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>">
+                </label>
+                <label>
+                    <span>Submit button text</span>
+                    <input type="text" name="greeting_submit_text" value="<?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?>">
+                </label>
+                <label class="span-2">
+                    <span>Success message</span>
+                    <input type="text" name="greeting_lead_success_message" value="<?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?>">
+                </label>
+            </div>
         </div>
     </section>
 

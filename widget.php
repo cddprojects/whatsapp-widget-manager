@@ -60,6 +60,7 @@ $widgetConfig = [
     'greetingDelaySeconds' => (int) $widget['greeting_delay_seconds'],
     'greetingCapturePhone' => !empty($widget['greeting_capture_phone']),
     'greetingPhoneRequired' => !empty($widget['greeting_phone_required']),
+    'greetingForcePhoneCapture' => !empty($widget['greeting_force_phone_capture']),
     'greetingPhonePlaceholder' => (string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number'),
     'greetingSubmitText' => (string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp'),
     'greetingLeadSuccessMessage' => (string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...'),
@@ -181,6 +182,9 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
         window.CTCW_WIDGET = <?= json_for_html($widgetConfig) ?>;
         window.CTCW_WIDGET_ID = <?= (int) $widget['id'] ?>;
         window.CTCW_PUBLIC_KEY = <?= json_for_html((string) $widget['public_key']) ?>;
+        window.CTCW_GREETING_CAPTURE_PHONE = <?= !empty($widget['greeting_capture_phone']) ? 'true' : 'false' ?>;
+        window.CTCW_FORCE_PHONE_CAPTURE = <?= !empty($widget['greeting_force_phone_capture']) ? 'true' : 'false' ?>;
+        window.CTCW_PHONE_REQUIRED = <?= !empty($widget['greeting_phone_required']) ? 'true' : 'false' ?>;
     </script>
     <script src="assets/js/widget.js?v=<?= (int) filemtime(__DIR__ . '/assets/js/widget.js') ?>"></script>
     <?= $widget['custom_script_footer'] ?? '' ?>

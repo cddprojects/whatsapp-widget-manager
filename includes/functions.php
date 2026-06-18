@@ -778,6 +778,7 @@ function default_widget_data(): array
         'greeting_delay_seconds' => 2,
         'greeting_capture_phone' => 0,
         'greeting_phone_required' => 1,
+        'greeting_force_phone_capture' => 0,
         'greeting_phone_placeholder' => 'Enter your phone number',
         'greeting_submit_text' => 'Continue to WhatsApp',
         'greeting_lead_success_message' => 'Redirecting to WhatsApp...',
@@ -899,8 +900,9 @@ function sanitize_widget_input(array $post): array
         'greeting_title' => trim((string) ($post['greeting_title'] ?? $defaults['greeting_title'])),
         'greeting_message' => trim((string) ($post['greeting_message'] ?? $defaults['greeting_message'])),
         'greeting_delay_seconds' => max(0, min(120, (int) ($post['greeting_delay_seconds'] ?? 2))),
-        'greeting_capture_phone' => post_checkbox('greeting_capture_phone'),
-        'greeting_phone_required' => post_checkbox('greeting_phone_required'),
+        'greeting_capture_phone' => 0,
+        'greeting_phone_required' => 0,
+        'greeting_force_phone_capture' => 0,
         'greeting_phone_placeholder' => trim((string) ($post['greeting_phone_placeholder'] ?? $defaults['greeting_phone_placeholder'])),
         'greeting_submit_text' => trim((string) ($post['greeting_submit_text'] ?? $defaults['greeting_submit_text'])),
         'greeting_lead_success_message' => trim((string) ($post['greeting_lead_success_message'] ?? $defaults['greeting_lead_success_message'])),
@@ -932,6 +934,24 @@ function sanitize_widget_input(array $post): array
     if ($data['greeting_lead_success_message'] === '') {
         $data['greeting_lead_success_message'] = $defaults['greeting_lead_success_message'];
     }
+
+    $greetingCapturePhone = post_checkbox('greeting_capture_phone');
+    $greetingForcePhoneCapture = post_checkbox('greeting_force_phone_capture');
+    $greetingPhoneRequired = post_checkbox('greeting_phone_required');
+
+    if (!$greetingCapturePhone) {
+        $greetingForcePhoneCapture = 0;
+    }
+
+    if ($greetingForcePhoneCapture) {
+        $greetingCapturePhone = 1;
+        $greetingPhoneRequired = 1;
+    }
+
+    $data['greeting_capture_phone'] = $greetingCapturePhone;
+    $data['greeting_phone_required'] = $greetingPhoneRequired;
+    $data['greeting_force_phone_capture'] = $greetingForcePhoneCapture;
+
     if ($sameMobile) {
         $data['mobile_position_type'] = $data['desktop_position_type'];
         $data['mobile_vertical_position_type'] = $data['desktop_vertical_position_type'];
