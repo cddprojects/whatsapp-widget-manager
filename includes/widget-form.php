@@ -59,18 +59,21 @@ $settingsSections = [
     <?php endif; ?>
 
     <div class="form-actions sticky-actions">
-        <div class="sticky-actions-copy">
-            <div class="sticky-actions-meta">
+        <div class="ctcw-save-bar<?= empty($showLivePreview) ? ' ctcw-save-bar--compact' : '' ?>">
+            <?php if (!empty($showLivePreview)): ?>
+                <div class="ctcw-save-note">
+                    Floating preview shows unsaved changes. Save Widget to publish.
+                </div>
+            <?php endif; ?>
+
+            <div class="ctcw-save-actions">
                 <?php if (!empty($showLivePreview)): ?>
-                    <p class="live-preview-helper">Floating preview shows unsaved changes. Save Widget to publish.</p>
-                    <label class="live-preview-toggle" for="ctcwEnableLivePreview">
+                    <label class="ctcw-preview-toggle" for="ctcwEnableLivePreview">
                         <input type="checkbox" id="ctcwEnableLivePreview" data-live-preview-toggle checked>
-                        <span>Enable live preview</span>
+                        <span class="ctcw-toggle-ui" aria-hidden="true"></span>
+                        <span class="ctcw-toggle-text">Enable live preview</span>
                     </label>
-                    <p class="live-preview-toggle-helper">Show a floating preview on this page while editing. Preview does not redirect to WhatsApp.</p>
                 <?php endif; ?>
-            </div>
-            <div class="sticky-actions-buttons">
                 <a class="btn btn-light" href="dashboard.php">Back</a>
                 <button type="submit" class="btn btn-primary">Save Widget</button>
             </div>
