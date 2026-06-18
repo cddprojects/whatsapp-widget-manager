@@ -1433,6 +1433,26 @@ function generate_temporary_password(int $length = 14): string
     return $password;
 }
 
+function validate_client_password(string $password, string $confirmPassword): array
+{
+    $errors = [];
+
+    if ($password === '') {
+        $errors[] = 'Password is required.';
+    }
+    if ($confirmPassword === '') {
+        $errors[] = 'Confirm password is required.';
+    }
+    if ($password !== '' && $confirmPassword !== '' && $password !== $confirmPassword) {
+        $errors[] = 'Password and confirm password do not match.';
+    }
+    if ($password !== '' && strlen($password) < 8) {
+        $errors[] = 'Password must be at least 8 characters.';
+    }
+
+    return $errors;
+}
+
 function dashboard_summary_stats(): array
 {
     $clients = db()->query("SELECT COUNT(*) FROM users WHERE role = '" . ROLE_CLIENT . "'")->fetchColumn();

@@ -9,7 +9,7 @@ $name = '';
 $email = '';
 $status = USER_STATUS_ACTIVE;
 $password = '';
-$generatedPassword = null;
+$confirmPassword = '';
 
 if (is_post()) {
     verify_csrf();
@@ -17,7 +17,7 @@ if (is_post()) {
     $email = strtolower(trim((string) ($_POST['email'] ?? '')));
     $status = (string) ($_POST['status'] ?? USER_STATUS_ACTIVE);
     $password = (string) ($_POST['password'] ?? '');
-    $autoGenerate = !empty($_POST['auto_generate']);
+    $confirmPassword = (string) ($_POST['confirm_password'] ?? '');
 
     if ($name === '') {
         $errors[] = 'Client name is required.';
@@ -29,16 +29,7 @@ if (is_post()) {
         $status = USER_STATUS_ACTIVE;
     }
 
-    if ($autoGenerate) {
-        $password = generate_temporary_password();
-        $generatedPassword = $password;
-    }
-
-    if ($password === '') {
-        $errors[] = 'Temporary password is required.';
-    } elseif (strlen($password) < 8) {
-        $errors[] = 'Password must be at least 8 characters.';
-    }
+    $errors = array_merge($errors, validate_client_password($password, $confirmPassword));
 
     if (!$errors) {
         $stmt = db()->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
@@ -58,12 +49,9 @@ if (is_post()) {
                 'status' => $status,
             ]);
             $clientId = (int) db()->lastInsertId();
-            if ($generatedPassword !== null) {
-                flash('success', 'Client account created. Copy the temporary password now.');
-                $_SESSION['created_client_password'] = $generatedPassword;
-            } else {
-                flash('success', 'Client account created.');
-            }
+            flash('success', 'Client created successfully.');
+            $_SESSION['created_client_password'] = $password;
+            $_SESSION['created_client_email'] = $email;
             redirect('admin-client-detail.php?id=' . $clientId);
         }
     }
@@ -90,7 +78,7 @@ require __DIR__ . '/includes/header.php';
         </div>
     <?php endif; ?>
 
-    <form method="post" class="admin-form-grid">
+    <form method="post" class="admin-form-grid" data-client-create-form novalidate>
         <?= csrf_field() ?>
         <label>
             <span>Client name</span>
@@ -100,9 +88,41 @@ require __DIR__ . '/includes/header.php';
             <span>Client email</span>
             <input type="email" name="email" value="<?= e($email) ?>" required>
         </label>
-        <label>
-            <span>Temporary password</span>
-            <input type="text" name="password" value="<?= e($password) ?>" minlength="8" autocomplete="new-password">
+        <label class="span-full">
+            <span>Password</span>
+            <div class="password-field-row">
+                <input
+                    type="password"
+                    name="password"
+                    id="clientPassword"
+                    value="<?= e($password) ?>"
+                    minlength="8"
+                    autocomplete="new-password"
+                    data-client-password
+                    required
+                >
+                <button type="button" class="btn btn-light btn-compact" data-toggle-client-password>Show</button>
+                <button type="button" class="btn btn-light" data-generate-client-password>Generate</button>
+            </div>
+            <p class="field-helper">Use at least 16 characters with uppercase, lowercase, numbers, and symbols.</p>
+            <div class="password-strength" data-password-strength aria-live="polite">
+                <span class="password-strength-label">Password strength: <strong data-strength-text>Weak</strong></span>
+                <span class="password-strength-bar" data-strength-bar aria-hidden="true"></span>
+            </div>
+            <p class="field-error" data-password-match-error hidden>Password and confirm password do not match.</p>
+        </label>
+        <label class="span-full">
+            <span>Confirm password</span>
+            <input
+                type="password"
+                name="confirm_password"
+                id="clientConfirmPassword"
+                value="<?= e($confirmPassword) ?>"
+                minlength="8"
+                autocomplete="new-password"
+                data-client-confirm-password
+                required
+            >
         </label>
         <label>
             <span>Status</span>
@@ -110,10 +130,6 @@ require __DIR__ . '/includes/header.php';
                 <option value="<?= e(USER_STATUS_ACTIVE) ?>"<?= selected($status, USER_STATUS_ACTIVE) ?>>Active</option>
                 <option value="<?= e(USER_STATUS_DISABLED) ?>"<?= selected($status, USER_STATUS_DISABLED) ?>>Disabled</option>
             </select>
-        </label>
-        <label class="checkbox-row">
-            <input type="checkbox" name="auto_generate" value="1">
-            <span>Auto-generate secure password on submit</span>
         </label>
         <div class="form-actions span-full">
             <button type="submit" class="btn btn-primary">Create client</button>

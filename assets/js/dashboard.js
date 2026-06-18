@@ -447,7 +447,182 @@
     });
 
     initLiveWidgetPreview();
+    initClientCreateForm();
 })();
+
+function initClientCreateForm() {
+    var form = document.querySelector('[data-client-create-form]');
+    if (!form) {
+        return;
+    }
+
+    var passwordInput = form.querySelector('[data-client-password]');
+    var confirmInput = form.querySelector('[data-client-confirm-password]');
+    var generateButton = form.querySelector('[data-generate-client-password]');
+    var toggleButton = form.querySelector('[data-toggle-client-password]');
+    var strengthRoot = form.querySelector('[data-password-strength]');
+    var strengthText = form.querySelector('[data-strength-text]');
+    var matchError = form.querySelector('[data-password-match-error]');
+
+    if (!passwordInput || !confirmInput) {
+        return;
+    }
+
+    var upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var lower = 'abcdefghijklmnopqrstuvwxyz';
+    var numbers = '0123456789';
+    var symbols = '!@#$%^&*()_+-=[]{};:,.?/~';
+    var allChars = upper + lower + numbers + symbols;
+
+    function randomChar(set) {
+        var array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        return set.charAt(array[0] % set.length);
+    }
+
+    function shuffleChars(chars) {
+        var list = chars.slice();
+        var index = list.length - 1;
+
+        while (index > 0) {
+            var array = new Uint32Array(1);
+            window.crypto.getRandomValues(array);
+            var swapIndex = array[0] % (index + 1);
+            var temp = list[index];
+            list[index] = list[swapIndex];
+            list[swapIndex] = temp;
+            index -= 1;
+        }
+
+        return list;
+    }
+
+    function generateSecurePassword(length) {
+        var size = length || 16;
+        var required = [
+            randomChar(upper),
+            randomChar(lower),
+            randomChar(numbers),
+            randomChar(symbols)
+        ];
+        var passwordChars = required.slice();
+
+        while (passwordChars.length < size) {
+            passwordChars.push(randomChar(allChars));
+        }
+
+        return shuffleChars(passwordChars).join('');
+    }
+
+    function getPasswordStrength(password) {
+        if (!password) {
+            return { level: 'weak', label: 'Weak' };
+        }
+
+        var hasUpper = /[A-Z]/.test(password);
+        var hasLower = /[a-z]/.test(password);
+        var hasNumber = /[0-9]/.test(password);
+        var hasSymbol = /[!@#$%^&*()_+\-=[\]{};:,.?/~]/.test(password);
+        var types = [hasUpper, hasLower, hasNumber, hasSymbol].filter(Boolean).length;
+
+        if (password.length >= 16 && hasUpper && hasLower && hasNumber && hasSymbol) {
+            return { level: 'strong', label: 'Strong' };
+        }
+        if (password.length >= 8 && types >= 2) {
+            return { level: 'normal', label: 'Normal' };
+        }
+        return { level: 'weak', label: 'Weak' };
+    }
+
+    function updateStrengthIndicator() {
+        if (!strengthRoot || !strengthText) {
+            return;
+        }
+
+        var strength = getPasswordStrength(passwordInput.value);
+        strengthRoot.classList.remove('is-weak', 'is-normal', 'is-strong');
+        strengthRoot.classList.add('is-' + strength.level);
+        strengthText.textContent = strength.label;
+    }
+
+    function updateMatchError() {
+        if (!matchError) {
+            return;
+        }
+
+        var mismatch = confirmInput.value !== '' && passwordInput.value !== confirmInput.value;
+        matchError.hidden = !mismatch;
+        confirmInput.setCustomValidity(mismatch ? 'Password and confirm password do not match.' : '');
+    }
+
+    function fillGeneratedPassword(value) {
+        passwordInput.value = value;
+        confirmInput.value = value;
+        passwordInput.type = 'text';
+        confirmInput.type = 'text';
+        if (toggleButton) {
+            toggleButton.textContent = 'Hide';
+        }
+        updateStrengthIndicator();
+        updateMatchError();
+        passwordInput.focus();
+        passwordInput.select();
+    }
+
+    if (generateButton) {
+        generateButton.addEventListener('click', function () {
+            fillGeneratedPassword(generateSecurePassword(16));
+        });
+    }
+
+    if (toggleButton) {
+        toggleButton.addEventListener('click', function () {
+            var showing = passwordInput.type === 'text';
+            passwordInput.type = showing ? 'password' : 'text';
+            confirmInput.type = showing ? 'password' : 'text';
+            toggleButton.textContent = showing ? 'Show' : 'Hide';
+        });
+    }
+
+    passwordInput.addEventListener('input', function () {
+        updateStrengthIndicator();
+        updateMatchError();
+    });
+    confirmInput.addEventListener('input', updateMatchError);
+
+    form.addEventListener('submit', function (event) {
+        updateMatchError();
+
+        if (passwordInput.value === '') {
+            event.preventDefault();
+            passwordInput.reportValidity();
+            return;
+        }
+
+        if (confirmInput.value === '') {
+            event.preventDefault();
+            confirmInput.reportValidity();
+            return;
+        }
+
+        if (passwordInput.value.length < 8) {
+            event.preventDefault();
+            passwordInput.setCustomValidity('Password must be at least 8 characters.');
+            passwordInput.reportValidity();
+            passwordInput.setCustomValidity('');
+            return;
+        }
+
+        if (passwordInput.value !== confirmInput.value) {
+            event.preventDefault();
+            updateMatchError();
+            confirmInput.focus();
+        }
+    });
+
+    updateStrengthIndicator();
+    updateMatchError();
+}
 
 function initLiveWidgetPreview() {
     var form = document.querySelector('[data-widget-form]');
