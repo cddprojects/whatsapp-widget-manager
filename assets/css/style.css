@@ -877,6 +877,78 @@ code {
 .btn-danger-soft {
     color: var(--danger);
     background: var(--danger-soft);
+    border: 1px solid #fecaca;
+}
+
+.danger-zone-card {
+    margin-top: 24px;
+    border-color: #fecaca;
+    background: #fffafa;
+}
+
+.danger-zone-card h2 {
+    margin: 0 0 8px;
+    color: var(--danger);
+}
+
+.danger-zone-copy {
+    margin: 0 0 16px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.danger-zone-summary {
+    margin-bottom: 20px;
+}
+
+.danger-zone-form {
+    display: grid;
+    gap: 20px;
+}
+
+.danger-zone-options {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.danger-zone-options legend {
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.radio-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.radio-card input {
+    width: auto !important;
+    min-height: 0 !important;
+    margin-top: 4px;
+}
+
+.radio-card strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.radio-card small {
+    display: block;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.danger-zone-confirm input {
+    max-width: 280px;
 }
 
 .btn-small {

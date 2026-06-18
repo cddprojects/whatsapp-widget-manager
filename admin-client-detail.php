@@ -148,6 +148,12 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </section>
 
+<section class="settings-card danger-zone-card">
+    <h2>Danger Zone</h2>
+    <p class="danger-zone-copy">Delete this client account. You can either reassign their widgets to superadmin or delete all related widgets.</p>
+    <a class="btn btn-danger-soft" href="admin-client-delete.php?id=<?= (int) $client['id'] ?>">Delete Client</a>
+</section>
+
 <div class="form-actions">
     <a class="btn btn-light" href="admin-clients.php">Back to Clients</a>
 </div>
