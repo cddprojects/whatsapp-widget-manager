@@ -12,6 +12,9 @@ $currentPage = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($pageTitle) ?> - <?= e(APP_NAME) ?></title>
     <link rel="stylesheet" href="assets/css/style.css?v=<?= (int) filemtime(__DIR__ . '/../assets/css/style.css') ?>">
+    <?php foreach ($pageStylesheets ?? [] as $stylesheet): ?>
+        <link rel="stylesheet" href="<?= e($stylesheet) ?>?v=<?= (int) filemtime(__DIR__ . '/../' . ltrim($stylesheet, '/')) ?>">
+    <?php endforeach; ?>
 </head>
 <body class="app-shell">
 <header class="topbar">

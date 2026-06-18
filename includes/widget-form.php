@@ -63,7 +63,7 @@ $settingsSections = [
         <button type="submit" class="btn btn-primary">Save Widget</button>
     </div>
 
-    <div class="settings-workspace" data-settings-workspace>
+    <div class="settings-workspace<?= !empty($showLivePreview) ? ' has-live-preview' : '' ?>" data-settings-workspace>
         <aside class="settings-sidebar" aria-label="Widget settings sections">
             <div class="settings-sidebar-card">
                 <strong>Widget setup</strong>
@@ -521,6 +521,10 @@ $settingsSections = [
         <button type="submit" name="reset_custom_code" value="1" class="btn btn-light" data-reset-custom-code>Reset Custom Code</button>
     </section>
         </div>
+
+        <?php if (!empty($showLivePreview)): ?>
+            <?php require __DIR__ . '/live-widget-preview.php'; ?>
+        <?php endif; ?>
     </div>
 
     <script type="application/json" id="country-code-data"><?= json_for_html(country_code_options()) ?></script>

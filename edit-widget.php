@@ -36,6 +36,8 @@ if (is_post()) {
 }
 
 $pageTitle = 'Edit Widget';
+$showLivePreview = true;
+$pageStylesheets = ['assets/css/widget-live-preview.css'];
 require __DIR__ . '/includes/header.php';
 ?>
 
