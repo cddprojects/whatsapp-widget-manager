@@ -16,7 +16,7 @@
     var currentState = 'normal';
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var hoverTimer = null;
-    var greetingCaptureSize = [320, 340];
+    var greetingCaptureSize = config.greetingForcePhoneCapture ? [420, 380] : [320, 340];
     var pageContext = {
         url: '',
         title: ''
@@ -53,6 +53,24 @@
         return !!(greeting && greeting.classList.contains('is-visible'));
     }
 
+    function isForcePhoneCapture() {
+        return !!(
+            config.greetingForcePhoneCapture
+            && config.greetingCapturePhone
+            && config.greetingEnabled
+            && greeting
+            && phoneInput
+        );
+    }
+
+    function resetSubmitButton(submitButton) {
+        if (!submitButton) {
+            return;
+        }
+        submitButton.disabled = false;
+        submitButton.classList.remove('is-loading');
+    }
+
     function closeGreetingDialog() {
         if (!greeting) {
             return;
@@ -62,10 +80,7 @@
         if (greetingSuccess) {
             greetingSuccess.hidden = true;
         }
-        if (greetingSubmit) {
-            greetingSubmit.disabled = false;
-            greetingSubmit.classList.remove('is-loading');
-        }
+        resetSubmitButton(greetingSubmit);
         currentState = 'normal';
         reportMappedSize('normal');
         reportSize();
@@ -177,34 +192,10 @@
         openUrl(url);
     }
 
-    function saveLeadAndRedirect(url, submitButton) {
-        var phone = phoneInput ? phoneInput.value.trim() : '';
-        var phoneRequired = !!config.greetingPhoneRequired;
-        var shouldSave = phone !== '' && isValidPhone(phone);
-
-        if (phoneRequired && !isValidPhone(phone)) {
-            showPhoneError('Please enter a valid phone number.');
-            reportSize();
-            scheduleSizeReports();
-            return;
-        }
-
-        showPhoneError('');
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.classList.add('is-loading');
-        }
-
-        closeGreetingDialog();
-
-        if (!shouldSave || !config.saveLeadUrl) {
-            redirectToWhatsapp(url);
-            return;
-        }
-
+    function saveLead(phone, url) {
         var leadPage = getLeadPageContext();
 
-        fetch(config.saveLeadUrl, {
+        return fetch(config.saveLeadUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -224,13 +215,77 @@
             })
             .then(function (data) {
                 if (!data || !data.success) {
-                    console.warn('Lead save failed:', data && data.message ? data.message : 'Unknown error');
+                    throw new Error(data && data.message ? data.message : 'Save failed');
                 }
+                return data;
+            });
+    }
+
+    function handlePhoneCaptureSubmit(submitButton) {
+        if (!config.online) {
+            return;
+        }
+
+        var url = buildUrl();
+        var phone = phoneInput ? phoneInput.value.trim() : '';
+        var forceMode = isForcePhoneCapture();
+        var invalidMessage = forceMode
+            ? 'Please enter a valid phone number before continuing.'
+            : 'Please enter a valid phone number.';
+
+        if (phone === '' || !isValidPhone(phone)) {
+            if (forceMode || config.greetingPhoneRequired || phone !== '') {
+                showPhoneError(invalidMessage);
+                reportSize();
+                scheduleSizeReports();
+                return;
+            }
+        }
+
+        showPhoneError('');
+
+        if (phone === '' || !isValidPhone(phone)) {
+            closeGreetingDialog();
+            redirectToWhatsapp(url);
+            return;
+        }
+
+        if (!config.saveLeadUrl) {
+            if (forceMode) {
+                showPhoneError('We could not save your phone number. Please try again.');
+                reportSize();
+                scheduleSizeReports();
+                return;
+            }
+            closeGreetingDialog();
+            redirectToWhatsapp(url);
+            return;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.classList.add('is-loading');
+        }
+
+        if (!forceMode) {
+            closeGreetingDialog();
+        }
+
+        saveLead(phone, url)
+            .then(function () {
+                if (forceMode && greetingSuccess) {
+                    greetingSuccess.hidden = false;
+                }
+                redirectToWhatsapp(url);
             })
-            .catch(function (error) {
-                console.warn('Lead save failed:', error);
-            })
-            .finally(function () {
+            .catch(function () {
+                if (forceMode) {
+                    resetSubmitButton(submitButton);
+                    showPhoneError('We could not save your phone number. Please try again.');
+                    reportSize();
+                    scheduleSizeReports();
+                    return;
+                }
                 redirectToWhatsapp(url);
             });
     }
@@ -369,6 +424,9 @@
     }
 
     function revealGreeting() {
+        if (!greeting) {
+            return;
+        }
         currentState = 'greeting';
         var size = sizeForState('greeting');
         sendWidgetSize(size[0], size[1], 'greeting');
@@ -379,6 +437,56 @@
                 scheduleSizeReports();
             });
         });
+    }
+
+    function showGreetingPhoneCapture() {
+        if (!greeting) {
+            return;
+        }
+        if (greetingSuccess) {
+            greetingSuccess.hidden = true;
+        }
+        showPhoneError('');
+        resetSubmitButton(greetingSubmit);
+        revealGreeting();
+        window.setTimeout(function () {
+            if (phoneInput) {
+                phoneInput.focus();
+            }
+            reportSize();
+            scheduleSizeReports();
+        }, 60);
+    }
+
+    function handleWhatsAppClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') {
+            event.stopImmediatePropagation();
+        }
+
+        if (isOpening) {
+            return;
+        }
+        isOpening = true;
+        window.setTimeout(function () {
+            isOpening = false;
+        }, 1200);
+
+        if (!config.online) {
+            reportMappedSize('animation');
+            button.classList.add('is-shaking');
+            scheduleSizeReports();
+            window.setTimeout(function () { button.classList.remove('is-shaking'); }, 400);
+            return;
+        }
+
+        if (isForcePhoneCapture()) {
+            showGreetingPhoneCapture();
+            return;
+        }
+
+        openUrl(buildUrl());
     }
 
     if (config.greetingEnabled && greeting) {
@@ -395,10 +503,7 @@
     if (greetingSubmit) {
         greetingSubmit.addEventListener('click', function (event) {
             event.preventDefault();
-            if (!config.online) {
-                return;
-            }
-            saveLeadAndRedirect(buildUrl(), greetingSubmit);
+            handlePhoneCaptureSubmit(greetingSubmit);
         });
     }
 
@@ -437,31 +542,7 @@
     container.addEventListener('mouseleave', endHover);
     button.addEventListener('mouseenter', startHover);
     button.addEventListener('mouseleave', endHover);
-
-    button.addEventListener('click', function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (typeof event.stopImmediatePropagation === 'function') {
-            event.stopImmediatePropagation();
-        }
-
-        if (isOpening) {
-            return;
-        }
-        isOpening = true;
-        window.setTimeout(function () {
-            isOpening = false;
-        }, 1200);
-
-        if (!config.online) {
-            reportMappedSize('animation');
-            button.classList.add('is-shaking');
-            scheduleSizeReports();
-            window.setTimeout(function () { button.classList.remove('is-shaking'); }, 400);
-            return;
-        }
-        openUrl(buildUrl());
-    }, true);
+    button.addEventListener('click', handleWhatsAppClick, true);
 
     window.addEventListener('message', function (event) {
         if (!event.data) {

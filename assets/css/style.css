@@ -1429,6 +1429,24 @@ code {
     font-size: 13px;
 }
 
+.field-helper {
+    display: block;
+    margin: -4px 0 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.greeting-capture-options.is-disabled {
+    opacity: 0.55;
+}
+
+.greeting-capture-options.is-disabled input:not([data-greeting-capture-toggle]),
+.greeting-capture-options.is-disabled select,
+.greeting-capture-options.is-disabled textarea {
+    pointer-events: none;
+}
+
 .sr-only {
     position: absolute;
     width: 1px;

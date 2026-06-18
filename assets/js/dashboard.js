@@ -27,6 +27,39 @@
         table.hidden = mode.value !== 'custom';
     }
 
+    function refreshGreetingCaptureOptions() {
+        var captureToggle = document.querySelector('[data-greeting-capture-toggle]');
+        var options = document.querySelector('[data-greeting-capture-options]');
+        var forceToggle = document.querySelector('[data-greeting-force-toggle]');
+        var requiredToggle = document.querySelector('[data-greeting-phone-required]');
+        if (!captureToggle || !options) {
+            return;
+        }
+
+        var captureEnabled = captureToggle.checked;
+        options.hidden = !captureEnabled;
+        options.classList.toggle('is-disabled', !captureEnabled);
+        options.querySelectorAll('input, select, textarea').forEach(function (field) {
+            if (field === captureToggle) {
+                return;
+            }
+            field.disabled = !captureEnabled;
+        });
+
+        if (!captureEnabled && forceToggle) {
+            forceToggle.checked = false;
+        }
+
+        if (forceToggle && requiredToggle) {
+            if (forceToggle.checked) {
+                requiredToggle.checked = true;
+                requiredToggle.disabled = true;
+            } else if (captureEnabled) {
+                requiredToggle.disabled = false;
+            }
+        }
+    }
+
     function renumberRandomRows() {
         document.querySelectorAll('[data-random-number-list] .repeat-row').forEach(function (row, index) {
             row.querySelectorAll('select, input').forEach(function (input) {
@@ -170,6 +203,16 @@
         businessMode.addEventListener('change', refreshBusinessHours);
         refreshBusinessHours();
     }
+
+    var greetingCaptureToggle = document.querySelector('[data-greeting-capture-toggle]');
+    var greetingForceToggle = document.querySelector('[data-greeting-force-toggle]');
+    if (greetingCaptureToggle) {
+        greetingCaptureToggle.addEventListener('change', refreshGreetingCaptureOptions);
+    }
+    if (greetingForceToggle) {
+        greetingForceToggle.addEventListener('change', refreshGreetingCaptureOptions);
+    }
+    refreshGreetingCaptureOptions();
 
     document.querySelectorAll('[data-style-select]').forEach(function (select) {
         select.addEventListener('change', refreshSelectedStyleCards);
