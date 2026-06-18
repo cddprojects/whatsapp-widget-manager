@@ -1423,6 +1423,12 @@ code {
     white-space: pre-wrap;
 }
 
+.upload-helper-text {
+    margin: -6px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
 .sr-only {
     position: absolute;
     width: 1px;

@@ -90,6 +90,11 @@ require __DIR__ . '/includes/header.php';
                     <pre>+60123456789
 +6581234567</pre>
                 </div>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="replace_existing" value="1">
+                    <span>Replace existing active numbers</span>
+                </label>
+                <p class="upload-helper-text">If unchecked, uploaded numbers will be added to your current active numbers.</p>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Upload Numbers</button>
                 </div>

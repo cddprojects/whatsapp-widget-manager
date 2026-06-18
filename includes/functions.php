@@ -613,6 +613,111 @@ function client_active_phone_numbers(array $widget): array
     ]];
 }
 
+function get_widget_active_numbers(array $widget): array
+{
+    return client_active_phone_numbers($widget);
+}
+
+function phone_number_dedupe_key(array $number): string
+{
+    $entry = strip_phone_number_entry($number);
+    if ($entry['full_number'] !== '') {
+        return clean_phone_number($entry['full_number']);
+    }
+
+    if ($entry['number'] === '') {
+        return '';
+    }
+
+    return clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+}
+
+function remove_duplicate_phone_numbers(array $numbers): array
+{
+    $unique = [];
+    $seen = [];
+
+    foreach ($numbers as $number) {
+        if (!is_array($number)) {
+            continue;
+        }
+
+        $entry = strip_phone_number_entry($number);
+        if ($entry['number'] === '') {
+            continue;
+        }
+
+        if ($entry['full_number'] === '') {
+            $entry['full_number'] = clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+        }
+
+        $key = clean_phone_number($entry['full_number']);
+        if ($key === '' || isset($seen[$key])) {
+            continue;
+        }
+
+        $seen[$key] = true;
+        $unique[] = $entry;
+    }
+
+    return $unique;
+}
+
+function merge_phone_numbers_with_stats(array $existingNumbers, array $uploadedNumbers): array
+{
+    $merged = remove_duplicate_phone_numbers($existingNumbers);
+    $existingKeys = [];
+    foreach ($merged as $number) {
+        $key = phone_number_dedupe_key($number);
+        if ($key !== '') {
+            $existingKeys[$key] = true;
+        }
+    }
+
+    $added = 0;
+    $duplicatesSkipped = 0;
+
+    foreach ($uploadedNumbers as $number) {
+        if (!is_array($number)) {
+            continue;
+        }
+
+        $entry = strip_phone_number_entry($number);
+        if ($entry['number'] === '') {
+            continue;
+        }
+
+        if ($entry['full_number'] === '') {
+            $entry['full_number'] = clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+        }
+
+        $key = clean_phone_number($entry['full_number']);
+        if ($key === '') {
+            continue;
+        }
+
+        if (isset($existingKeys[$key])) {
+            $duplicatesSkipped++;
+            continue;
+        }
+
+        $existingKeys[$key] = true;
+        $merged[] = $entry;
+        $added++;
+    }
+
+    return [
+        'numbers' => remove_duplicate_phone_numbers($merged),
+        'added' => $added,
+        'duplicates_skipped' => $duplicatesSkipped,
+    ];
+}
+
+function merge_phone_numbers(array $existingNumbers, array $uploadedNumbers): array
+{
+    return merge_phone_numbers_with_stats($existingNumbers, $uploadedNumbers)['numbers'];
+}
+
 function default_business_hours(): array
 {
     $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -1180,6 +1285,18 @@ function build_phone_widget_update(array $numbers): ?array
         'use_random_numbers' => 1,
         'random_numbers_json' => json_encode(array_values($payload)),
     ];
+}
+
+function save_widget_phone_numbers(int $widgetId, array $numbers): bool
+{
+    $update = build_phone_widget_update($numbers);
+    if ($update === null) {
+        return false;
+    }
+
+    update_widget_phone_fields($widgetId, $update);
+
+    return true;
 }
 
 function sanitize_client_phone_manual_input(array $post): ?array
