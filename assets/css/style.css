@@ -495,11 +495,20 @@ code {
     flex-wrap: wrap;
 }
 
+.sticky-actions-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1 1 280px;
+    min-width: 0;
+}
+
 .sticky-actions-buttons {
     display: flex;
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    flex: 0 0 auto;
 }
 
 .live-preview-helper {
@@ -509,18 +518,25 @@ code {
     line-height: 1.5;
 }
 
-.preview-frame-debug-toggle {
+.live-preview-toggle {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin: 8px 0 0;
-    color: var(--muted);
-    font-size: 13px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
 }
 
-.preview-frame-debug-toggle input {
+.live-preview-toggle input {
     margin: 0;
+}
+
+.live-preview-toggle-helper {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 .settings-sidebar {
