@@ -1225,6 +1225,15 @@ code {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 18px;
+    align-items: end;
+}
+
+.admin-filter-bar .form-actions {
+    flex-wrap: nowrap;
+}
+
+.admin-filter-bar .form-actions .btn {
+    padding-block: 12px;
 }
 
 .search-field {
