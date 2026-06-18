@@ -30,21 +30,15 @@ if (!$isSystemPreview && !domain_matches_referrer($widget, $referrer)) {
 
 $frameId = 'ctcw-frame-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $widget['id']);
 $widgetSrc = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
-$desktopSize = widget_style_frame_size((string) ($widget['desktop_style'] ?? 'style-1'));
-$mobileSize = widget_style_frame_size((string) ($widget['mobile_style'] ?? 'style-1'));
 $config = [
     'widgetId' => (string) $widget['id'],
     'frameId' => $frameId,
     'src' => $widgetSrc,
-    'greetingCapturePhone' => !empty($widget['greeting_capture_phone']),
-    'greetingEnabled' => !empty($widget['greeting_enabled']),
     'desktop' => [
         'position' => iframe_position_settings($widget, 'desktop'),
-        'size' => $desktopSize,
     ],
     'mobile' => [
         'position' => iframe_position_settings($widget, 'mobile'),
-        'size' => $mobileSize,
     ],
 ];
 ?>
@@ -54,7 +48,7 @@ $config = [
     var config = <?= json_for_html($config) ?>;
     var iframe = document.getElementById(config.frameId);
     var lastSize = null;
-    var lastState = 'normal';
+    var defaultSize = { width: 120, height: 120 };
 
     function isMobile() {
         return window.innerWidth <= 767;
@@ -72,39 +66,10 @@ $config = [
         return config.src + '&mode=' + encodeURIComponent(activeMode());
     }
 
-    function maxWidth() {
-        return Math.max(120, window.innerWidth - 16);
-    }
-
-    function maxHeight() {
-        return Math.max(120, window.innerHeight - 16);
-    }
-
-    function minimumForState(state) {
-        if (state === 'greeting') {
-            if (config.greetingCapturePhone) {
-                return { width: 320, height: 340 };
-            }
-            return { width: 380, height: 280 };
-        }
-
-        var active = activeConfig();
-        var size = active.size || { width: 120, height: 120 };
-        if (size.width > 180) {
-            return {
-                width: Math.max(280, size.width),
-                height: Math.max(120, size.height)
-            };
-        }
-
-        return { width: 120, height: 120 };
-    }
-
-    function clampSize(width, height, state) {
-        var minimum = minimumForState(state);
+    function clampSize(width, height) {
         return {
-            width: Math.min(maxWidth(), Math.max(minimum.width, parseInt(width, 10) || minimum.width)),
-            height: Math.min(maxHeight(), Math.max(minimum.height, parseInt(height, 10) || minimum.height))
+            width: Math.min(window.innerWidth - 16, Math.max(80, parseInt(width, 10) || defaultSize.width)),
+            height: Math.min(window.innerHeight - 16, Math.max(80, parseInt(height, 10) || defaultSize.height))
         };
     }
 
@@ -121,13 +86,12 @@ $config = [
         iframe.style[position.horizontalSide] = position.horizontalValue;
     }
 
-    function applySize(width, height, state) {
-        var size = clampSize(width, height, state);
-        if (lastSize && lastSize.width === size.width && lastSize.height === size.height && lastState === (state || 'normal')) {
+    function applySize(width, height) {
+        var size = clampSize(width, height);
+        if (lastSize && lastSize.width === size.width && lastSize.height === size.height) {
             return;
         }
         lastSize = size;
-        lastState = state || 'normal';
         iframe.style.width = size.width + 'px';
         iframe.style.height = size.height + 'px';
     }
@@ -146,7 +110,7 @@ $config = [
         iframe.style.maxHeight = 'calc(100vh - 16px)';
         iframe.style.transition = 'none';
         applyPosition();
-        applySize(activeConfig().size.width, activeConfig().size.height, 'normal');
+        applySize(defaultSize.width, defaultSize.height);
     }
 
     function sendViewport() {
@@ -198,10 +162,10 @@ $config = [
         if (!iframe || event.source !== iframe.contentWindow) {
             return;
         }
-        if (!event.data || (event.data.type !== 'ctcw' && event.data.type !== 'ctcw:size') || String(event.data.id) !== config.widgetId) {
+        if (!event.data || (event.data.type !== 'ctcw:size' && event.data.type !== 'ctcw') || String(event.data.id) !== config.widgetId) {
             return;
         }
-        applySize(event.data.width, event.data.height, event.data.state || 'normal');
+        applySize(event.data.width, event.data.height);
     });
 
     window.addEventListener('resize', function () {
@@ -211,18 +175,7 @@ $config = [
         applyPosition();
         sendViewport();
         if (lastSize) {
-            applySize(lastSize.width, lastSize.height, lastState);
-            return;
-        }
-        applySize(activeConfig().size.width, activeConfig().size.height, 'normal');
-        if (iframe.contentWindow) {
-            iframe.contentWindow.postMessage({
-                type: 'ctcw:viewport',
-                width: window.innerWidth,
-                height: window.innerHeight,
-                url: window.location.href,
-                title: document.title || ''
-            }, '*');
+            applySize(lastSize.width, lastSize.height);
         }
     });
 })();

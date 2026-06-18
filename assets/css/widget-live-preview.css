@@ -21,6 +21,11 @@
     max-width: calc(100vw - 32px);
 }
 
+.ctcw-admin-live-preview.is-frame-debug .ctcw-admin-live-preview-inner {
+    outline: 2px dashed rgba(37, 99, 235, 0.65);
+    background: rgba(37, 99, 235, 0.08);
+}
+
 .ctcw-admin-live-preview .ctcw-preview-badge {
     position: absolute;
     right: 0;

@@ -457,6 +457,8 @@ function initLiveWidgetPreview() {
     }
 
     var customCssStyle = document.getElementById('ctcwAdminLivePreviewCustomCss');
+    var frameDebugToggle = document.querySelector('[data-preview-frame-debug]');
+    var frameDebugStorageKey = 'ctcw_show_frame_debug';
     var iconNode = document.getElementById('ctcw-preview-icon');
     var whatsappIcon = '';
 
@@ -466,6 +468,31 @@ function initLiveWidgetPreview() {
         } catch (error) {
             whatsappIcon = '';
         }
+    }
+
+    function updateFrameDebugState() {
+        var enabled = !!(frameDebugToggle && frameDebugToggle.checked);
+        previewRoot.classList.toggle('is-frame-debug', enabled);
+        try {
+            window.localStorage.setItem(frameDebugStorageKey, enabled ? '1' : '0');
+        } catch (error) {
+            // Ignore storage failures in restricted browsers.
+        }
+    }
+
+    function initFrameDebugToggle() {
+        if (!frameDebugToggle) {
+            return;
+        }
+
+        try {
+            frameDebugToggle.checked = window.localStorage.getItem(frameDebugStorageKey) === '1';
+        } catch (error) {
+            frameDebugToggle.checked = false;
+        }
+
+        frameDebugToggle.addEventListener('change', updateFrameDebugState);
+        updateFrameDebugState();
     }
 
     function getFieldValue(name) {
@@ -597,6 +624,7 @@ function initLiveWidgetPreview() {
 
         updatePreviewPosition();
         updateCustomCssPreview();
+        updateFrameDebugState();
     }
 
     var watchedNames = [
@@ -646,4 +674,5 @@ function initLiveWidgetPreview() {
     }
 
     renderLiveWidgetPreview();
+    initFrameDebugToggle();
 }
