@@ -53,11 +53,11 @@
         document.querySelectorAll('[data-business-day-row]').forEach(function (row) {
             var dayEnabled = row.querySelector('[data-day-enabled]');
             var timeInputs = row.querySelectorAll('input[type="time"]');
-            var rowActive = mode === 'custom' && dayEnabled && dayEnabled.checked;
+            var disableTimes = mode === 'custom' && dayEnabled && !dayEnabled.checked;
 
-            row.classList.toggle('is-disabled', mode === 'custom' && dayEnabled && !dayEnabled.checked);
+            row.classList.toggle('is-disabled', disableTimes);
             timeInputs.forEach(function (input) {
-                input.disabled = !rowActive;
+                input.disabled = disableTimes;
             });
         });
     }
