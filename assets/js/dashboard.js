@@ -21,10 +21,51 @@
     }
 
     function refreshBusinessHours() {
-        var mode = document.querySelector('[data-business-hours-mode]');
-        var table = document.querySelector('[data-business-hours-table]');
-        if (!mode || !table) return;
-        table.hidden = mode.value !== 'custom';
+        var modeSelect = document.querySelector('[data-business-hours-mode]');
+        var alwaysOpenState = document.querySelector('[data-always-open-state]');
+        var offlineMessageGroup = document.querySelector('[data-offline-message-group]');
+        var customHoursGroup = document.querySelector('[data-custom-business-hours-group]');
+        var helperClosed = document.querySelector('[data-offline-helper-closed]');
+        var helperCustom = document.querySelector('[data-offline-helper-custom]');
+
+        if (!modeSelect) {
+            return;
+        }
+
+        var mode = modeSelect.value;
+
+        if (alwaysOpenState) {
+            alwaysOpenState.hidden = mode !== 'always_open';
+        }
+        if (offlineMessageGroup) {
+            offlineMessageGroup.hidden = mode === 'always_open';
+        }
+        if (customHoursGroup) {
+            customHoursGroup.hidden = mode !== 'custom';
+        }
+        if (helperClosed) {
+            helperClosed.hidden = mode !== 'always_closed';
+        }
+        if (helperCustom) {
+            helperCustom.hidden = mode !== 'custom';
+        }
+
+        document.querySelectorAll('[data-business-day-row]').forEach(function (row) {
+            var dayEnabled = row.querySelector('[data-day-enabled]');
+            var timeInputs = row.querySelectorAll('input[type="time"]');
+            var rowActive = mode === 'custom' && dayEnabled && dayEnabled.checked;
+
+            row.classList.toggle('is-disabled', mode === 'custom' && dayEnabled && !dayEnabled.checked);
+            timeInputs.forEach(function (input) {
+                input.disabled = !rowActive;
+            });
+        });
+    }
+
+    function initBusinessHoursRows() {
+        document.querySelectorAll('[data-day-enabled]').forEach(function (checkbox) {
+            checkbox.addEventListener('change', refreshBusinessHours);
+        });
     }
 
     function renumberRandomRows() {
@@ -139,6 +180,7 @@
     var businessMode = document.querySelector('[data-business-hours-mode]');
     if (businessMode) {
         businessMode.addEventListener('change', refreshBusinessHours);
+        initBusinessHoursRows();
         refreshBusinessHours();
     }
 
