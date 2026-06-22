@@ -432,12 +432,20 @@ $settingsSections = [
                 </div>
                 <div class="alert alert-warning">This iframe widget is locked to your registered domain. It will not work if copied to another website.</div>
                 <textarea id="embed-code" readonly rows="5"><?= e($embed) ?></textarea>
-                <div class="preview-frame-wrap large">
-                    <iframe src="widget-preview.php?id=<?= (int) $widget['id'] ?>" title="Widget preview" class="preview-frame"></iframe>
-                </div>
+            </div>
+
+            <div class="install-info-card">
+                <h3>Install on your website</h3>
+                <ol class="install-steps">
+                    <li>Copy the embed code above.</li>
+                    <li>Paste it before the closing <code>&lt;/body&gt;</code> tag on <?= e($widget['website_domain']) ?>.</li>
+                    <li>Save and publish your website changes.</li>
+                    <li>Use the floating live preview toggle on this page to test unsaved widget changes.</li>
+                </ol>
+                <a class="btn btn-light btn-small" href="widget-preview.php?id=<?= (int) $widget['id'] ?>" target="_blank" rel="noopener noreferrer">Open saved widget preview</a>
             </div>
         <?php else: ?>
-            <div class="notice-box">Save the widget once to generate the unique iframe embed code and preview.</div>
+            <div class="notice-box">Save the widget once to generate the unique iframe embed code.</div>
         <?php endif; ?>
     </section>
 
