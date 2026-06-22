@@ -7,12 +7,10 @@
 
 html,
 body {
-    width: 100%;
-    height: 100%;
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: transparent;
+    background: transparent !important;
     font-family: Arial, Helvetica, sans-serif;
     pointer-events: none;
     box-shadow: none !important;
@@ -23,42 +21,64 @@ body * {
     box-shadow: none !important;
 }
 
-.ctcw-container {
+.ctcw-container,
+.ctcw-widget-root {
     z-index: 2147483647;
     pointer-events: auto;
+    position: absolute;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
     gap: 12px;
+    width: max-content;
+    max-width: 380px;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    text-shadow: none !important;
 }
 
-.ctcw-widget-root {
-    position: absolute;
-    pointer-events: auto;
+.ctcw-widget-root.ctcw-anchor-bottom,
+html.ctcw-mobile .ctcw-widget-root.ctcw-mobile-anchor-bottom {
+    justify-content: flex-end;
+}
+
+.ctcw-widget-root.ctcw-anchor-top,
+html.ctcw-mobile .ctcw-widget-root.ctcw-mobile-anchor-top {
+    justify-content: flex-start;
+}
+
+.ctcw-widget-root.ctcw-anchor-right,
+html.ctcw-mobile .ctcw-widget-root.ctcw-mobile-anchor-right {
+    align-items: flex-end;
+}
+
+.ctcw-widget-root.ctcw-anchor-left,
+html.ctcw-mobile .ctcw-widget-root.ctcw-mobile-anchor-left {
+    align-items: flex-start;
 }
 
 .ctcw-anchor-bottom.ctcw-anchor-right,
 html.ctcw-mobile .ctcw-mobile-anchor-bottom.ctcw-mobile-anchor-right {
-    bottom: 16px;
-    right: 16px;
+    bottom: 12px;
+    right: 12px;
 }
 
 .ctcw-anchor-bottom.ctcw-anchor-left,
 html.ctcw-mobile .ctcw-mobile-anchor-bottom.ctcw-mobile-anchor-left {
-    bottom: 16px;
-    left: 16px;
+    bottom: 12px;
+    left: 12px;
 }
 
 .ctcw-anchor-top.ctcw-anchor-right,
 html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-right {
-    top: 16px;
-    right: 16px;
+    top: 12px;
+    right: 12px;
 }
 
 .ctcw-anchor-top.ctcw-anchor-left,
 html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
-    top: 16px;
-    left: 16px;
+    top: 12px;
+    left: 12px;
 }
 
 .ctcw-container.is-hidden {
@@ -83,6 +103,7 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
     transition: transform 0.2s ease, width 0.25s ease, background 0.2s ease;
     pointer-events: auto;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .ctcw-widget:hover {
@@ -111,31 +132,143 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
 .ctcw-greeting {
     position: relative;
     display: none;
-    width: 280px;
-    padding: 16px 18px;
+    width: 340px;
+    max-width: 340px;
+    min-width: 300px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
     border-radius: 18px;
     background: #ffffff;
     color: var(--ctcw-text);
     box-shadow: none !important;
     pointer-events: auto;
+    overflow: visible;
+}
+
+.ctcw-greeting.has-capture {
+    width: 340px;
+    max-width: 340px;
+    min-width: 300px;
+    padding: 16px;
+}
+
+.ctcw-greeting-form {
+    display: grid;
+    gap: 10px;
+}
+
+.ctcw-phone-field {
+    display: grid;
+    gap: 6px;
+}
+
+.ctcw-phone-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.ctcw-phone-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    height: 46px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: var(--ctcw-text);
+    background: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+    box-shadow: none !important;
+}
+
+.ctcw-phone-input::placeholder {
+    font-size: 13px;
+    color: #829ab1;
+}
+
+.ctcw-phone-input:focus {
+    border-color: #2563eb;
+}
+
+.ctcw-phone-error {
+    color: #dc2626;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.ctcw-phone-error[hidden] {
+    display: none;
+}
+
+.ctcw-greeting-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    min-width: 44px;
+    height: 46px;
+    border: 0;
+    border-radius: 12px;
+    padding: 0;
+    color: #ffffff;
+    background: var(--ctcw-green);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: none !important;
+    white-space: nowrap;
+}
+
+.ctcw-greeting-submit:disabled,
+.ctcw-greeting-submit.is-loading {
+    opacity: 0.75;
+    cursor: wait;
+}
+
+.ctcw-greeting-submit svg {
+    display: block;
+}
+
+.ctcw-greeting-success {
+    display: block;
+    color: #047857;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ctcw-greeting-success[hidden] {
+    display: none;
 }
 
 .ctcw-greeting.is-visible {
     display: block;
+    flex: 0 0 auto;
     animation: ctcwFadeIn 0.25s ease;
 }
 
 .ctcw-greeting strong {
     display: block;
-    margin: 0 24px 6px 0;
+    margin: 0 24px 4px 0;
     font-size: 16px;
+    line-height: 1.3;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 .ctcw-greeting p {
     margin: 0;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.45;
     color: #52606d;
+}
+
+.ctcw-greeting.has-capture .ctcw-greeting-form {
+    margin: 0;
 }
 
 .ctcw-close {
@@ -357,12 +490,11 @@ html.ctcw-mobile .ctcw-mobile-anchor-top.ctcw-mobile-anchor-left {
 }
 
 @media (max-width: 767px) {
-    .ctcw-container {
-        max-width: calc(100vw - 24px);
-    }
-
-    .ctcw-greeting {
-        width: 260px;
+    .ctcw-greeting,
+    .ctcw-greeting.has-capture {
+        width: 340px;
+        max-width: 340px;
+        min-width: 300px;
     }
 
     .style-5 .ctcw-hover-box {

@@ -2,14 +2,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
-$user = require_login();
+require_superadmin();
 
 $widgetId = (int) ($_GET['id'] ?? 0);
-$widget = find_user_widget($widgetId, (int) $user['id']);
-if (!$widget) {
-    http_response_code(404);
-    exit('Widget not found.');
-}
+$widget = require_widget_access($widgetId);
 
 $code = embed_code($widget);
 $pageTitle = 'Embed Code';
@@ -39,7 +35,7 @@ require __DIR__ . '/includes/header.php';
     </div>
 
     <div class="form-actions">
-        <a class="btn btn-light" href="dashboard.php">Back to dashboard</a>
+        <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>">Back to client</a>
         <a class="btn btn-primary-soft" href="edit-widget.php?id=<?= (int) $widget['id'] ?>">Edit settings</a>
     </div>
 </section>

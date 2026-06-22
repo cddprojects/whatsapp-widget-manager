@@ -1,9 +1,6 @@
 <?php
 $widget = array_merge(default_widget_data(), $widget ?? []);
-$randomNumbers = json_decode((string) ($widget['random_numbers_json'] ?? '[]'), true);
-if (!is_array($randomNumbers) || count($randomNumbers) === 0) {
-    $randomNumbers = [['country_code' => $widget['whatsapp_country_code'] ?? '+60', 'number' => '']];
-}
+$phoneNumbers = widget_phone_list($widget);
 $businessHours = json_decode((string) ($widget['business_hours_json'] ?? ''), true);
 if (!is_array($businessHours)) {
     $businessHours = default_business_hours();
@@ -36,9 +33,51 @@ $settingsSections = [
 
 <form method="post" class="settings-form" data-widget-form>
     <?= csrf_field() ?>
+
+    <?php if (!empty($showOwnerPicker)): ?>
+        <section class="settings-card">
+            <div class="section-title">
+                <span>+</span>
+                <div>
+                    <h2>Client assignment</h2>
+                    <p>Select which client account will own this widget.</p>
+                </div>
+            </div>
+            <label>
+                <span>Assign to client</span>
+                <select name="owner_user_id" required>
+                    <option value="">Select client…</option>
+                    <?php
+                    $clientOptions = db()->query("SELECT id, name, email FROM users WHERE role = '" . ROLE_CLIENT . "' ORDER BY name ASC")->fetchAll();
+                    foreach ($clientOptions as $clientOption):
+                    ?>
+                        <option value="<?= (int) $clientOption['id'] ?>"><?= e($clientOption['name']) ?> — <?= e($clientOption['email']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        </section>
+    <?php endif; ?>
+
     <div class="form-actions sticky-actions">
-        <a class="btn btn-light" href="dashboard.php">Back</a>
-        <button type="submit" class="btn btn-primary">Save Widget</button>
+        <div class="ctcw-save-bar<?= empty($showLivePreview) ? ' ctcw-save-bar--compact' : '' ?>">
+            <?php if (!empty($showLivePreview)): ?>
+                <div class="ctcw-save-note">
+                    Floating preview shows unsaved changes. Save Widget to publish.
+                </div>
+            <?php endif; ?>
+
+            <div class="ctcw-save-actions">
+                <?php if (!empty($showLivePreview)): ?>
+                    <label class="ctcw-preview-toggle" for="ctcwEnableLivePreview">
+                        <input type="checkbox" id="ctcwEnableLivePreview" data-live-preview-toggle checked>
+                        <span class="ctcw-toggle-ui" aria-hidden="true"></span>
+                        <span class="ctcw-toggle-text">Enable live preview</span>
+                    </label>
+                <?php endif; ?>
+                <a class="btn btn-light" href="dashboard.php">Back</a>
+                <button type="submit" class="btn btn-primary">Save Widget</button>
+            </div>
+        </div>
     </div>
 
     <div class="settings-workspace" data-settings-workspace>
@@ -66,44 +105,17 @@ $settingsSections = [
             <span>1</span>
             <div>
                 <h2>WhatsApp Number</h2>
-                <p>Use a normal WhatsApp number, WhatsApp Business number, or rotate multiple numbers randomly.</p>
+                <p>Manage the WhatsApp destination numbers used by this widget.</p>
             </div>
         </div>
-        <div class="form-grid">
-            <label>
-                <span>Widget name</span>
-                <input type="text" name="widget_name" value="<?= e($widget['widget_name']) ?>">
-            </label>
-            <label>
-                <span>Country code</span>
-                <select name="whatsapp_country_code"><?= render_country_options((string) $widget['whatsapp_country_code']) ?></select>
-            </label>
-            <label>
-                <span>WhatsApp number</span>
-                <input type="tel" name="whatsapp_number" value="<?= e($widget['whatsapp_number']) ?>" placeholder="123456789">
-                <small>Digits only. Do not include spaces, symbols, or the country code.</small>
-            </label>
-            <label class="toggle-row">
-                <input type="checkbox" name="use_random_numbers" value="1"<?= checked($widget['use_random_numbers']) ?>>
-                <span>Enable random number selection on each click</span>
-            </label>
-        </div>
+        <label class="widget-name-field">
+            <span>Widget name</span>
+            <input type="text" name="widget_name" value="<?= e($widget['widget_name']) ?>">
+        </label>
 
-        <div class="random-number-panel">
-            <div class="panel-heading">
-                <h3>Random numbers</h3>
-                <button type="button" class="btn btn-small btn-light" data-add-random-number>Add number</button>
-            </div>
-            <div data-random-number-list>
-                <?php foreach ($randomNumbers as $index => $row): ?>
-                    <div class="repeat-row">
-                        <select name="random_numbers[<?= (int) $index ?>][country_code]"><?= render_country_options((string) ($row['country_code'] ?? '+60')) ?></select>
-                        <input type="tel" name="random_numbers[<?= (int) $index ?>][number]" value="<?= e((string) ($row['number'] ?? '')) ?>" placeholder="123456789">
-                        <button type="button" class="btn btn-small btn-danger-soft" data-remove-row>Remove</button>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
+        <?php
+        require __DIR__ . '/phone-number-list.php';
+        ?>
     </section>
 
     <section class="settings-card" data-settings-panel="prefilled-message">
@@ -407,7 +419,7 @@ $settingsSections = [
         </div>
         <label class="toggle-row">
             <input type="checkbox" name="greeting_enabled" value="1"<?= checked($widget['greeting_enabled']) ?>>
-            <span>Enable greeting popup</span>
+            <span>Enable greeting dialog</span>
         </label>
         <div class="form-grid two-columns">
             <label>
@@ -415,13 +427,54 @@ $settingsSections = [
                 <input type="text" name="greeting_title" value="<?= e($widget['greeting_title']) ?>">
             </label>
             <label>
-                <span>Delay seconds</span>
+                <span>Greeting delay seconds</span>
                 <input type="number" min="0" max="120" name="greeting_delay_seconds" value="<?= e((string) $widget['greeting_delay_seconds']) ?>">
             </label>
             <label class="span-2">
                 <span>Greeting message</span>
                 <textarea name="greeting_message" rows="3"><?= e($widget['greeting_message']) ?></textarea>
             </label>
+        </div>
+        <label class="toggle-row">
+            <input type="checkbox" name="greeting_capture_phone" value="1" data-greeting-capture-toggle<?= checked($widget['greeting_capture_phone'] ?? 0) ?>>
+            <span>Enable phone number capture</span>
+        </label>
+        <div class="greeting-capture-options" data-greeting-capture-options>
+            <label class="toggle-row">
+                <input
+                    type="checkbox"
+                    name="greeting_force_phone_capture"
+                    value="1"
+                    data-greeting-force-toggle
+                    <?= checked($widget['greeting_force_phone_capture'] ?? 0) ?>
+                >
+                <span>Force user to insert phone number</span>
+            </label>
+            <small class="field-helper">When enabled, visitors must enter their phone number before they can open WhatsApp.</small>
+            <label class="toggle-row">
+                <input
+                    type="checkbox"
+                    name="greeting_phone_required"
+                    value="1"
+                    data-greeting-phone-required
+                    <?= checked($widget['greeting_phone_required'] ?? 1) ?>
+                >
+                <span>Phone number required</span>
+            </label>
+            <div class="form-grid two-columns">
+                <label>
+                    <span>Phone input placeholder</span>
+                    <input type="text" name="greeting_phone_placeholder" value="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>">
+                </label>
+                <label>
+                    <span>Submit button text</span>
+                    <input type="text" name="greeting_submit_text" value="<?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?>">
+                </label>
+                <label class="span-2">
+                    <span>Success message</span>
+                    <input type="text" name="greeting_lead_success_message" value="<?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?>">
+                </label>
+            </div>
         </div>
     </section>
 
@@ -527,4 +580,6 @@ $settingsSections = [
     </section>
         </div>
     </div>
+
+    <script type="application/json" id="country-code-data"><?= json_for_html(country_code_options()) ?></script>
 </form>

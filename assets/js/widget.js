@@ -2,30 +2,33 @@
     'use strict';
 
     var config = window.CTCW_WIDGET || {};
-    var container = document.querySelector('.ctcw-container');
+    var container = document.querySelector('.ctcw-widget-root');
     var button = document.querySelector('[data-widget-button]');
     var greeting = document.querySelector('[data-greeting]');
     var closeGreeting = document.querySelector('[data-close-greeting]');
+    var greetingSubmit = document.querySelector('[data-greeting-submit]');
+    var phoneInput = document.querySelector('[data-greeting-phone]');
+    var phoneError = document.querySelector('[data-greeting-phone-error]');
+    var greetingSuccess = document.querySelector('[data-greeting-success]');
     var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-5', 'style-6', 'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover'];
     var isOpening = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
-    var currentState = 'normal';
+    var currentState = 'button';
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var hoverTimer = null;
-    var sizeMap = {
-        'style-1': { normal: [280, 110], hover: [300, 130], greeting: [390, 300] },
-        'style-2': { normal: [120, 120], hover: [130, 130], animation: [130, 130], greeting: [390, 300] },
-        'style-3': { normal: [120, 120], hover: [130, 130], greeting: [390, 300] },
-        'style-3-large': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
-        'style-3-extend': { normal: [150, 150], hover: [160, 160], greeting: [390, 300] },
-        'style-4': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] },
-        'style-5': { normal: [420, 260], hover: [420, 260], greeting: [390, 300] },
-        'style-6': { normal: [260, 90], hover: [280, 100], greeting: [390, 300] },
-        'style-7': { normal: [130, 130], hover: [140, 140], greeting: [390, 300] },
-        'style-7-extend': { normal: [420, 160], hover: [420, 160], greeting: [390, 300] },
-        'style-8': { normal: [300, 110], hover: [320, 130], greeting: [390, 300] },
-        'style-9-left-hover': { normal: [420, 160], hover: [420, 160], greeting: [390, 300] }
+    var pageContext = {
+        url: '',
+        title: ''
     };
+    var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-5', 'style-7'];
+    var stateMinimums = {
+        icon: { width: 110, height: 110 },
+        button: { width: 260, height: 110 },
+        hover: { width: 260, height: 110 },
+        greeting: { width: 380, height: 300 },
+        'greeting-phone': { width: 390, height: 340 }
+    };
+    var measureSelectors = '.ctcw-widget-root, .ctcw-greeting, .ctcw-widget, .ctcw-hover-box';
 
     if (!container || !button) {
         return;
@@ -40,6 +43,137 @@
         return width <= 767;
     }
 
+    function isGreetingVisible() {
+        return !!(greeting && greeting.classList.contains('is-visible'));
+    }
+
+    function isForcePhoneCapture() {
+        return !!(
+            config.greetingForcePhoneCapture
+            && config.greetingCapturePhone
+            && config.greetingEnabled
+            && greeting
+            && phoneInput
+        );
+    }
+
+    function resetSubmitButton(submitButton) {
+        if (!submitButton) {
+            return;
+        }
+        submitButton.disabled = false;
+        submitButton.classList.remove('is-loading');
+    }
+
+    function isIconOnlyStyle() {
+        return iconOnlyStyles.indexOf(currentStyle) !== -1;
+    }
+
+    function resolveSizeState() {
+        if (isGreetingVisible()) {
+            if (config.greetingCapturePhone && greeting && greeting.classList.contains('has-capture')) {
+                return 'greeting-phone';
+            }
+            return 'greeting';
+        }
+        if (currentState === 'hover') {
+            return isIconOnlyStyle() ? 'icon' : 'button';
+        }
+        if (isIconOnlyStyle()) {
+            return 'icon';
+        }
+        return 'button';
+    }
+
+    function isElementVisible(el) {
+        if (!el) {
+            return false;
+        }
+        var style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden') {
+            return false;
+        }
+        if (el.classList.contains('ctcw-greeting') && !el.classList.contains('is-visible')) {
+            return false;
+        }
+        if (el.classList.contains('ctcw-hover-box')) {
+            if (style.opacity === '0') {
+                return false;
+            }
+        }
+        var rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+    }
+
+    function getVisibleWidgetBounds() {
+        var elements = Array.from(document.querySelectorAll(measureSelectors)).filter(isElementVisible);
+        if (!elements.length) {
+            return { width: 120, height: 120 };
+        }
+
+        var minX = Infinity;
+        var minY = Infinity;
+        var maxX = -Infinity;
+        var maxY = -Infinity;
+
+        elements.forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            minX = Math.min(minX, rect.left);
+            minY = Math.min(minY, rect.top);
+            maxX = Math.max(maxX, rect.right);
+            maxY = Math.max(maxY, rect.bottom);
+        });
+
+        return {
+            width: Math.ceil(maxX - minX + 32),
+            height: Math.ceil(maxY - minY + 32)
+        };
+    }
+
+    function sendActualWidgetSize() {
+        window.requestAnimationFrame(function () {
+            var root = document.querySelector('.ctcw-widget-root');
+            if (!root || root.classList.contains('is-hidden')) {
+                return;
+            }
+
+            var state = resolveSizeState();
+            var bounds = getVisibleWidgetBounds();
+            var minimum = stateMinimums[state] || stateMinimums.icon;
+            var width = Math.max(minimum.width, bounds.width);
+            var height = Math.max(minimum.height, bounds.height);
+
+            window.parent.postMessage({
+                type: 'ctcw:size',
+                id: String(config.widgetId || window.CTCW_WIDGET_ID || ''),
+                width: width,
+                height: height,
+                state: state
+            }, '*');
+        });
+    }
+
+    function scheduleSizeReports() {
+        [50, 300, 800].forEach(function (delay) {
+            window.setTimeout(sendActualWidgetSize, delay);
+        });
+    }
+
+    function closeGreetingDialog() {
+        if (!greeting) {
+            return;
+        }
+        greeting.classList.remove('is-visible');
+        showPhoneError('');
+        if (greetingSuccess) {
+            greetingSuccess.hidden = true;
+        }
+        resetSubmitButton(greetingSubmit);
+        currentState = isIconOnlyStyle() ? 'icon' : 'button';
+        sendActualWidgetSize();
+        scheduleSizeReports();
+    }
+
     function applyResponsiveState() {
         var mobile = isMobile();
         var activeStyle = mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle;
@@ -51,60 +185,167 @@
         });
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
-        reportMappedSize('normal');
+        sendActualWidgetSize();
+        scheduleSizeReports();
     }
 
-    function sizeForState(state) {
-        var styleSizes = sizeMap[currentStyle] || sizeMap['style-1'];
-        if (state === 'greeting' && !styleSizes.greeting) {
-            return [380, 280];
+    function cleanPhone(phone) {
+        return String(phone || '').replace(/[^\d+]/g, '');
+    }
+
+    function isValidPhone(phone) {
+        var cleaned = cleanPhone(phone);
+        var digits = cleaned.replace(/\D/g, '');
+        return digits.length >= 8 && digits.length <= 15;
+    }
+
+    function showPhoneError(message) {
+        if (!phoneError) {
+            return;
         }
-        return styleSizes[state] || styleSizes.normal || [120, 120];
+        phoneError.textContent = message;
+        phoneError.hidden = !message;
     }
 
-    function sendWidgetSize(width, height, state) {
-        window.parent.postMessage({
-            type: 'ctcw',
-            id: String(config.widgetId || ''),
-            state: state || currentState,
-            width: width,
-            height: height
-        }, '*');
+    function updatePageContext(data) {
+        if (!data) {
+            return;
+        }
+        if (typeof data.url === 'string' && data.url !== '') {
+            pageContext.url = data.url;
+        }
+        if (typeof data.title === 'string' && data.title !== '') {
+            pageContext.title = data.title;
+        }
     }
 
-    function reportMappedSize(state) {
-        currentState = state;
-        var size = sizeForState(state);
-        sendWidgetSize(size[0], size[1], state);
-    }
+    function getLeadPageContext() {
+        if (pageContext.url || pageContext.title) {
+            return {
+                url: pageContext.url,
+                title: pageContext.title
+            };
+        }
 
-    function scheduleSizeReports() {
-        [50, 300, 800].forEach(function (delay) {
-            window.setTimeout(reportSize, delay);
-        });
-    }
-
-    function reportSize() {
-        window.requestAnimationFrame(function () {
-            var rects = [container.getBoundingClientRect()];
-            var hoverBox = container.querySelector('.ctcw-hover-box');
-            if (greeting && greeting.classList.contains('is-visible')) {
-                rects.push(greeting.getBoundingClientRect());
+        var url = document.referrer || '';
+        var title = '';
+        try {
+            if (window.parent && window.parent !== window) {
+                title = window.parent.document.title || '';
+                if (window.parent.location && window.parent.location.href) {
+                    url = window.parent.location.href;
+                }
             }
-            if (hoverBox && window.getComputedStyle(hoverBox).opacity !== '0') {
-                rects.push(hoverBox.getBoundingClientRect());
+        } catch (error) {
+            // Cross-origin embed: parent page data arrives via postMessage.
+        }
+
+        return {
+            url: url,
+            title: title
+        };
+    }
+
+    function redirectToWhatsapp(url) {
+        openUrl(url);
+    }
+
+    function saveLead(phone, url) {
+        var leadPage = getLeadPageContext();
+
+        return fetch(config.saveLeadUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                widget_id: config.widgetId,
+                public_key: config.publicKey,
+                visitor_phone: phone,
+                source_url: leadPage.url,
+                page_title: leadPage.title,
+                whatsapp_redirect_url: url,
+                website: ''
+            })
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data || !data.success) {
+                    throw new Error(data && data.message ? data.message : 'Save failed');
+                }
+                return data;
+            });
+    }
+
+    function handlePhoneCaptureSubmit(submitButton) {
+        if (!config.online) {
+            return;
+        }
+
+        var url = buildUrl();
+        var phone = phoneInput ? phoneInput.value.trim() : '';
+        var forceMode = isForcePhoneCapture();
+        var invalidMessage = forceMode
+            ? 'Please enter a valid phone number before continuing.'
+            : 'Please enter a valid phone number.';
+
+        if (phone === '' || !isValidPhone(phone)) {
+            if (forceMode || config.greetingPhoneRequired || phone !== '') {
+                showPhoneError(invalidMessage);
+                sendActualWidgetSize();
+                scheduleSizeReports();
+                return;
             }
+        }
 
-            var minX = Math.min.apply(null, rects.map(function (rect) { return rect.left; }));
-            var minY = Math.min.apply(null, rects.map(function (rect) { return rect.top; }));
-            var maxX = Math.max.apply(null, rects.map(function (rect) { return rect.right; }));
-            var maxY = Math.max.apply(null, rects.map(function (rect) { return rect.bottom; }));
-            var minimum = sizeForState(currentState);
-            var width = Math.max(minimum[0], Math.ceil(maxX - minX + 32));
-            var height = Math.max(minimum[1], Math.ceil(maxY - minY + 32));
+        showPhoneError('');
 
-            sendWidgetSize(width, height, currentState);
-        });
+        if (phone === '' || !isValidPhone(phone)) {
+            closeGreetingDialog();
+            redirectToWhatsapp(url);
+            return;
+        }
+
+        if (!config.saveLeadUrl) {
+            if (forceMode) {
+                showPhoneError('We could not save your phone number. Please try again.');
+                sendActualWidgetSize();
+                scheduleSizeReports();
+                return;
+            }
+            closeGreetingDialog();
+            redirectToWhatsapp(url);
+            return;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.classList.add('is-loading');
+        }
+
+        if (!forceMode) {
+            closeGreetingDialog();
+        }
+
+        saveLead(phone, url)
+            .then(function () {
+                if (forceMode && greetingSuccess) {
+                    greetingSuccess.hidden = false;
+                }
+                redirectToWhatsapp(url);
+            })
+            .catch(function () {
+                if (forceMode) {
+                    resetSubmitButton(submitButton);
+                    showPhoneError('We could not save your phone number. Please try again.');
+                    sendActualWidgetSize();
+                    scheduleSizeReports();
+                    return;
+                }
+                redirectToWhatsapp(url);
+            });
     }
 
     function chooseNumber() {
@@ -185,49 +426,42 @@
         window.open(url, '_blank', 'noopener,noreferrer');
     }
 
-    if (config.greetingEnabled && greeting) {
-        window.setTimeout(function () {
-            reportMappedSize('greeting');
+    function revealGreeting() {
+        if (!greeting) {
+            return;
+        }
+        currentState = config.greetingCapturePhone && greeting.classList.contains('has-capture')
+            ? 'greeting-phone'
+            : 'greeting';
+        window.requestAnimationFrame(function () {
             greeting.classList.add('is-visible');
-            reportSize();
-            scheduleSizeReports();
-        }, Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000);
-    }
-
-    if (closeGreeting) {
-        closeGreeting.addEventListener('click', function () {
-            greeting.classList.remove('is-visible');
-            reportMappedSize('normal');
-            reportSize();
-            scheduleSizeReports();
+            window.requestAnimationFrame(function () {
+                sendActualWidgetSize();
+                scheduleSizeReports();
+            });
         });
     }
 
-    function startHover() {
-        window.clearTimeout(hoverTimer);
-        reportMappedSize('hover');
-        hoverTimer = window.setTimeout(function () {
-            container.classList.add('is-hovering');
-            reportMappedSize('hover');
-        }, 40);
-    }
-
-    function endHover() {
-        window.clearTimeout(hoverTimer);
-        container.classList.remove('is-hovering');
+    function showGreetingPhoneCapture() {
+        if (!greeting) {
+            return;
+        }
+        if (greetingSuccess) {
+            greetingSuccess.hidden = true;
+        }
+        showPhoneError('');
+        resetSubmitButton(greetingSubmit);
+        revealGreeting();
         window.setTimeout(function () {
-            if (!greeting || !greeting.classList.contains('is-visible')) {
-                reportMappedSize('normal');
+            if (phoneInput) {
+                phoneInput.focus();
             }
-        }, 250);
+            sendActualWidgetSize();
+            scheduleSizeReports();
+        }, 60);
     }
 
-    container.addEventListener('mouseenter', startHover);
-    container.addEventListener('mouseleave', endHover);
-    button.addEventListener('mouseenter', startHover);
-    button.addEventListener('mouseleave', endHover);
-
-    button.addEventListener('click', function (event) {
+    function handleWhatsAppClick(event) {
         event.preventDefault();
         event.stopPropagation();
         if (typeof event.stopImmediatePropagation === 'function') {
@@ -243,44 +477,110 @@
         }, 1200);
 
         if (!config.online) {
-            reportMappedSize('animation');
+            currentState = 'animation';
             button.classList.add('is-shaking');
+            sendActualWidgetSize();
             scheduleSizeReports();
-            window.setTimeout(function () { button.classList.remove('is-shaking'); }, 400);
+            window.setTimeout(function () {
+                button.classList.remove('is-shaking');
+                currentState = isIconOnlyStyle() ? 'icon' : 'button';
+                sendActualWidgetSize();
+            }, 400);
             return;
         }
+
+        if (isForcePhoneCapture()) {
+            showGreetingPhoneCapture();
+            return;
+        }
+
         openUrl(buildUrl());
-    }, true);
+    }
+
+    if (config.greetingEnabled && greeting) {
+        window.setTimeout(
+            revealGreeting,
+            Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000
+        );
+    }
+
+    if (closeGreeting) {
+        closeGreeting.addEventListener('click', closeGreetingDialog);
+    }
+
+    if (greetingSubmit) {
+        greetingSubmit.addEventListener('click', function (event) {
+            event.preventDefault();
+            handlePhoneCaptureSubmit(greetingSubmit);
+        });
+    }
+
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function () {
+            showPhoneError('');
+            sendActualWidgetSize();
+        });
+    }
+
+    function startHover() {
+        if (isGreetingVisible()) {
+            return;
+        }
+        window.clearTimeout(hoverTimer);
+        currentState = 'hover';
+        hoverTimer = window.setTimeout(function () {
+            container.classList.add('is-hovering');
+            sendActualWidgetSize();
+            scheduleSizeReports();
+        }, 40);
+    }
+
+    function endHover() {
+        if (isGreetingVisible()) {
+            return;
+        }
+        window.clearTimeout(hoverTimer);
+        container.classList.remove('is-hovering');
+        window.setTimeout(function () {
+            if (!isGreetingVisible()) {
+                currentState = isIconOnlyStyle() ? 'icon' : 'button';
+                sendActualWidgetSize();
+                scheduleSizeReports();
+            }
+        }, 250);
+    }
+
+    container.addEventListener('mouseenter', startHover);
+    container.addEventListener('mouseleave', endHover);
+    button.addEventListener('mouseenter', startHover);
+    button.addEventListener('mouseleave', endHover);
+    button.addEventListener('click', handleWhatsAppClick, true);
 
     window.addEventListener('message', function (event) {
         if (!event.data) {
             return;
         }
-        if (event.data.type !== 'ctcw:viewport' && !(event.data.type === 'ctcw' && !event.data.id)) {
+        if (event.data.type === 'ctcw:viewport') {
+            parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
+            updatePageContext(event.data);
+            applyResponsiveState();
             return;
         }
-        parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
-        applyResponsiveState();
-        scheduleSizeReports();
     });
+
+    if (typeof ResizeObserver !== 'undefined') {
+        var resizeObserver = new ResizeObserver(function () {
+            sendActualWidgetSize();
+        });
+        resizeObserver.observe(container);
+    }
 
     applyResponsiveState();
-    reportMappedSize('normal');
     scheduleSizeReports();
     window.addEventListener('resize', applyResponsiveState);
-    window.addEventListener('load', reportSize);
+    window.addEventListener('load', sendActualWidgetSize);
     document.addEventListener('DOMContentLoaded', function () {
-        reportMappedSize('normal');
-        reportSize();
+        sendActualWidgetSize();
         scheduleSizeReports();
     });
-
-    var reportsRemaining = 8;
-    var startupReporter = window.setInterval(function () {
-        reportSize();
-        reportsRemaining -= 1;
-        if (reportsRemaining <= 0) {
-            window.clearInterval(startupReporter);
-        }
-    }, 250);
 })();

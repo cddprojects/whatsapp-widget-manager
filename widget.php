@@ -58,6 +58,14 @@ $widgetConfig = [
     'offlineMessage' => (string) $widget['offline_message'],
     'greetingEnabled' => !empty($widget['greeting_enabled']),
     'greetingDelaySeconds' => (int) $widget['greeting_delay_seconds'],
+    'greetingCapturePhone' => !empty($widget['greeting_capture_phone']),
+    'greetingPhoneRequired' => !empty($widget['greeting_phone_required']),
+    'greetingForcePhoneCapture' => !empty($widget['greeting_force_phone_capture']),
+    'greetingPhonePlaceholder' => (string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number'),
+    'greetingSubmitText' => (string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp'),
+    'greetingLeadSuccessMessage' => (string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...'),
+    'publicKey' => (string) $widget['public_key'],
+    'saveLeadUrl' => SYSTEM_BASE_URL . '/save-widget-lead.php',
 ];
 
 $desktopStyle = (string) ($widget['desktop_style'] ?? 'style-1');
@@ -94,8 +102,8 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
                 bottom: auto;
                 left: auto;
                 right: auto;
-                <?= e($desktopVerticalSide) ?>: 16px;
-                <?= e($desktopHorizontalSide) ?>: 16px;
+                <?= e($desktopVerticalSide) ?>: 12px;
+                <?= e($desktopHorizontalSide) ?>: 12px;
                 align-items: <?= e($desktopAlign) ?>;
             }
             html.ctcw-mobile .ctcw-container {
@@ -103,8 +111,8 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
                 bottom: auto;
                 left: auto;
                 right: auto;
-                <?= e($mobileVerticalSide) ?>: 16px;
-                <?= e($mobileHorizontalSide) ?>: 16px;
+                <?= e($mobileVerticalSide) ?>: 12px;
+                <?= e($mobileHorizontalSide) ?>: 12px;
                 align-items: <?= e($mobileAlign) ?>;
             }
         </style>
@@ -126,10 +134,40 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
         data-show-mobile="<?= !empty($widget['show_mobile']) ? '1' : '0' ?>"
     >
         <?php if (!empty($widget['greeting_enabled'])): ?>
-            <div class="ctcw-greeting" data-greeting>
+            <div class="ctcw-greeting<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?>" data-greeting>
                 <button class="ctcw-close" type="button" aria-label="Close greeting" data-close-greeting>&times;</button>
-                <strong><?= e($widget['greeting_title']) ?></strong>
-                <p><?= e($widget['greeting_message']) ?></p>
+                <?php if (!empty($widget['greeting_capture_phone'])): ?>
+                    <div class="ctcw-greeting-form">
+                        <strong><?= e($widget['greeting_title']) ?></strong>
+                        <p><?= e($widget['greeting_message']) ?></p>
+                        <div class="ctcw-phone-field">
+                            <div class="ctcw-phone-row">
+                                <input
+                                    class="ctcw-phone-input"
+                                    type="tel"
+                                    data-greeting-phone
+                                    placeholder="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>"
+                                    autocomplete="tel"
+                                >
+                                <button
+                                    type="button"
+                                    class="ctcw-greeting-submit"
+                                    data-greeting-submit
+                                    aria-label="<?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?>"
+                                >
+                                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                                        <path fill="currentColor" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="ctcw-phone-error" data-greeting-phone-error hidden></span>
+                        </div>
+                        <span class="ctcw-greeting-success" data-greeting-success hidden><?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?></span>
+                    </div>
+                <?php else: ?>
+                    <strong><?= e($widget['greeting_title']) ?></strong>
+                    <p><?= e($widget['greeting_message']) ?></p>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
         <button class="ctcw-widget" type="button" data-widget-button aria-label="<?= e($widget['call_to_action']) ?>">
@@ -142,6 +180,11 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
     </div>
     <script>
         window.CTCW_WIDGET = <?= json_for_html($widgetConfig) ?>;
+        window.CTCW_WIDGET_ID = <?= (int) $widget['id'] ?>;
+        window.CTCW_PUBLIC_KEY = <?= json_for_html((string) $widget['public_key']) ?>;
+        window.CTCW_GREETING_CAPTURE_PHONE = <?= !empty($widget['greeting_capture_phone']) ? 'true' : 'false' ?>;
+        window.CTCW_FORCE_PHONE_CAPTURE = <?= !empty($widget['greeting_force_phone_capture']) ? 'true' : 'false' ?>;
+        window.CTCW_PHONE_REQUIRED = <?= !empty($widget['greeting_phone_required']) ? 'true' : 'false' ?>;
     </script>
     <script src="assets/js/widget.js?v=<?= (int) filemtime(__DIR__ . '/assets/js/widget.js') ?>"></script>
     <?= $widget['custom_script_footer'] ?? '' ?>

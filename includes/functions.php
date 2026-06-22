@@ -480,6 +480,299 @@ function render_country_options(string $selectedCode): string
     return $html;
 }
 
+function country_code_search_label(string $code): string
+{
+    foreach (country_code_options() as $option) {
+        if ($option['code'] === $code) {
+            return (string) $option['label'];
+        }
+    }
+
+    return $code;
+}
+
+function render_country_code_search_input(string $inputId, string $selectedCode = '+60', ?string $hiddenName = null): string
+{
+    $listId = $inputId . '-list';
+    $displayValue = country_code_search_label($selectedCode);
+    $nameAttr = $hiddenName !== null ? ' name="' . e($hiddenName) . '"' : '';
+    $html = '<div class="country-code-field" data-country-code-field>'
+        . '<input type="text" class="country-code-search" id="' . e($inputId) . '" list="' . e($listId) . '" value="' . e($displayValue) . '" placeholder="Search country or code" autocomplete="off" data-country-search>'
+        . '<input type="hidden" value="' . e($selectedCode) . '" data-country-value' . $nameAttr . '>'
+        . '<datalist id="' . e($listId) . '">';
+
+    foreach (country_code_options() as $option) {
+        $html .= '<option value="' . e($option['label']) . '"></option>';
+    }
+
+    $html .= '</datalist></div>';
+
+    return $html;
+}
+
+function country_code_prefixes_longest_first(): array
+{
+    static $prefixes = null;
+    if ($prefixes !== null) {
+        return $prefixes;
+    }
+
+    $prefixes = [];
+    foreach (country_code_options() as $option) {
+        $prefixes[] = clean_phone_number((string) $option['code']);
+    }
+
+    usort($prefixes, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+    $prefixes = array_values(array_unique(array_filter($prefixes)));
+
+    return $prefixes;
+}
+
+function parse_international_phone_line(string $line): ?array
+{
+    $raw = trim($line);
+    if ($raw === '') {
+        return null;
+    }
+
+    $digits = clean_phone_number($raw);
+    if ($digits === '') {
+        return null;
+    }
+
+    if (str_starts_with($digits, '00')) {
+        $digits = substr($digits, 2);
+    }
+
+    foreach (country_code_prefixes_longest_first() as $prefix) {
+        if ($prefix === '' || !str_starts_with($digits, $prefix) || strlen($digits) <= strlen($prefix)) {
+            continue;
+        }
+
+        $localDigits = substr($digits, strlen($prefix));
+        $fullNumber = $prefix . $localDigits;
+        if (!validate_phone_number($fullNumber)) {
+            continue;
+        }
+
+        return [
+            'country_code' => '+' . $prefix,
+            'number' => $localDigits,
+            'full_number' => $fullNumber,
+        ];
+    }
+
+    return null;
+}
+
+function strip_phone_number_entry(array $number): array
+{
+    return [
+        'country_code' => (string) ($number['country_code'] ?? '+60'),
+        'number' => (string) ($number['number'] ?? ''),
+        'full_number' => (string) ($number['full_number'] ?? ''),
+    ];
+}
+
+function client_active_phone_numbers(array $widget): array
+{
+    return widget_phone_list($widget);
+}
+
+function widget_phone_list(array $widget): array
+{
+    $numbers = [];
+
+    foreach (decode_random_numbers($widget['random_numbers_json'] ?? '[]') as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $entry = strip_phone_number_entry($row);
+        if ($entry['number'] === '') {
+            continue;
+        }
+
+        if ($entry['full_number'] === '') {
+            $entry['full_number'] = clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+        }
+
+        if (!validate_phone_number($entry['full_number'])) {
+            continue;
+        }
+
+        $numbers[] = $entry;
+    }
+
+    $numbers = remove_duplicate_phone_numbers($numbers);
+    if ($numbers !== []) {
+        return $numbers;
+    }
+
+    $number = clean_phone_number((string) ($widget['whatsapp_number'] ?? ''));
+    if ($number === '') {
+        return [];
+    }
+
+    $countryCode = (string) ($widget['whatsapp_country_code'] ?? '+60');
+    $countryDigits = clean_phone_number($countryCode);
+    $localDigits = $number;
+    if ($countryDigits !== '' && str_starts_with($number, $countryDigits) && strlen($number) > strlen($countryDigits)) {
+        $localDigits = substr($number, strlen($countryDigits));
+    }
+
+    $fullNumber = $countryDigits . $localDigits;
+    if (!validate_phone_number($fullNumber)) {
+        return [];
+    }
+
+    return [[
+        'country_code' => $countryCode,
+        'number' => $localDigits,
+        'full_number' => $fullNumber,
+    ]];
+}
+
+function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widget_numbers'): ?array
+{
+    $rows = $post[$fieldKey] ?? [];
+    if (!is_array($rows) || $rows === []) {
+        return null;
+    }
+
+    $numbers = [];
+
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $countryCode = trim((string) ($row['country_code'] ?? '+60'));
+        if (!array_key_exists($countryCode, country_codes())) {
+            $countryCode = '+60';
+        }
+
+        $normalized = normalize_phone_number($countryCode, (string) ($row['number'] ?? ''));
+        if ($normalized === null) {
+            continue;
+        }
+
+        $numbers[] = $normalized;
+    }
+
+    $numbers = remove_duplicate_phone_numbers($numbers);
+    if ($numbers === []) {
+        return null;
+    }
+
+    return build_phone_widget_update($numbers);
+}
+
+function get_widget_active_numbers(array $widget): array
+{
+    return client_active_phone_numbers($widget);
+}
+
+function phone_number_dedupe_key(array $number): string
+{
+    $entry = strip_phone_number_entry($number);
+    if ($entry['full_number'] !== '') {
+        return clean_phone_number($entry['full_number']);
+    }
+
+    if ($entry['number'] === '') {
+        return '';
+    }
+
+    return clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+}
+
+function remove_duplicate_phone_numbers(array $numbers): array
+{
+    $unique = [];
+    $seen = [];
+
+    foreach ($numbers as $number) {
+        if (!is_array($number)) {
+            continue;
+        }
+
+        $entry = strip_phone_number_entry($number);
+        if ($entry['number'] === '') {
+            continue;
+        }
+
+        if ($entry['full_number'] === '') {
+            $entry['full_number'] = clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+        }
+
+        $key = clean_phone_number($entry['full_number']);
+        if ($key === '' || isset($seen[$key])) {
+            continue;
+        }
+
+        $seen[$key] = true;
+        $unique[] = $entry;
+    }
+
+    return $unique;
+}
+
+function merge_phone_numbers_with_stats(array $existingNumbers, array $uploadedNumbers): array
+{
+    $merged = remove_duplicate_phone_numbers($existingNumbers);
+    $existingKeys = [];
+    foreach ($merged as $number) {
+        $key = phone_number_dedupe_key($number);
+        if ($key !== '') {
+            $existingKeys[$key] = true;
+        }
+    }
+
+    $added = 0;
+    $duplicatesSkipped = 0;
+
+    foreach ($uploadedNumbers as $number) {
+        if (!is_array($number)) {
+            continue;
+        }
+
+        $entry = strip_phone_number_entry($number);
+        if ($entry['number'] === '') {
+            continue;
+        }
+
+        if ($entry['full_number'] === '') {
+            $entry['full_number'] = clean_phone_number($entry['country_code']) . clean_phone_number($entry['number']);
+        }
+
+        $key = clean_phone_number($entry['full_number']);
+        if ($key === '') {
+            continue;
+        }
+
+        if (isset($existingKeys[$key])) {
+            $duplicatesSkipped++;
+            continue;
+        }
+
+        $existingKeys[$key] = true;
+        $merged[] = $entry;
+        $added++;
+    }
+
+    return [
+        'numbers' => remove_duplicate_phone_numbers($merged),
+        'added' => $added,
+        'duplicates_skipped' => $duplicatesSkipped,
+    ];
+}
+
+function merge_phone_numbers(array $existingNumbers, array $uploadedNumbers): array
+{
+    return merge_phone_numbers_with_stats($existingNumbers, $uploadedNumbers)['numbers'];
+}
+
 function default_business_hours(): array
 {
     $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -535,9 +828,15 @@ function default_widget_data(): array
         'business_hours_json' => json_encode(default_business_hours()),
         'offline_message' => 'We are currently offline. Please leave us a message later.',
         'greeting_enabled' => 1,
-        'greeting_title' => 'Need help?',
-        'greeting_message' => 'Chat with us on WhatsApp.',
+        'greeting_title' => 'Hi 👋',
+        'greeting_message' => 'Need Help? Contact Us !',
         'greeting_delay_seconds' => 2,
+        'greeting_capture_phone' => 0,
+        'greeting_phone_required' => 1,
+        'greeting_force_phone_capture' => 0,
+        'greeting_phone_placeholder' => 'Enter your phone number',
+        'greeting_submit_text' => 'Continue to WhatsApp',
+        'greeting_lead_success_message' => 'Redirecting to WhatsApp...',
         'custom_css' => '',
         'custom_script_head' => '',
         'custom_script_body' => '',
@@ -574,31 +873,7 @@ function sanitize_widget_input(array $post): array
 {
     $defaults = default_widget_data();
     $websiteDomain = normalize_domain((string) ($post['website_domain'] ?? ''));
-    $countryCode = (string) ($post['whatsapp_country_code'] ?? '+60');
-    if (!array_key_exists($countryCode, country_codes())) {
-        $countryCode = '+60';
-    }
-
-    $randomRows = $post['random_numbers'] ?? [];
-    $randomNumbers = [];
-    if (is_array($randomRows)) {
-        foreach ($randomRows as $row) {
-            if (!is_array($row)) {
-                continue;
-            }
-            $rowCountry = (string) ($row['country_code'] ?? $countryCode);
-            if (!array_key_exists($rowCountry, country_codes())) {
-                $rowCountry = $countryCode;
-            }
-            $rowNumber = clean_phone_number((string) ($row['number'] ?? ''));
-            if ($rowNumber !== '' && validate_phone_number($rowNumber)) {
-                $randomNumbers[] = [
-                    'country_code' => $rowCountry,
-                    'number' => $rowNumber,
-                ];
-            }
-        }
-    }
+    $phoneUpdate = sanitize_phone_numbers_from_post($post, 'widget_numbers');
 
     $businessRows = $post['business_hours'] ?? [];
     $businessHours = default_business_hours();
@@ -622,10 +897,10 @@ function sanitize_widget_input(array $post): array
         'allow_subdomains' => post_checkbox('allow_subdomains'),
         'domain_lock_enabled' => post_checkbox('domain_lock_enabled'),
         'strict_domain_check' => post_checkbox('strict_domain_check'),
-        'whatsapp_country_code' => $countryCode,
-        'whatsapp_number' => clean_phone_number((string) ($post['whatsapp_number'] ?? '')),
-        'use_random_numbers' => post_checkbox('use_random_numbers'),
-        'random_numbers_json' => json_encode($randomNumbers),
+        'whatsapp_country_code' => (string) ($phoneUpdate['whatsapp_country_code'] ?? '+60'),
+        'whatsapp_number' => (string) ($phoneUpdate['whatsapp_number'] ?? ''),
+        'use_random_numbers' => (int) ($phoneUpdate['use_random_numbers'] ?? 0),
+        'random_numbers_json' => (string) ($phoneUpdate['random_numbers_json'] ?? '[]'),
         'prefilled_message' => trim((string) ($post['prefilled_message'] ?? $defaults['prefilled_message'])),
         'call_to_action' => trim((string) ($post['call_to_action'] ?? $defaults['call_to_action'])),
         'desktop_style' => enum_value((string) ($post['desktop_style'] ?? 'style-1'), array_keys(widget_styles()), 'style-1'),
@@ -656,6 +931,12 @@ function sanitize_widget_input(array $post): array
         'greeting_title' => trim((string) ($post['greeting_title'] ?? $defaults['greeting_title'])),
         'greeting_message' => trim((string) ($post['greeting_message'] ?? $defaults['greeting_message'])),
         'greeting_delay_seconds' => max(0, min(120, (int) ($post['greeting_delay_seconds'] ?? 2))),
+        'greeting_capture_phone' => 0,
+        'greeting_phone_required' => 0,
+        'greeting_force_phone_capture' => 0,
+        'greeting_phone_placeholder' => trim((string) ($post['greeting_phone_placeholder'] ?? $defaults['greeting_phone_placeholder'])),
+        'greeting_submit_text' => trim((string) ($post['greeting_submit_text'] ?? $defaults['greeting_submit_text'])),
+        'greeting_lead_success_message' => trim((string) ($post['greeting_lead_success_message'] ?? $defaults['greeting_lead_success_message'])),
         'custom_css' => strip_php_tags((string) ($post['custom_css'] ?? '')),
         'custom_script_head' => strip_php_tags((string) ($post['custom_script_head'] ?? '')),
         'custom_script_body' => strip_php_tags((string) ($post['custom_script_body'] ?? '')),
@@ -675,6 +956,33 @@ function sanitize_widget_input(array $post): array
     if ($data['call_to_action'] === '') {
         $data['call_to_action'] = $defaults['call_to_action'];
     }
+    if ($data['greeting_submit_text'] === '') {
+        $data['greeting_submit_text'] = $defaults['greeting_submit_text'];
+    }
+    if ($data['greeting_phone_placeholder'] === '') {
+        $data['greeting_phone_placeholder'] = $defaults['greeting_phone_placeholder'];
+    }
+    if ($data['greeting_lead_success_message'] === '') {
+        $data['greeting_lead_success_message'] = $defaults['greeting_lead_success_message'];
+    }
+
+    $greetingCapturePhone = post_checkbox('greeting_capture_phone');
+    $greetingForcePhoneCapture = post_checkbox('greeting_force_phone_capture');
+    $greetingPhoneRequired = post_checkbox('greeting_phone_required');
+
+    if (!$greetingCapturePhone) {
+        $greetingForcePhoneCapture = 0;
+    }
+
+    if ($greetingForcePhoneCapture) {
+        $greetingCapturePhone = 1;
+        $greetingPhoneRequired = 1;
+    }
+
+    $data['greeting_capture_phone'] = $greetingCapturePhone;
+    $data['greeting_phone_required'] = $greetingPhoneRequired;
+    $data['greeting_force_phone_capture'] = $greetingForcePhoneCapture;
+
     if ($sameMobile) {
         $data['mobile_position_type'] = $data['desktop_position_type'];
         $data['mobile_vertical_position_type'] = $data['desktop_vertical_position_type'];
@@ -698,9 +1006,13 @@ function validate_widget_data(array $data): array
     if (!is_valid_domain($data['website_domain'])) {
         $errors[] = 'Please enter a valid website domain.';
     }
-    if (!validate_phone_number($data['whatsapp_number'])) {
-        $errors[] = 'Please enter a valid WhatsApp number.';
+
+    $primaryFullNumber = clean_phone_number((string) ($data['whatsapp_country_code'] ?? ''))
+        . clean_phone_number((string) ($data['whatsapp_number'] ?? ''));
+    if ($primaryFullNumber === '' || !validate_phone_number($primaryFullNumber)) {
+        $errors[] = 'Please add at least one WhatsApp number.';
     }
+
     if ($data['custom_url'] !== '' && !filter_var($data['custom_url'], FILTER_VALIDATE_URL)) {
         $errors[] = 'Custom URL must be a valid full URL.';
     }
@@ -872,3 +1184,763 @@ function whatsapp_icon_svg(): string
 {
     return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.04 3.2c-7.02 0-12.72 5.68-12.72 12.68 0 2.24.6 4.43 1.72 6.35L3.2 28.8l6.74-1.77a12.76 12.76 0 0 0 6.1 1.55h.01c7.01 0 12.72-5.68 12.72-12.68S23.06 3.2 16.04 3.2Zm0 23.24h-.01c-1.94 0-3.85-.52-5.52-1.5l-.4-.24-4 .96 1.07-3.9-.26-.4a10.48 10.48 0 0 1-1.6-5.48c0-5.82 4.8-10.55 10.72-10.55 2.86 0 5.56 1.1 7.58 3.1a10.45 10.45 0 0 1 3.15 7.47c0 5.82-4.8 10.54-10.73 10.54Zm5.88-7.9c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.52-.16-.74.16-.22.32-.85 1.05-1.04 1.27-.19.22-.38.24-.7.08-.32-.16-1.36-.5-2.6-1.6-.96-.85-1.6-1.9-1.79-2.22-.19-.32-.02-.5.14-.66.15-.15.32-.38.48-.56.16-.19.22-.32.32-.54.11-.22.05-.4-.03-.56-.08-.16-.74-1.78-1.02-2.44-.27-.64-.54-.55-.74-.56h-.63c-.22 0-.56.08-.85.4-.3.32-1.12 1.1-1.12 2.68s1.15 3.1 1.31 3.31c.16.22 2.27 3.45 5.5 4.84.77.33 1.37.53 1.84.68.77.24 1.47.2 2.03.12.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.13-.3-.21-.62-.37Z"/></svg>';
 }
+
+function normalize_phone_number(string $countryCode, string $phone): ?array
+{
+    $countryDigits = clean_phone_number($countryCode);
+    $phoneDigits = clean_phone_number($phone);
+
+    if ($countryDigits === '' || $phoneDigits === '') {
+        return null;
+    }
+
+    if (str_starts_with($phoneDigits, $countryDigits) && strlen($phoneDigits) > strlen($countryDigits)) {
+        $localDigits = substr($phoneDigits, strlen($countryDigits));
+    } else {
+        $localDigits = $phoneDigits;
+    }
+
+    $fullNumber = $countryDigits . $localDigits;
+    if (!validate_phone_number($fullNumber)) {
+        return null;
+    }
+
+    return [
+        'country_code' => '+' . $countryDigits,
+        'number' => $localDigits,
+        'full_number' => $fullNumber,
+    ];
+}
+
+function parse_phone_upload(string $filePath): array
+{
+    $stats = [
+        'total_rows' => 0,
+        'imported' => 0,
+        'skipped_invalid' => 0,
+        'duplicates' => 0,
+    ];
+    $numbers = [];
+    $seen = [];
+
+    $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES);
+    if ($lines === false) {
+        return ['numbers' => [], 'stats' => $stats];
+    }
+
+    if ($extension === 'csv') {
+        $rows = array_map(static fn ($line) => str_getcsv($line), $lines);
+        $stats['total_rows'] = count($rows);
+        $hasHeader = false;
+        if ($rows !== []) {
+            $first = array_map(static fn ($value) => strtolower(trim((string) $value)), $rows[0]);
+            $hasHeader = in_array('phone_number', $first, true) || in_array('country_code', $first, true);
+        }
+
+        $start = $hasHeader ? 1 : 0;
+        for ($i = $start; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            if (!is_array($row) || $row === []) {
+                continue;
+            }
+
+            if ($hasHeader) {
+                $map = [];
+                foreach ($rows[0] as $index => $header) {
+                    $map[strtolower(trim((string) $header))] = $row[$index] ?? '';
+                }
+                $country = trim((string) ($map['country_code'] ?? ''));
+                $phone = trim((string) ($map['phone_number'] ?? $map['number'] ?? ''));
+            } elseif (count($row) >= 2) {
+                $country = trim((string) ($row[0] ?? ''));
+                $phone = trim((string) ($row[1] ?? ''));
+            } else {
+                $stats['skipped_invalid']++;
+                continue;
+            }
+
+            if ($country === '' || $phone === '') {
+                $stats['skipped_invalid']++;
+                continue;
+            }
+
+            $normalized = normalize_phone_number($country, $phone);
+            if ($normalized === null) {
+                $stats['skipped_invalid']++;
+                continue;
+            }
+
+            if (isset($seen[$normalized['full_number']])) {
+                $stats['duplicates']++;
+                continue;
+            }
+
+            $seen[$normalized['full_number']] = true;
+            $numbers[] = $normalized;
+            $stats['imported']++;
+        }
+
+        if ($hasHeader) {
+            $stats['total_rows'] = max(0, count($rows) - 1);
+        }
+
+        return ['numbers' => $numbers, 'stats' => $stats];
+    }
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '') {
+            continue;
+        }
+
+        $stats['total_rows']++;
+        $normalized = parse_international_phone_line($line);
+        if ($normalized === null) {
+            $stats['skipped_invalid']++;
+            continue;
+        }
+
+        if (isset($seen[$normalized['full_number']])) {
+            $stats['duplicates']++;
+            continue;
+        }
+
+        $seen[$normalized['full_number']] = true;
+        $numbers[] = $normalized;
+        $stats['imported']++;
+    }
+
+    return ['numbers' => $numbers, 'stats' => $stats];
+}
+
+function build_phone_widget_update(array $numbers): ?array
+{
+    if ($numbers === []) {
+        return null;
+    }
+
+    if (count($numbers) === 1) {
+        $number = $numbers[0];
+        return [
+            'whatsapp_country_code' => $number['country_code'],
+            'whatsapp_number' => $number['number'],
+            'use_random_numbers' => 0,
+            'random_numbers_json' => '[]',
+        ];
+    }
+
+    $payload = array_map(static function (array $number): array {
+        return strip_phone_number_entry($number);
+    }, $numbers);
+
+    return [
+        'whatsapp_country_code' => $numbers[0]['country_code'],
+        'whatsapp_number' => $numbers[0]['number'],
+        'use_random_numbers' => 1,
+        'random_numbers_json' => json_encode(array_values($payload)),
+    ];
+}
+
+function save_widget_phone_numbers(int $widgetId, array $numbers): bool
+{
+    $update = build_phone_widget_update($numbers);
+    if ($update === null) {
+        return false;
+    }
+
+    update_widget_phone_fields($widgetId, $update);
+
+    return true;
+}
+
+function sanitize_client_phone_manual_input(array $post): ?array
+{
+    return sanitize_phone_numbers_from_post($post, 'manual_numbers');
+}
+
+function update_widget_phone_fields(int $widgetId, array $data): void
+{
+    $allowed = [
+        'whatsapp_country_code' => true,
+        'whatsapp_number' => true,
+        'use_random_numbers' => true,
+        'random_numbers_json' => true,
+    ];
+    $filtered = array_intersect_key($data, $allowed);
+    if ($filtered === []) {
+        return;
+    }
+
+    $assignments = [];
+    foreach (array_keys($filtered) as $column) {
+        $assignments[] = $column . ' = :' . $column;
+    }
+
+    $filtered['id'] = $widgetId;
+    $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($filtered);
+}
+
+function update_widget_admin(int $widgetId, array $data): void
+{
+    $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
+    $data['id'] = $widgetId;
+    $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($data);
+}
+
+function reassign_widget_owner(int $widgetId, int $userId): void
+{
+    $stmt = db()->prepare('UPDATE widgets SET user_id = :user_id, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
+    $stmt->execute(['id' => $widgetId, 'user_id' => $userId]);
+}
+
+function decode_random_numbers(?string $json): array
+{
+    $rows = json_decode((string) $json, true);
+    return is_array($rows) ? $rows : [];
+}
+
+function format_whatsapp_display(array $widget): string
+{
+    $numbers = widget_phone_list($widget);
+    if ($numbers === []) {
+        return 'No number set';
+    }
+
+    if (count($numbers) > 1) {
+        return count($numbers) . ' rotating numbers';
+    }
+
+    $number = $numbers[0];
+
+    return e((string) $number['country_code']) . ' ' . e((string) $number['number']);
+}
+
+function generate_temporary_password(int $length = 14): string
+{
+    $alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%^&*';
+    $max = strlen($alphabet) - 1;
+    $password = '';
+
+    for ($i = 0; $i < $length; $i++) {
+        $password .= $alphabet[random_int(0, $max)];
+    }
+
+    return $password;
+}
+
+function validate_client_password(string $password, string $confirmPassword): array
+{
+    $errors = [];
+
+    if ($password === '') {
+        $errors[] = 'Password is required.';
+    }
+    if ($confirmPassword === '') {
+        $errors[] = 'Confirm password is required.';
+    }
+    if ($password !== '' && $confirmPassword !== '' && $password !== $confirmPassword) {
+        $errors[] = 'Password and confirm password do not match.';
+    }
+    if ($password !== '' && strlen($password) < 8) {
+        $errors[] = 'Password must be at least 8 characters.';
+    }
+
+    return $errors;
+}
+
+function database_table_exists(string $table): bool
+{
+    static $cache = [];
+
+    if (array_key_exists($table, $cache)) {
+        return $cache[$table];
+    }
+
+    $stmt = db()->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.tables
+         WHERE table_schema = DATABASE() AND table_name = :table'
+    );
+    $stmt->execute(['table' => $table]);
+    $cache[$table] = (int) $stmt->fetchColumn() > 0;
+
+    return $cache[$table];
+}
+
+function client_widget_count(int $clientId): int
+{
+    $stmt = db()->prepare('SELECT COUNT(*) FROM widgets WHERE user_id = :user_id');
+    $stmt->execute(['user_id' => $clientId]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function client_lead_count(int $clientId): int
+{
+    if (!database_table_exists('widget_leads')) {
+        return 0;
+    }
+
+    $stmt = db()->prepare('SELECT COUNT(*) FROM widget_leads WHERE user_id = :user_id');
+    $stmt->execute(['user_id' => $clientId]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function delete_client_account(int $clientId, string $widgetMode, int $superadminId): array
+{
+    if (!in_array($widgetMode, ['delete_all', 'reassign'], true)) {
+        return ['success' => false, 'message' => 'Invalid delete option selected.'];
+    }
+
+    $client = find_client_user($clientId);
+    if (!$client) {
+        return ['success' => false, 'message' => 'Client account not found.'];
+    }
+
+    if ($clientId === $superadminId) {
+        return ['success' => false, 'message' => 'You cannot delete your own account from this action.'];
+    }
+
+    $pdo = db();
+
+    try {
+        $pdo->beginTransaction();
+
+        if ($widgetMode === 'reassign') {
+            $stmt = $pdo->prepare('UPDATE widgets SET user_id = :superadmin_id WHERE user_id = :client_id');
+            $stmt->execute([
+                'superadmin_id' => $superadminId,
+                'client_id' => $clientId,
+            ]);
+
+            if (database_table_exists('widget_leads')) {
+                $stmt = $pdo->prepare('UPDATE widget_leads SET user_id = :superadmin_id WHERE user_id = :client_id');
+                $stmt->execute([
+                    'superadmin_id' => $superadminId,
+                    'client_id' => $clientId,
+                ]);
+            }
+        } else {
+            if (database_table_exists('widget_leads')) {
+                $stmt = $pdo->prepare('DELETE FROM widget_leads WHERE user_id = :client_id');
+                $stmt->execute(['client_id' => $clientId]);
+            }
+
+            $stmt = $pdo->prepare('DELETE FROM widgets WHERE user_id = :client_id');
+            $stmt->execute(['client_id' => $clientId]);
+        }
+
+        $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id AND role = :role');
+        $stmt->execute([
+            'id' => $clientId,
+            'role' => ROLE_CLIENT,
+        ]);
+
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Client account could not be deleted.'];
+        }
+
+        $pdo->commit();
+
+        return [
+            'success' => true,
+            'mode' => $widgetMode,
+            'message' => $widgetMode === 'reassign'
+                ? 'Client deleted successfully. Their widgets were reassigned to superadmin.'
+                : 'Client and related widgets were deleted successfully.',
+        ];
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        return ['success' => false, 'message' => 'Unable to delete client account. Please try again.'];
+    }
+}
+
+function dashboard_summary_stats(): array
+{
+    $clients = db()->query("SELECT COUNT(*) FROM users WHERE role = '" . ROLE_CLIENT . "'")->fetchColumn();
+    $activeClients = db()->query("SELECT COUNT(*) FROM users WHERE role = '" . ROLE_CLIENT . "' AND status = '" . USER_STATUS_ACTIVE . "'")->fetchColumn();
+    $disabledClients = db()->query("SELECT COUNT(*) FROM users WHERE role = '" . ROLE_CLIENT . "' AND status = '" . USER_STATUS_DISABLED . "'")->fetchColumn();
+    $widgets = db()->query('SELECT COUNT(*) FROM widgets')->fetchColumn();
+
+    return [
+        'total_clients' => (int) $clients,
+        'active_clients' => (int) $activeClients,
+        'disabled_clients' => (int) $disabledClients,
+        'total_widgets' => (int) $widgets,
+    ];
+}
+
+function search_clients(array $options): array
+{
+    $page = max(1, (int) ($options['page'] ?? 1));
+    $perPage = max(1, min(50, (int) ($options['per_page'] ?? 20)));
+    $offset = ($page - 1) * $perPage;
+    $query = trim((string) ($options['q'] ?? ''));
+    $status = (string) ($options['status'] ?? 'all');
+    $sort = (string) ($options['sort'] ?? 'newest');
+
+    $where = ["u.role = :role"];
+    $params = ['role' => ROLE_CLIENT];
+
+    if ($status === USER_STATUS_ACTIVE || $status === USER_STATUS_DISABLED) {
+        $where[] = 'u.status = :status';
+        $params['status'] = $status;
+    }
+
+    $join = '';
+    if ($query !== '') {
+        $join = ' LEFT JOIN widgets w ON w.user_id = u.id';
+        $where[] = '(u.name LIKE :q_name OR u.email LIKE :q_email OR w.website_domain LIKE :q_domain OR w.widget_name LIKE :q_widget)';
+        $like = '%' . $query . '%';
+        $params['q_name'] = $like;
+        $params['q_email'] = $like;
+        $params['q_domain'] = $like;
+        $params['q_widget'] = $like;
+    }
+
+    $whereSql = implode(' AND ', $where);
+    $orderBy = match ($sort) {
+        'oldest' => 'u.created_at ASC',
+        'name_az' => 'u.name ASC',
+        'most_widgets' => 'widget_count DESC, u.name ASC',
+        default => 'u.created_at DESC',
+    };
+
+    $countSql = 'SELECT COUNT(DISTINCT u.id) FROM users u' . $join . ' WHERE ' . $whereSql;
+    $countStmt = db()->prepare($countSql);
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
+
+    $sql = 'SELECT u.id, u.name, u.email, u.status, u.created_at, u.last_login_at, COUNT(w.id) AS widget_count
+            FROM users u
+            LEFT JOIN widgets w ON w.user_id = u.id
+            WHERE ' . $whereSql . '
+            GROUP BY u.id
+            ORDER BY ' . $orderBy . '
+            LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll();
+
+    return [
+        'rows' => $rows,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'pages' => (int) max(1, ceil($total / $perPage)),
+    ];
+}
+
+function widgets_for_user(int $userId): array
+{
+    $stmt = db()->prepare('SELECT * FROM widgets WHERE user_id = :user_id ORDER BY updated_at DESC');
+    $stmt->execute(['user_id' => $userId]);
+    return $stmt->fetchAll();
+}
+
+function recent_clients(int $limit = 5): array
+{
+    $stmt = db()->prepare(
+        'SELECT u.id, u.name, u.email, u.status, u.created_at, COUNT(w.id) AS widget_count
+         FROM users u
+         LEFT JOIN widgets w ON w.user_id = u.id
+         WHERE u.role = :role
+         GROUP BY u.id
+         ORDER BY u.created_at DESC
+         LIMIT ' . (int) $limit
+    );
+    $stmt->execute(['role' => ROLE_CLIENT]);
+    return $stmt->fetchAll();
+}
+
+function recent_widgets(int $limit = 5): array
+{
+    $stmt = db()->prepare(
+        'SELECT w.*, u.name AS owner_name, u.email AS owner_email
+         FROM widgets w
+         INNER JOIN users u ON u.id = w.user_id
+         ORDER BY w.updated_at DESC
+         LIMIT ' . (int) $limit
+    );
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+function search_all_widgets(array $options): array
+{
+    $page = max(1, (int) ($options['page'] ?? 1));
+    $perPage = max(1, min(50, (int) ($options['per_page'] ?? 20)));
+    $offset = ($page - 1) * $perPage;
+    $query = trim((string) ($options['q'] ?? ''));
+
+    $where = ['1=1'];
+    $params = [];
+    if ($query !== '') {
+
+            $where[] = '(w.widget_name LIKE :q_widget OR w.website_domain LIKE :q_domain OR u.name LIKE :q_name OR u.email LIKE :q_email)';
+            $like = '%' . $query . '%';
+            $params['q_widget'] = $like;
+            $params['q_domain'] = $like;
+            $params['q_name'] = $like;
+            $params['q_email'] = $like;
+
+    }
+
+    $whereSql = implode(' AND ', $where);
+    $countStmt = db()->prepare('SELECT COUNT(*) FROM widgets w INNER JOIN users u ON u.id = w.user_id WHERE ' . $whereSql);
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
+
+    $sql = 'SELECT w.*, u.name AS owner_name, u.email AS owner_email
+            FROM widgets w
+            INNER JOIN users u ON u.id = w.user_id
+            WHERE ' . $whereSql . '
+            ORDER BY w.updated_at DESC
+            LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    return [
+        'rows' => $stmt->fetchAll(),
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'pages' => (int) max(1, ceil($total / $perPage)),
+    ];
+}
+
+function user_status_badge_class(string $status): string
+{
+    return $status === USER_STATUS_ACTIVE ? 'status-pill status-active' : 'status-pill status-disabled';
+}
+
+function feature_status_pill($value): string
+{
+    $enabled = !empty($value);
+
+    return '<span class="status-pill ' . ($enabled ? 'status-active' : 'status-disabled') . '">'
+        . e($enabled ? 'Enabled' : 'Disabled') . '</span>';
+}
+
+function nav_is_active(string $page): bool
+{
+    return basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === $page;
+}
+
+function nav_link_class(string $page, array $relatedPages = []): string
+{
+    $current = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $active = $current === $page || in_array($current, $relatedPages, true);
+
+    return $active ? 'topnav-link is-active' : 'topnav-link';
+}
+
+function render_widget_action_menu(array $widget, array $options = []): void
+{
+    $widgetId = (int) $widget['id'];
+    $showDelete = !empty($options['show_delete']);
+    $deleteClientId = (int) ($options['delete_client_id'] ?? 0);
+    ?>
+    <div class="row-actions">
+        <a class="btn btn-small btn-primary" href="edit-widget.php?id=<?= $widgetId ?>">Manage</a>
+        <a class="btn btn-small btn-light" href="widget-preview.php?id=<?= $widgetId ?>">Preview</a>
+        <div class="action-menu" data-action-menu>
+            <button type="button" class="btn btn-small btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="More actions">⋯</button>
+            <div class="action-menu-panel" role="menu">
+                <a role="menuitem" href="edit-widget-phone.php?id=<?= $widgetId ?>">Phone Number</a>
+                <a role="menuitem" href="admin-widget-leads.php?widget_id=<?= $widgetId ?>">Leads</a>
+                <a role="menuitem" href="embed-code.php?id=<?= $widgetId ?>">Embed Code</a>
+                <?php if ($showDelete): ?>
+                    <form method="post" data-confirm="Delete this widget?">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="delete_widget">
+                        <input type="hidden" name="widget_id" value="<?= $widgetId ?>">
+                        <?php if ($deleteClientId > 0): ?>
+                            <input type="hidden" name="client_id" value="<?= $deleteClientId ?>">
+                        <?php endif; ?>
+                        <button type="submit" class="action-menu-danger" role="menuitem">Delete</button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+
+function format_datetime(?string $value, string $fallback = 'Never'): string
+{
+    if ($value === null || trim($value) === '') {
+        return $fallback;
+    }
+
+    return date('M j, Y g:i A', strtotime($value));
+}
+
+function validate_uploaded_phone_file(array $file): array
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return ['Upload failed. Please try again.'];
+    }
+
+    if (($file['size'] ?? 0) > 1048576) {
+        return ['File must be 1MB or smaller.'];
+    }
+
+    $name = strtolower((string) ($file['name'] ?? ''));
+    if (!preg_match('/\.(csv|txt)$/', $name)) {
+        return ['Only CSV or TXT files are allowed.'];
+    }
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = $finfo ? finfo_file($finfo, (string) $file['tmp_name']) : '';
+    if ($finfo) {
+        finfo_close($finfo);
+    }
+
+    $allowed = ['text/plain', 'text/csv', 'application/csv', 'application/vnd.ms-excel'];
+    if ($mime !== '' && !in_array($mime, $allowed, true)) {
+        return ['Invalid file type uploaded.'];
+    }
+
+    return [];
+}
+
+function normalize_visitor_phone(string $phone): ?array
+{
+    $raw = trim(strip_tags($phone));
+    if ($raw === '') {
+        return null;
+    }
+
+    $digits = clean_phone_number($raw);
+    if (strlen($digits) < 8 || strlen($digits) > 15) {
+        return null;
+    }
+
+    $display = preg_replace('/[^\d+]/', '', $raw) ?? $digits;
+    if ($display !== '' && $display[0] !== '+') {
+        $display = '+' . $digits;
+    }
+
+    return [
+        'visitor_phone' => $display,
+        'visitor_country_code' => null,
+        'visitor_full_phone' => $digits,
+    ];
+}
+
+function lead_recently_saved(int $widgetId, string $fullPhone): bool
+{
+    $stmt = db()->prepare(
+        'SELECT id FROM widget_leads
+         WHERE widget_id = :widget_id AND visitor_full_phone = :phone
+           AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+         LIMIT 1'
+    );
+    $stmt->execute(['widget_id' => $widgetId, 'phone' => $fullPhone]);
+    return (bool) $stmt->fetchColumn();
+}
+
+function insert_widget_lead(array $widget, array $lead): int
+{
+    $stmt = db()->prepare(
+        'INSERT INTO widget_leads (
+            widget_id, user_id, visitor_phone, visitor_country_code, visitor_full_phone,
+            source_domain, source_url, page_title, whatsapp_redirect_url, ip_address, user_agent
+         ) VALUES (
+            :widget_id, :user_id, :visitor_phone, :visitor_country_code, :visitor_full_phone,
+            :source_domain, :source_url, :page_title, :whatsapp_redirect_url, :ip_address, :user_agent
+         )'
+    );
+    $stmt->execute([
+        'widget_id' => (int) $widget['id'],
+        'user_id' => (int) $widget['user_id'],
+        'visitor_phone' => $lead['visitor_phone'],
+        'visitor_country_code' => $lead['visitor_country_code'],
+        'visitor_full_phone' => $lead['visitor_full_phone'],
+        'source_domain' => $lead['source_domain'],
+        'source_url' => $lead['source_url'],
+        'page_title' => $lead['page_title'],
+        'whatsapp_redirect_url' => $lead['whatsapp_redirect_url'],
+        'ip_address' => $lead['ip_address'],
+        'user_agent' => $lead['user_agent'],
+    ]);
+
+    return (int) db()->lastInsertId();
+}
+
+function search_widget_leads(int $widgetId, array $options): array
+{
+    $page = max(1, (int) ($options['page'] ?? 1));
+    $perPage = max(1, min(100, (int) ($options['per_page'] ?? 25)));
+    $offset = ($page - 1) * $perPage;
+    $query = trim((string) ($options['q'] ?? ''));
+    $dateFrom = trim((string) ($options['date_from'] ?? ''));
+    $dateTo = trim((string) ($options['date_to'] ?? ''));
+
+    $where = ['wl.widget_id = :widget_id'];
+    $params = ['widget_id' => $widgetId];
+
+    if ($query !== '') {
+        $where[] = '(wl.visitor_phone LIKE :q OR wl.visitor_full_phone LIKE :q OR wl.source_domain LIKE :q OR wl.source_url LIKE :q OR wl.page_title LIKE :q)';
+        $params['q'] = '%' . $query . '%';
+    }
+    if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+        $where[] = 'DATE(wl.created_at) >= :date_from';
+        $params['date_from'] = $dateFrom;
+    }
+    if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+        $where[] = 'DATE(wl.created_at) <= :date_to';
+        $params['date_to'] = $dateTo;
+    }
+
+    $whereSql = implode(' AND ', $where);
+    $countStmt = db()->prepare('SELECT COUNT(*) FROM widget_leads wl WHERE ' . $whereSql);
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
+
+    $sql = 'SELECT wl.*, w.widget_name, u.name AS owner_name, u.email AS owner_email
+            FROM widget_leads wl
+            INNER JOIN widgets w ON w.id = wl.widget_id
+            INNER JOIN users u ON u.id = wl.user_id
+            WHERE ' . $whereSql . '
+            ORDER BY wl.created_at DESC
+            LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    return [
+        'rows' => $stmt->fetchAll(),
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'pages' => (int) max(1, ceil($total / $perPage)),
+    ];
+}
+
+function widget_leads_for_export(int $widgetId, array $options): array
+{
+    $result = search_widget_leads($widgetId, array_merge($options, ['page' => 1, 'per_page' => 10000]));
+    return $result['rows'];
+}
+
+function json_response(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload);
+    exit;
+}
+

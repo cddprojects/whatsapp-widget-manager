@@ -9,8 +9,13 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(120) NOT NULL,
     email VARCHAR(190) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    role VARCHAR(30) NOT NULL DEFAULT 'client',
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    last_login_at DATETIME NULL,
+    password_changed_at DATETIME NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_users_role_status (role, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS widgets (
@@ -57,6 +62,12 @@ CREATE TABLE IF NOT EXISTS widgets (
     greeting_title VARCHAR(160) NULL,
     greeting_message TEXT NULL,
     greeting_delay_seconds INT UNSIGNED NOT NULL DEFAULT 2,
+    greeting_capture_phone TINYINT(1) NOT NULL DEFAULT 0,
+    greeting_phone_required TINYINT(1) NOT NULL DEFAULT 1,
+    greeting_force_phone_capture TINYINT(1) NOT NULL DEFAULT 0,
+    greeting_phone_placeholder VARCHAR(100) NOT NULL DEFAULT 'Enter your phone number',
+    greeting_submit_text VARCHAR(100) NOT NULL DEFAULT 'Continue to WhatsApp',
+    greeting_lead_success_message VARCHAR(255) NOT NULL DEFAULT 'Redirecting to WhatsApp...',
     custom_css LONGTEXT NULL,
     custom_script_head LONGTEXT NULL,
     custom_script_body LONGTEXT NULL,
@@ -68,12 +79,36 @@ CREATE TABLE IF NOT EXISTS widgets (
     CONSTRAINT fk_widgets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO users (id, name, email, password)
+CREATE TABLE IF NOT EXISTS widget_leads (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    widget_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    visitor_phone VARCHAR(50) NOT NULL,
+    visitor_country_code VARCHAR(10) NULL,
+    visitor_full_phone VARCHAR(50) NOT NULL,
+    source_domain VARCHAR(255) NULL,
+    source_url TEXT NULL,
+    page_title VARCHAR(255) NULL,
+    whatsapp_redirect_url TEXT NULL,
+    ip_address VARCHAR(100) NULL,
+    user_agent TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_widget_leads_widget_id (widget_id),
+    INDEX idx_widget_leads_user_id (user_id),
+    INDEX idx_widget_leads_visitor_phone (visitor_full_phone),
+    INDEX idx_widget_leads_created_at (created_at),
+    CONSTRAINT fk_widget_leads_widget FOREIGN KEY (widget_id) REFERENCES widgets(id) ON DELETE CASCADE,
+    CONSTRAINT fk_widget_leads_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO users (id, name, email, password, role, status)
 VALUES
-    (1, 'Demo Client', 'demo@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi')
+    (1, 'Demo Client', 'demo@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi', 'client', 'active')
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
-    email = VALUES(email);
+    email = VALUES(email),
+    role = VALUES(role),
+    status = VALUES(status);
 
 INSERT INTO widgets (
     id,

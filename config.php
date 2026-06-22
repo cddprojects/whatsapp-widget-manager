@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/includes/env.php';
+
 /*
  * Click To Chat Manager configuration.
  *
@@ -8,6 +10,10 @@ declare(strict_types=1);
  * environment variables on your server.
  */
 define('APP_NAME', 'Click To Chat Manager');
+define('ROLE_SUPERADMIN', 'superadmin');
+define('ROLE_CLIENT', 'client');
+define('USER_STATUS_ACTIVE', 'active');
+define('USER_STATUS_DISABLED', 'disabled');
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 define('DB_NAME', getenv('DB_NAME') ?: 'click_to_chat_manager');
 define('DB_USER', getenv('DB_USER') ?: 'root');

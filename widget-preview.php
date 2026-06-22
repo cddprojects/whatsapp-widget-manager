@@ -2,14 +2,14 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
-$user = require_login();
+require_login();
+
+if (is_client()) {
+    redirect('client-dashboard.php');
+}
 
 $widgetId = (int) ($_GET['id'] ?? 0);
-$widget = find_user_widget($widgetId, (int) $user['id']);
-if (!$widget) {
-    http_response_code(404);
-    exit('Widget not found.');
-}
+$widget = require_widget_access($widgetId);
 
 ?>
 <!doctype html>
