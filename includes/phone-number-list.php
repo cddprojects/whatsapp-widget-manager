@@ -5,6 +5,7 @@ $phoneNumbers = $phoneNumbers ?? [];
 $fieldPrefix = (string) ($fieldPrefix ?? 'widget_numbers');
 $emptyMessage = (string) ($emptyMessage ?? 'No numbers added yet. Click Add number to get started.');
 $listId = (string) ($listId ?? 'phone-number-list');
+$hasPhoneNumbers = $phoneNumbers !== [];
 ?>
 
 <div class="phone-numbers-card" data-phone-numbers-card>
@@ -16,13 +17,35 @@ $listId = (string) ($listId ?? 'phone-number-list');
         <button type="button" class="btn btn-small btn-light" data-add-phone-number>Add number</button>
     </div>
 
+    <div class="ctcw-phone-bulk-toolbar" data-phone-bulk-toolbar<?= $hasPhoneNumbers ? '' : ' hidden' ?>>
+        <div class="ctcw-phone-bulk-actions">
+            <label class="ctcw-phone-select-all" for="ctcwSelectAllPhones">
+                <input type="checkbox" id="ctcwSelectAllPhones" data-select-all-phones aria-label="Select all phone numbers">
+                <span>Select all</span>
+            </label>
+            <span id="ctcwSelectedPhoneCount" class="ctcw-selected-phone-count" data-selected-phone-count>0 selected</span>
+        </div>
+        <button
+            type="button"
+            id="ctcwDeleteSelectedPhones"
+            class="btn btn-small btn-danger-soft ctcw-delete-selected-btn"
+            data-delete-selected-phones
+            disabled
+            aria-label="Delete selected phone numbers"
+        >
+            Delete selected
+        </button>
+    </div>
+
+    <p class="ctcw-phone-bulk-error" data-phone-bulk-error hidden>At least one WhatsApp number must remain active.</p>
+
     <div
         class="phone-number-list"
         data-phone-number-list
         data-field-prefix="<?= e($fieldPrefix) ?>"
         id="<?= e($listId) ?>"
     >
-        <?php if ($phoneNumbers === []): ?>
+        <?php if (!$hasPhoneNumbers): ?>
             <div class="empty-state compact-empty" data-phone-empty-state>
                 <p><?= e($emptyMessage) ?></p>
             </div>
@@ -32,8 +55,13 @@ $listId = (string) ($listId ?? 'phone-number-list');
                 $countryCode = (string) ($row['country_code'] ?? '+60');
                 $phoneNumber = (string) ($row['number'] ?? '');
                 $inputId = $listId . '-country-' . (int) $index;
+                $selectLabel = 'Select phone number ' . $countryCode . $phoneNumber;
                 ?>
-                <div class="phone-number-row" data-phone-number-row>
+                <div class="phone-number-row ctcw-phone-row" data-phone-number-row>
+                    <label class="ctcw-phone-select-wrap">
+                        <span class="sr-only"><?= e($selectLabel) ?></span>
+                        <input type="checkbox" class="ctcw-phone-select" aria-label="<?= e($selectLabel) ?>">
+                    </label>
                     <?= render_country_code_search_input(
                         $inputId,
                         $countryCode,
@@ -57,7 +85,11 @@ $listId = (string) ($listId ?? 'phone-number-list');
     </div>
 
     <template id="<?= e($listId) ?>-template">
-        <div class="phone-number-row" data-phone-number-row>
+        <div class="phone-number-row ctcw-phone-row" data-phone-number-row>
+            <label class="ctcw-phone-select-wrap">
+                <span class="sr-only">Select phone number</span>
+                <input type="checkbox" class="ctcw-phone-select" aria-label="Select phone number">
+            </label>
             <div class="country-code-field" data-country-code-field>
                 <input type="text" class="country-code-search" list="<?= e($listId) ?>-country-options" value="MY +60 Malaysia" placeholder="Search country or code" autocomplete="off" data-country-search>
                 <input type="hidden" value="+60" data-country-value>
@@ -70,4 +102,16 @@ $listId = (string) ($listId ?? 'phone-number-list');
             <button type="button" class="btn btn-small btn-danger-soft" data-remove-phone-number>Delete</button>
         </div>
     </template>
+
+    <div class="ctcw-phone-bulk-modal" data-phone-bulk-modal hidden>
+        <div class="ctcw-phone-bulk-modal-backdrop" data-phone-bulk-modal-close></div>
+        <div class="ctcw-phone-bulk-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ctcwPhoneBulkModalTitle">
+            <h3 id="ctcwPhoneBulkModalTitle">Delete selected numbers?</h3>
+            <p data-phone-bulk-modal-message></p>
+            <div class="form-actions">
+                <button type="button" class="btn btn-light" data-phone-bulk-modal-cancel>Cancel</button>
+                <button type="button" class="btn btn-danger-soft" data-phone-bulk-modal-confirm>Delete selected</button>
+            </div>
+        </div>
+    </div>
 </div>

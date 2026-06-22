@@ -101,6 +101,202 @@
         }
     }
 
+    function countPhoneRows(list) {
+        return list.querySelectorAll('[data-phone-number-row]').length;
+    }
+
+    function getPhoneCard(list) {
+        return list ? list.closest('[data-phone-numbers-card]') : null;
+    }
+
+    function canRemovePhoneRows(list, removeCount) {
+        return countPhoneRows(list) - removeCount >= 1;
+    }
+
+    function setPhoneBulkToolbarVisible(card, visible) {
+        if (!card) {
+            return;
+        }
+        var toolbar = card.querySelector('[data-phone-bulk-toolbar]');
+        if (toolbar) {
+            toolbar.hidden = !visible;
+        }
+    }
+
+    function updateBulkDeleteUI(card) {
+        if (!card) {
+            return;
+        }
+
+        var list = card.querySelector('[data-phone-number-list]');
+        var checkboxes = list ? Array.from(list.querySelectorAll('.ctcw-phone-select')) : [];
+        var selected = checkboxes.filter(function (checkbox) {
+            return checkbox.checked;
+        });
+        var selectAll = card.querySelector('[data-select-all-phones]');
+        var countEl = card.querySelector('[data-selected-phone-count]');
+        var deleteButton = card.querySelector('[data-delete-selected-phones]');
+        var errorEl = card.querySelector('[data-phone-bulk-error]');
+        var total = checkboxes.length;
+
+        if (countEl) {
+            countEl.textContent = selected.length + ' selected';
+        }
+
+        if (deleteButton) {
+            deleteButton.disabled = selected.length === 0 || selected.length === total;
+        }
+
+        if (errorEl) {
+            errorEl.hidden = !(total > 0 && selected.length === total);
+        }
+
+        if (selectAll) {
+            if (selected.length === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (selected.length === total) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            }
+        }
+
+        checkboxes.forEach(function (checkbox) {
+            var row = checkbox.closest('[data-phone-number-row]');
+            if (row) {
+                row.classList.toggle('is-selected', checkbox.checked);
+            }
+        });
+    }
+
+    function closePhoneBulkModal(card) {
+        var modal = card.querySelector('[data-phone-bulk-modal]');
+        if (modal) {
+            modal.hidden = true;
+        }
+    }
+
+    function openPhoneBulkModal(card) {
+        var list = card.querySelector('[data-phone-number-list]');
+        var modal = card.querySelector('[data-phone-bulk-modal]');
+        if (!list || !modal) {
+            return;
+        }
+
+        var selectedCheckboxes = Array.from(list.querySelectorAll('.ctcw-phone-select:checked'));
+        var count = selectedCheckboxes.length;
+        var total = countPhoneRows(list);
+
+        if (count === 0 || count === total) {
+            updateBulkDeleteUI(card);
+            return;
+        }
+
+        var message = modal.querySelector('[data-phone-bulk-modal-message]');
+        var confirmButton = modal.querySelector('[data-phone-bulk-modal-confirm]');
+
+        if (message) {
+            message.textContent = 'You are about to remove ' + count + ' phone numbers. This action cannot be undone until you save your changes.';
+        }
+        if (confirmButton) {
+            confirmButton.textContent = 'Delete ' + count + ' numbers';
+        }
+
+        modal.hidden = false;
+        if (confirmButton) {
+            confirmButton.focus();
+        }
+    }
+
+    function removeSelectedPhoneRows(card) {
+        var list = card.querySelector('[data-phone-number-list]');
+        if (!list) {
+            return;
+        }
+
+        var selectedCheckboxes = Array.from(list.querySelectorAll('.ctcw-phone-select:checked'));
+        if (!canRemovePhoneRows(list, selectedCheckboxes.length)) {
+            updateBulkDeleteUI(card);
+            return;
+        }
+
+        selectedCheckboxes.forEach(function (checkbox) {
+            var row = checkbox.closest('[data-phone-number-row]');
+            if (row) {
+                row.remove();
+            }
+        });
+
+        renumberPhoneRows(list);
+        showPhoneEmptyState(list);
+
+        if (countPhoneRows(list) === 0) {
+            setPhoneBulkToolbarVisible(card, false);
+        }
+
+        var selectAll = card.querySelector('[data-select-all-phones]');
+        if (selectAll) {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+        }
+
+        updateBulkDeleteUI(card);
+        closePhoneBulkModal(card);
+    }
+
+    function initPhoneBulkDelete(card) {
+        var list = card.querySelector('[data-phone-number-list]');
+        if (!list) {
+            return;
+        }
+
+        var selectAll = card.querySelector('[data-select-all-phones]');
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                var checked = selectAll.checked;
+                list.querySelectorAll('.ctcw-phone-select').forEach(function (checkbox) {
+                    checkbox.checked = checked;
+                });
+                updateBulkDeleteUI(card);
+            });
+        }
+
+        list.addEventListener('change', function (event) {
+            if (event.target.classList.contains('ctcw-phone-select')) {
+                updateBulkDeleteUI(card);
+            }
+        });
+
+        var deleteButton = card.querySelector('[data-delete-selected-phones]');
+        if (deleteButton) {
+            deleteButton.addEventListener('click', function () {
+                openPhoneBulkModal(card);
+            });
+        }
+
+        var modal = card.querySelector('[data-phone-bulk-modal]');
+        if (modal) {
+            modal.querySelectorAll('[data-phone-bulk-modal-close], [data-phone-bulk-modal-cancel]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    closePhoneBulkModal(card);
+                });
+            });
+
+            var confirmButton = modal.querySelector('[data-phone-bulk-modal-confirm]');
+            if (confirmButton) {
+                confirmButton.addEventListener('click', function () {
+                    removeSelectedPhoneRows(card);
+                });
+            }
+        }
+
+        setPhoneBulkToolbarVisible(card, countPhoneRows(list) > 0);
+        updateBulkDeleteUI(card);
+    }
+
     function renumberPhoneRows(list) {
         var fieldPrefix = list.getAttribute('data-field-prefix') || 'widget_numbers';
         list.querySelectorAll('[data-phone-number-row]').forEach(function (row, index) {
@@ -187,6 +383,10 @@
             row.querySelectorAll('input[type="tel"]').forEach(function (input) {
                 input.value = '';
             });
+            row.querySelectorAll('.ctcw-phone-select').forEach(function (checkbox) {
+                checkbox.checked = false;
+            });
+            row.classList.remove('is-selected');
             row.querySelectorAll('[data-country-code-field]').forEach(function (field) {
                 syncCountryField(field, '+60');
             });
@@ -204,6 +404,10 @@
         hidePhoneEmptyState(list);
         list.appendChild(row);
         preparePhoneRow(row, list);
+
+        var card = getPhoneCard(list);
+        setPhoneBulkToolbarVisible(card, true);
+        updateBulkDeleteUI(card);
     }
 
     function showSettingsPanel(sectionId, updateHash) {
@@ -269,12 +473,23 @@
             if (!phoneRow || !phoneList) {
                 return;
             }
+            if (!canRemovePhoneRows(phoneList, 1)) {
+                window.alert('At least one WhatsApp number must remain active.');
+                updateBulkDeleteUI(getPhoneCard(phoneList));
+                return;
+            }
             if (!window.confirm('Delete this number from the list?')) {
                 return;
             }
             phoneRow.remove();
             renumberPhoneRows(phoneList);
             showPhoneEmptyState(phoneList);
+
+            var phoneCard = getPhoneCard(phoneList);
+            if (countPhoneRows(phoneList) === 0) {
+                setPhoneBulkToolbarVisible(phoneCard, false);
+            }
+            updateBulkDeleteUI(phoneCard);
             return;
         }
 
@@ -483,9 +698,13 @@
 
             if (!phoneList.querySelector('[data-phone-number-row]')) {
                 event.preventDefault();
-                window.alert('Please add at least one WhatsApp number.');
+                window.alert('Please keep at least one active WhatsApp number.');
             }
         });
+    });
+
+    document.querySelectorAll('[data-phone-numbers-card]').forEach(function (card) {
+        initPhoneBulkDelete(card);
     });
 
     initLiveWidgetPreview();
