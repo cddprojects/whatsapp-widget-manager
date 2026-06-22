@@ -12,7 +12,7 @@ if (is_post()) {
     verify_csrf();
     $data = sanitize_phone_numbers_from_post($_POST, 'manual_numbers');
     if ($data === null) {
-        $errors[] = 'Please add at least one WhatsApp number.';
+        $errors[] = 'Please keep at least one active WhatsApp number.';
     } else {
         update_widget_phone_fields($widgetId, $data);
         flash('success', 'Phone numbers updated.');
