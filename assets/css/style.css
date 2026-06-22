@@ -1271,7 +1271,45 @@ code {
 .business-hours-table {
     display: grid;
     gap: 10px;
-    margin-top: 18px;
+    margin-top: 12px;
+}
+
+.business-hours-dynamic {
+    margin-top: 16px;
+}
+
+.business-hours-dynamic[hidden] {
+    display: none !important;
+}
+
+.business-hours-subheading {
+    margin: 0 0 4px;
+    font-size: 15px;
+}
+
+.business-hours-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.business-hours-status.is-online {
+    color: #15803d;
+    background: #dcfce7;
+    border: 1px solid #bbf7d0;
+}
+
+.business-day-row.is-disabled {
+    opacity: 0.5;
+}
+
+.business-day-row input:disabled {
+    cursor: not-allowed;
+    background: #f8fafc;
 }
 
 .business-row {

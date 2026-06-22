@@ -345,34 +345,67 @@ $settingsSections = [
             <span>7</span>
             <div>
                 <h2>Business Hours</h2>
-                <p>Outside business hours, the widget shows an offline state and disables the WhatsApp click.</p>
+                <p>Control when the WhatsApp widget is available.</p>
             </div>
         </div>
-        <div class="form-grid two-columns">
-            <label>
-                <span>Business hours mode</span>
-                <select name="business_hours_mode" data-business-hours-mode>
-                    <option value="always_open"<?= selected((string) $widget['business_hours_mode'], 'always_open') ?>>Always Open / Online</option>
-                    <option value="always_closed"<?= selected((string) $widget['business_hours_mode'], 'always_closed') ?>>Always Closed / Offline</option>
-                    <option value="custom"<?= selected((string) $widget['business_hours_mode'], 'custom') ?>>Custom Business Hours</option>
-                </select>
-            </label>
+        <?php $businessHoursMode = (string) ($widget['business_hours_mode'] ?? 'always_open'); ?>
+        <label>
+            <span>Business hours mode</span>
+            <select name="business_hours_mode" id="business_hours_mode" data-business-hours-mode>
+                <option value="always_open"<?= selected($businessHoursMode, 'always_open') ?>>Always Open / Online</option>
+                <option value="always_closed"<?= selected($businessHoursMode, 'always_closed') ?>>Always Closed / Offline</option>
+                <option value="custom"<?= selected($businessHoursMode, 'custom') ?>>Custom Business Hours</option>
+            </select>
+        </label>
+
+        <div class="business-hours-dynamic" id="alwaysOpenState" data-always-open-state<?= $businessHoursMode === 'always_open' ? '' : ' hidden' ?>>
+            <span class="business-hours-status is-online">Always online</span>
+            <p class="field-helper">The widget is always available and WhatsApp clicks remain enabled.</p>
+        </div>
+
+        <div class="business-hours-dynamic" id="offlineMessageGroup" data-offline-message-group<?= $businessHoursMode === 'always_open' ? ' hidden' : '' ?>>
+            <p class="field-helper" data-offline-helper-closed<?= $businessHoursMode === 'always_closed' ? '' : ' hidden' ?>>The widget is shown as offline and WhatsApp clicks are disabled at all times.</p>
+            <p class="field-helper" data-offline-helper-custom<?= $businessHoursMode === 'custom' ? '' : ' hidden' ?>>Set the days and times when the widget is available. Outside these hours, visitors will see the offline message.</p>
             <label>
                 <span>Offline message</span>
                 <input type="text" name="offline_message" value="<?= e($widget['offline_message']) ?>">
             </label>
         </div>
-        <div class="business-hours-table" data-business-hours-table>
-            <?php foreach ($businessHours as $day => $settings): ?>
-                <div class="business-row">
-                    <label class="toggle-row">
-                        <input type="checkbox" name="business_hours[<?= e($day) ?>][enabled]" value="1"<?= checked($settings['enabled'] ?? false) ?>>
-                        <span><?= e(ucfirst($day)) ?></span>
-                    </label>
-                    <input type="time" name="business_hours[<?= e($day) ?>][open]" value="<?= e((string) ($settings['open'] ?? '09:00')) ?>">
-                    <input type="time" name="business_hours[<?= e($day) ?>][close]" value="<?= e((string) ($settings['close'] ?? '18:00')) ?>">
-                </div>
-            <?php endforeach; ?>
+
+        <div class="business-hours-dynamic" id="customBusinessHoursGroup" data-custom-business-hours-group<?= $businessHoursMode === 'custom' ? '' : ' hidden' ?>>
+            <h3 class="business-hours-subheading">Weekly availability</h3>
+            <div class="business-hours-table" data-business-hours-table>
+                <?php foreach ($businessHours as $day => $settings): ?>
+                    <?php
+                    $dayEnabled = !empty($settings['enabled']);
+                    $dayDisabled = $businessHoursMode === 'custom' && !$dayEnabled;
+                    ?>
+                    <div class="business-row business-day-row<?= $dayDisabled ? ' is-disabled' : '' ?>" data-business-day-row>
+                        <label class="toggle-row">
+                            <input
+                                type="checkbox"
+                                name="business_hours[<?= e($day) ?>][enabled]"
+                                value="1"
+                                data-day-enabled
+                                <?= checked($dayEnabled) ?>
+                            >
+                            <span><?= e(ucfirst($day)) ?></span>
+                        </label>
+                        <input
+                            type="time"
+                            name="business_hours[<?= e($day) ?>][open]"
+                            value="<?= e((string) ($settings['open'] ?? '09:00')) ?>"
+                            <?= $dayDisabled ? 'disabled' : '' ?>
+                        >
+                        <input
+                            type="time"
+                            name="business_hours[<?= e($day) ?>][close]"
+                            value="<?= e((string) ($settings['close'] ?? '18:00')) ?>"
+                            <?= $dayDisabled ? 'disabled' : '' ?>
+                        >
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
     </section>
 
