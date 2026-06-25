@@ -872,6 +872,21 @@
         initPhoneBulkDelete(card);
     });
 
+    document.querySelectorAll('[data-strict-domain-check]').forEach(function (checkbox) {
+        var warning = document.querySelector('[data-strict-domain-warning]');
+
+        if (!warning) {
+            return;
+        }
+
+        function syncStrictDomainWarning() {
+            warning.hidden = !checkbox.checked;
+        }
+
+        checkbox.addEventListener('change', syncStrictDomainWarning);
+        syncStrictDomainWarning();
+    });
+
     initLiveWidgetPreview();
     initClientCreateForm();
 })();

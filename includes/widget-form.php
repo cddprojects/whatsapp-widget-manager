@@ -505,11 +505,12 @@ $settingsSections = [
                 <span>Allow subdomains</span>
             </label>
             <label class="toggle-row">
-                <input type="checkbox" name="strict_domain_check" value="1"<?= checked($widget['strict_domain_check']) ?>>
-                <span>Strict domain check</span>
+                <input type="checkbox" name="strict_domain_check" value="1" data-strict-domain-check<?= !empty($widget['strict_domain_check']) ? ' checked' : '' ?>>
+                <span>Strict Domain Check</span>
             </label>
         </div>
-        <div class="notice-box compact">Strict domain check blocks the widget when the browser does not send a referrer. Recommended default: enabled.</div>
+        <div class="notice-box compact">Block the widget when the visitor’s browser does not send a matching website referrer. Keep this off unless you require stricter domain protection.</div>
+        <div class="notice-box compact alert-warning" data-strict-domain-warning<?= !empty($widget['strict_domain_check']) ? '' : ' hidden' ?>>This may prevent the widget from loading for some valid visitors or browser privacy settings.</div>
         <?php if ($embed !== ''): ?>
             <div class="embed-box">
                 <div class="panel-heading">
