@@ -463,17 +463,77 @@ function normalize_dial_code(string $value): string
     return '+' . $digits;
 }
 
-function get_neutral_calling_code_label(string $dialCode): string
+function get_neutral_calling_code_label(string $dialCode, string $fallbackCountryName = ''): string
 {
     $labels = [
-        '+1' => 'North America',
+        '+1' => 'North America (US / Canada)',
+        '+7' => 'Russia / Kazakhstan',
+        '+20' => 'Egypt',
+        '+27' => 'South Africa',
+        '+30' => 'Greece',
+        '+31' => 'Netherlands',
+        '+32' => 'Belgium',
+        '+33' => 'France',
+        '+34' => 'Spain',
+        '+39' => 'Italy',
+        '+40' => 'Romania',
+        '+41' => 'Switzerland',
+        '+43' => 'Austria',
         '+44' => 'United Kingdom',
+        '+45' => 'Denmark',
+        '+46' => 'Sweden',
+        '+47' => 'Norway',
+        '+48' => 'Poland',
+        '+49' => 'Germany',
+        '+51' => 'Peru',
+        '+52' => 'Mexico',
+        '+54' => 'Argentina',
+        '+55' => 'Brazil',
+        '+56' => 'Chile',
+        '+57' => 'Colombia',
+        '+58' => 'Venezuela',
         '+60' => 'Malaysia',
+        '+61' => 'Australia',
+        '+62' => 'Indonesia',
+        '+63' => 'Philippines',
+        '+64' => 'New Zealand',
         '+65' => 'Singapore',
+        '+66' => 'Thailand',
+        '+81' => 'Japan',
+        '+82' => 'South Korea',
+        '+84' => 'Vietnam',
+        '+86' => 'China',
+        '+91' => 'India',
+        '+92' => 'Pakistan',
+        '+93' => 'Afghanistan',
+        '+94' => 'Sri Lanka',
+        '+95' => 'Myanmar',
+        '+98' => 'Iran',
+        '+212' => 'Morocco',
+        '+234' => 'Nigeria',
+        '+254' => 'Kenya',
+        '+351' => 'Portugal',
+        '+352' => 'Luxembourg',
+        '+353' => 'Ireland',
+        '+358' => 'Finland',
+        '+380' => 'Ukraine',
+        '+420' => 'Czech Republic',
         '+852' => 'Hong Kong',
+        '+853' => 'Macau',
+        '+886' => 'Taiwan',
+        '+960' => 'Maldives',
+        '+971' => 'United Arab Emirates',
     ];
 
-    return $labels[$dialCode] ?? '';
+    if (isset($labels[$dialCode])) {
+        return $labels[$dialCode];
+    }
+
+    if ($fallbackCountryName !== '') {
+        return $fallbackCountryName;
+    }
+
+    return 'International calling code';
 }
 
 function calling_code_options(): array
@@ -492,7 +552,7 @@ function calling_code_options(): array
 
         $uniqueCodes[$dialCode] = [
             'dialCode' => $dialCode,
-            'label' => get_neutral_calling_code_label($dialCode),
+            'label' => get_neutral_calling_code_label($dialCode, (string) $country['name']),
         ];
     }
 
@@ -548,7 +608,7 @@ function render_calling_code_picker(string $selectedCode = '+60', ?string $hidde
         . '<span class="ctcw-calling-code-caret" aria-hidden="true">▼</span>'
         . '</button>'
         . '<div class="ctcw-calling-code-menu" hidden>'
-        . '<input type="search" class="ctcw-calling-code-search" placeholder="Search calling code" autocomplete="off" aria-label="Search calling code">'
+        . '<input type="search" class="ctcw-calling-code-search" placeholder="Search calling code or country" autocomplete="off" aria-label="Search calling code or country">'
         . '<div class="ctcw-calling-code-options" role="listbox"></div>'
         . '</div>'
         . '</div>';

@@ -96,7 +96,7 @@ $hasPhoneNumbers = $phoneNumbers !== [];
                     <span class="ctcw-calling-code-caret" aria-hidden="true">▼</span>
                 </button>
                 <div class="ctcw-calling-code-menu" hidden>
-                    <input type="search" class="ctcw-calling-code-search" placeholder="Search calling code" autocomplete="off" aria-label="Search calling code">
+                    <input type="search" class="ctcw-calling-code-search" placeholder="Search calling code or country" autocomplete="off" aria-label="Search calling code or country">
                     <div class="ctcw-calling-code-options" role="listbox"></div>
                 </div>
             </div>
