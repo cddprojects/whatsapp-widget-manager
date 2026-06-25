@@ -581,5 +581,5 @@ $settingsSections = [
         </div>
     </div>
 
-    <script type="application/json" id="country-code-data"><?= json_for_html(country_code_options()) ?></script>
+    <script type="application/json" id="country-code-data"><?= json_for_html(calling_code_options()) ?></script>
 </form>

@@ -52,9 +52,8 @@ $hasPhoneNumbers = $phoneNumbers !== [];
         <?php else: ?>
             <?php foreach ($phoneNumbers as $index => $row): ?>
                 <?php
-                $countryCode = (string) ($row['country_code'] ?? '+60');
+                $countryCode = normalize_dial_code((string) ($row['country_code'] ?? '+60')) ?: '+60';
                 $phoneNumber = (string) ($row['number'] ?? '');
-                $inputId = $listId . '-country-' . (int) $index;
                 $selectLabel = 'Select phone number ' . $countryCode . $phoneNumber;
                 ?>
                 <div class="phone-number-row ctcw-phone-row" data-phone-number-row>
@@ -62,8 +61,7 @@ $hasPhoneNumbers = $phoneNumbers !== [];
                         <span class="sr-only"><?= e($selectLabel) ?></span>
                         <input type="checkbox" class="ctcw-phone-select" aria-label="<?= e($selectLabel) ?>">
                     </label>
-                    <?= render_country_code_search_input(
-                        $inputId,
+                    <?= render_calling_code_picker(
                         $countryCode,
                         $fieldPrefix . '[' . (int) $index . '][country_code]'
                     ) ?>
@@ -73,9 +71,10 @@ $hasPhoneNumbers = $phoneNumbers !== [];
                             type="tel"
                             name="<?= e($fieldPrefix) ?>[<?= (int) $index ?>][number]"
                             value="<?= e($phoneNumber) ?>"
-                            placeholder="123456789"
+                            placeholder="Phone number without calling code"
                             autocomplete="tel"
                             data-row-phone
+                            class="ctcw-phone-number-input"
                         >
                     </label>
                     <button type="button" class="btn btn-small btn-danger-soft" data-remove-phone-number>Delete</button>
@@ -90,14 +89,20 @@ $hasPhoneNumbers = $phoneNumbers !== [];
                 <span class="sr-only">Select phone number</span>
                 <input type="checkbox" class="ctcw-phone-select" aria-label="Select phone number">
             </label>
-            <div class="country-code-field" data-country-code-field>
-                <input type="text" class="country-code-search" list="<?= e($listId) ?>-country-options" value="MY +60 Malaysia" placeholder="Search country or code" autocomplete="off" data-country-search>
-                <input type="hidden" value="+60" data-country-value>
-                <datalist id="<?= e($listId) ?>-country-options"></datalist>
+            <div class="ctcw-calling-code-picker">
+                <input type="hidden" class="ctcw-calling-code-value" value="+60">
+                <button type="button" class="ctcw-calling-code-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Calling code">
+                    <span class="ctcw-calling-code-label">+60</span>
+                    <span class="ctcw-calling-code-caret" aria-hidden="true">▼</span>
+                </button>
+                <div class="ctcw-calling-code-menu" hidden>
+                    <input type="search" class="ctcw-calling-code-search" placeholder="Search calling code" autocomplete="off" aria-label="Search calling code">
+                    <div class="ctcw-calling-code-options" role="listbox"></div>
+                </div>
             </div>
             <label class="phone-number-input">
                 <span class="sr-only">Phone number</span>
-                <input type="tel" value="" placeholder="123456789" autocomplete="tel" data-row-phone>
+                <input type="tel" value="" placeholder="Phone number without calling code" autocomplete="tel" data-row-phone class="ctcw-phone-number-input">
             </label>
             <button type="button" class="btn btn-small btn-danger-soft" data-remove-phone-number>Delete</button>
         </div>

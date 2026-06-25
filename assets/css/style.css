@@ -1086,6 +1086,7 @@ code {
     display: grid;
     gap: 12px;
     margin-top: 16px;
+    overflow: visible;
 }
 
 .ctcw-phone-bulk-toolbar {
@@ -1204,14 +1205,20 @@ code {
 }
 
 .phone-number-row {
+    position: relative;
     display: grid;
-    grid-template-columns: auto minmax(220px, 280px) minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(150px, 180px) minmax(0, 1fr) auto;
     gap: 12px;
     align-items: center;
     padding: 14px;
     border: 1px solid var(--line);
     border-radius: 14px;
     background: #fafbfc;
+    overflow: visible;
+}
+
+.ctcw-phone-row {
+    overflow: visible;
 }
 
 .ctcw-phone-row.is-disabled input:disabled,
@@ -1913,12 +1920,98 @@ code {
     gap: 8px;
 }
 
-.country-code-field {
-    display: grid;
-    gap: 6px;
+.ctcw-calling-code-picker {
+    position: relative;
+    z-index: 20;
+    min-width: 150px;
 }
 
-.country-code-search,
+.ctcw-calling-code-trigger {
+    width: 100%;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #ffffff;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.ctcw-calling-code-trigger:hover,
+.ctcw-calling-code-trigger:focus-visible {
+    border-color: #94a3b8;
+    outline: none;
+}
+
+.ctcw-calling-code-caret {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1;
+}
+
+.ctcw-calling-code-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 9999;
+    width: min(320px, calc(100vw - 32px));
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #dbe2ea;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+.ctcw-calling-code-menu[hidden] {
+    display: none !important;
+}
+
+.ctcw-calling-code-search {
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 12px 12px 0 0;
+    font: inherit;
+    color: var(--text);
+    background: #ffffff;
+}
+
+.ctcw-calling-code-search:focus {
+    outline: none;
+}
+
+.ctcw-calling-code-options {
+    display: grid;
+}
+
+.ctcw-calling-code-option {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border: 0;
+    background: transparent;
+    color: #0f172a;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.ctcw-calling-code-option:hover,
+.ctcw-calling-code-option:focus-visible {
+    background: #f1f5f9;
+    outline: none;
+}
+
+.ctcw-phone-number-input,
 .client-phone-input input {
     width: 100%;
 }

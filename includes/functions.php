@@ -453,11 +453,62 @@ function country_code_options(): array
     }, $rows);
 }
 
+function normalize_dial_code(string $value): string
+{
+    $digits = preg_replace('/\D/', '', $value) ?? '';
+    if ($digits === '') {
+        return '';
+    }
+
+    return '+' . $digits;
+}
+
+function get_neutral_calling_code_label(string $dialCode): string
+{
+    $labels = [
+        '+1' => 'North America',
+        '+44' => 'United Kingdom',
+        '+60' => 'Malaysia',
+        '+65' => 'Singapore',
+        '+852' => 'Hong Kong',
+    ];
+
+    return $labels[$dialCode] ?? '';
+}
+
+function calling_code_options(): array
+{
+    static $options = null;
+    if ($options !== null) {
+        return $options;
+    }
+
+    $uniqueCodes = [];
+    foreach (country_code_options() as $country) {
+        $dialCode = normalize_dial_code((string) $country['code']);
+        if ($dialCode === '' || isset($uniqueCodes[$dialCode])) {
+            continue;
+        }
+
+        $uniqueCodes[$dialCode] = [
+            'dialCode' => $dialCode,
+            'label' => get_neutral_calling_code_label($dialCode),
+        ];
+    }
+
+    $options = array_values($uniqueCodes);
+    usort($options, static function (array $a, array $b): int {
+        return (int) str_replace('+', '', $a['dialCode']) <=> (int) str_replace('+', '', $b['dialCode']);
+    });
+
+    return $options;
+}
+
 function country_codes(): array
 {
     $codes = [];
-    foreach (country_code_options() as $option) {
-        $codes[$option['code']] = $option['label'];
+    foreach (calling_code_options() as $option) {
+        $codes[$option['dialCode']] = $option['dialCode'];
     }
 
     return $codes;
@@ -482,32 +533,30 @@ function render_country_options(string $selectedCode): string
 
 function country_code_search_label(string $code): string
 {
-    foreach (country_code_options() as $option) {
-        if ($option['code'] === $code) {
-            return (string) $option['label'];
-        }
-    }
+    return normalize_dial_code($code) ?: $code;
+}
 
-    return $code;
+function render_calling_code_picker(string $selectedCode = '+60', ?string $hiddenName = null): string
+{
+    $callingCode = normalize_dial_code($selectedCode) ?: '+60';
+    $nameAttr = $hiddenName !== null ? ' name="' . e($hiddenName) . '"' : '';
+
+    return '<div class="ctcw-calling-code-picker">'
+        . '<input type="hidden" class="ctcw-calling-code-value" value="' . e($callingCode) . '"' . $nameAttr . '>'
+        . '<button type="button" class="ctcw-calling-code-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Calling code">'
+        . '<span class="ctcw-calling-code-label">' . e($callingCode) . '</span>'
+        . '<span class="ctcw-calling-code-caret" aria-hidden="true">▼</span>'
+        . '</button>'
+        . '<div class="ctcw-calling-code-menu" hidden>'
+        . '<input type="search" class="ctcw-calling-code-search" placeholder="Search calling code" autocomplete="off" aria-label="Search calling code">'
+        . '<div class="ctcw-calling-code-options" role="listbox"></div>'
+        . '</div>'
+        . '</div>';
 }
 
 function render_country_code_search_input(string $inputId, string $selectedCode = '+60', ?string $hiddenName = null): string
 {
-    $listId = $inputId . '-list';
-    $displayValue = country_code_search_label($selectedCode);
-    $nameAttr = $hiddenName !== null ? ' name="' . e($hiddenName) . '"' : '';
-    $html = '<div class="country-code-field" data-country-code-field>'
-        . '<input type="text" class="country-code-search" id="' . e($inputId) . '" list="' . e($listId) . '" value="' . e($displayValue) . '" placeholder="Search country or code" autocomplete="off" data-country-search>'
-        . '<input type="hidden" value="' . e($selectedCode) . '" data-country-value' . $nameAttr . '>'
-        . '<datalist id="' . e($listId) . '">';
-
-    foreach (country_code_options() as $option) {
-        $html .= '<option value="' . e($option['label']) . '"></option>';
-    }
-
-    $html .= '</datalist></div>';
-
-    return $html;
+    return render_calling_code_picker($selectedCode, $hiddenName);
 }
 
 function country_code_prefixes_longest_first(): array
@@ -647,7 +696,7 @@ function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widge
             continue;
         }
 
-        $countryCode = trim((string) ($row['country_code'] ?? '+60'));
+        $countryCode = normalize_dial_code(trim((string) ($row['country_code'] ?? '+60'))) ?: '+60';
         if (!array_key_exists($countryCode, country_codes())) {
             $countryCode = '+60';
         }
