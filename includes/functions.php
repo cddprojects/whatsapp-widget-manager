@@ -905,7 +905,7 @@ function default_widget_data(): array
         'allow_www' => 1,
         'allow_subdomains' => 0,
         'domain_lock_enabled' => 1,
-        'strict_domain_check' => 1,
+        'strict_domain_check' => 0,
         'whatsapp_country_code' => '+60',
         'whatsapp_number' => '',
         'use_random_numbers' => 0,

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS widgets (
     allow_www TINYINT(1) NOT NULL DEFAULT 1,
     allow_subdomains TINYINT(1) NOT NULL DEFAULT 0,
     domain_lock_enabled TINYINT(1) NOT NULL DEFAULT 1,
-    strict_domain_check TINYINT(1) NOT NULL DEFAULT 1,
+    strict_domain_check TINYINT(1) NOT NULL DEFAULT 0,
     whatsapp_country_code VARCHAR(8) NOT NULL DEFAULT '+60',
     whatsapp_number VARCHAR(32) NOT NULL,
     use_random_numbers TINYINT(1) NOT NULL DEFAULT 0,
