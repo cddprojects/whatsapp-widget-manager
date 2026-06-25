@@ -1993,16 +1993,30 @@ code {
 
 .ctcw-calling-code-option {
     width: 100%;
-    min-height: 42px;
-    display: flex;
+    min-height: 46px;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
     align-items: center;
-    padding: 10px 12px;
+    gap: 12px;
+    padding: 11px 14px;
     border: 0;
     background: transparent;
     color: #0f172a;
     text-align: left;
-    font: inherit;
     cursor: pointer;
+}
+
+.ctcw-calling-code-option-code {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.ctcw-calling-code-option-label {
+    overflow: hidden;
+    color: #475569;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ctcw-calling-code-option:hover,

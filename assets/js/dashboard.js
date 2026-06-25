@@ -592,23 +592,68 @@
         };
     }
 
-    function filterCallingCodeOptions(options, query) {
-        var normalizedQuery = normalizeDialCode(query);
+    function getCallingCodeSearchText(option) {
+        var parts = [String(option.label || '').toLowerCase()];
 
-        if (!normalizedQuery) {
+        if (callingCodeSearchAliases[option.dialCode]) {
+            parts = parts.concat(callingCodeSearchAliases[option.dialCode]);
+        }
+
+        return parts.join(' ');
+    }
+
+    var callingCodeSearchAliases = {
+        '+1': ['north america', 'usa', 'us', 'canada', 'america'],
+        '+44': ['uk', 'united kingdom', 'britain', 'great britain', 'england'],
+        '+60': ['malaysia'],
+        '+65': ['singapore'],
+        '+852': ['hong kong', 'hk']
+    };
+
+    function getCallingCodeLabel(dialCode) {
+        var match = callingCodeOptions.find(function (option) {
+            return option.dialCode === dialCode;
+        });
+
+        return match && match.label ? match.label : 'International calling code';
+    }
+
+    function updateCallingCodeTrigger(row, dialCode) {
+        var picker = getCallingCodePickerElements(row);
+
+        if (!picker.hiddenInput || !picker.label) {
+            return;
+        }
+
+        var normalizedCode = normalizeDialCode(dialCode);
+
+        picker.hiddenInput.value = normalizedCode;
+        picker.label.textContent = normalizedCode;
+
+        if (picker.trigger) {
+            picker.trigger.title = 'Calling code: ' + normalizedCode + ' — ' + getCallingCodeLabel(normalizedCode);
+        }
+    }
+
+    function filterCallingCodeOptions(options, query) {
+        var rawQuery = String(query || '').trim().toLowerCase();
+        var normalizedCode = normalizeDialCode(query);
+
+        if (!rawQuery) {
             return options;
         }
 
-        var exactMatch = options.filter(function (option) {
-            return option.dialCode === normalizedQuery;
+        var exactCodeMatch = options.filter(function (option) {
+            return option.dialCode === normalizedCode;
         });
 
-        if (exactMatch.length) {
-            return exactMatch;
+        if (exactCodeMatch.length) {
+            return exactCodeMatch;
         }
 
         return options.filter(function (option) {
-            return option.dialCode.indexOf(normalizedQuery) === 0;
+            return (normalizedCode !== '' && option.dialCode.indexOf(normalizedCode) === 0)
+                || getCallingCodeSearchText(option).indexOf(rawQuery) !== -1;
         });
     }
 
@@ -628,7 +673,17 @@
             button.className = 'ctcw-calling-code-option';
             button.setAttribute('role', 'option');
             button.dataset.dialCode = option.dialCode;
-            button.textContent = option.dialCode;
+
+            var codeEl = document.createElement('strong');
+            codeEl.className = 'ctcw-calling-code-option-code';
+            codeEl.textContent = option.dialCode;
+
+            var labelEl = document.createElement('span');
+            labelEl.className = 'ctcw-calling-code-option-label';
+            labelEl.textContent = option.label || 'International calling code';
+
+            button.appendChild(codeEl);
+            button.appendChild(labelEl);
             picker.options.appendChild(button);
         });
     }
@@ -687,20 +742,15 @@
     }
 
     function selectCallingCode(row, dialCode) {
+        updateCallingCodeTrigger(row, dialCode);
+
         var picker = getCallingCodePickerElements(row);
 
-        if (!picker.hiddenInput || !picker.label) {
-            return;
+        if (picker.hiddenInput) {
+            picker.hiddenInput.dispatchEvent(
+                new Event('change', { bubbles: true })
+            );
         }
-
-        var normalizedCode = normalizeDialCode(dialCode);
-
-        picker.hiddenInput.value = normalizedCode;
-        picker.label.textContent = normalizedCode;
-
-        picker.hiddenInput.dispatchEvent(
-            new Event('change', { bubbles: true })
-        );
 
         closeCallingCodeMenu(row);
     }
@@ -708,14 +758,11 @@
     function hydrateCallingCodePicker(row) {
         var picker = getCallingCodePickerElements(row);
 
-        if (!picker.hiddenInput || !picker.label) {
+        if (!picker.hiddenInput) {
             return;
         }
 
-        var callingCode = getCallingCodeDisplay(picker.hiddenInput.value);
-
-        picker.hiddenInput.value = callingCode;
-        picker.label.textContent = callingCode;
+        updateCallingCodeTrigger(row, getCallingCodeDisplay(picker.hiddenInput.value));
     }
 
     function initCallingCodePickers(list) {
