@@ -117,7 +117,7 @@ require __DIR__ . '/includes/header.php';
         <?php endif; ?>
     </section>
 
-    <script type="application/json" id="country-code-data"><?= json_for_html(country_code_options()) ?></script>
+    <script type="application/json" id="country-code-data"><?= json_for_html(calling_code_options()) ?></script>
 <?php endif; ?>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

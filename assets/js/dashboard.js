@@ -300,25 +300,14 @@
     function renumberPhoneRows(list) {
         var fieldPrefix = list.getAttribute('data-field-prefix') || 'widget_numbers';
         list.querySelectorAll('[data-phone-number-row]').forEach(function (row, index) {
-            var hiddenInput = row.querySelector('[data-country-value]');
+            var hiddenInput = row.querySelector('.ctcw-calling-code-value');
             var phoneInput = row.querySelector('[data-row-phone]');
-            var searchInput = row.querySelector('[data-country-search]');
-            var listBaseId = list.id || 'phone-number-list';
 
             if (hiddenInput) {
                 hiddenInput.name = fieldPrefix + '[' + index + '][country_code]';
             }
             if (phoneInput) {
                 phoneInput.name = fieldPrefix + '[' + index + '][number]';
-            }
-            if (searchInput) {
-                searchInput.id = listBaseId + '-country-' + index;
-                searchInput.setAttribute('list', listBaseId + '-country-' + index + '-list');
-            }
-
-            var datalist = row.querySelector('datalist');
-            if (datalist) {
-                datalist.id = listBaseId + '-country-' + index + '-list';
             }
         });
     }
@@ -342,35 +331,14 @@
         list.appendChild(empty);
     }
 
-    function populateCountryDatalist(datalist) {
-        if (!datalist || datalist.options.length > 0) {
-            return;
-        }
-
-        countryOptions.forEach(function (option) {
-            var node = document.createElement('option');
-            node.value = option.label;
-            datalist.appendChild(node);
-        });
-    }
-
     function preparePhoneRow(row, list) {
-        row.querySelectorAll('[data-country-code-field]').forEach(function (field) {
-            populateCountryDatalist(field.querySelector('datalist'));
-            bindCountrySearch(field);
-        });
+        hydrateCallingCodePicker(row);
         renumberPhoneRows(list);
     }
 
-    function syncPhoneListCountryFields(list) {
-        list.querySelectorAll('[data-country-code-field]').forEach(function (field) {
-            var searchInput = field.querySelector('[data-country-search]');
-            var hiddenInput = field.querySelector('[data-country-value]');
-            if (!searchInput || !hiddenInput) {
-                return;
-            }
-            var resolved = resolveCountryCode(searchInput.value, hiddenInput.value || '+60');
-            syncCountryField(field, resolved);
+    function syncPhoneListCallingCodes(list) {
+        list.querySelectorAll('[data-phone-number-row]').forEach(function (row) {
+            hydrateCallingCodePicker(row);
         });
     }
 
@@ -387,18 +355,14 @@
                 checkbox.checked = false;
             });
             row.classList.remove('is-selected');
-            row.querySelectorAll('[data-country-code-field]').forEach(function (field) {
-                syncCountryField(field, '+60');
-            });
+            selectCallingCode(row, '+60');
         } else {
             var template = document.getElementById(list.id + '-template');
             if (!template) {
                 return;
             }
             row = template.content.firstElementChild.cloneNode(true);
-            row.querySelectorAll('[data-country-code-field]').forEach(function (field) {
-                syncCountryField(field, '+60');
-            });
+            selectCallingCode(row, '+60');
         }
 
         hidePhoneEmptyState(list);
@@ -593,95 +557,249 @@
         });
     }
 
-    var countryDataNode = document.getElementById('country-code-data');
-    var countryOptions = [];
-    if (countryDataNode) {
+    var callingCodeDataNode = document.getElementById('country-code-data');
+    var callingCodeOptions = [];
+    if (callingCodeDataNode) {
         try {
-            countryOptions = JSON.parse(countryDataNode.textContent || '[]');
+            callingCodeOptions = JSON.parse(callingCodeDataNode.textContent || '[]');
         } catch (error) {
-            countryOptions = [];
+            callingCodeOptions = [];
         }
     }
 
-    function cleanDigits(value) {
-        return String(value || '').replace(/\D+/g, '');
-    }
+    function normalizeDialCode(value) {
+        var digits = String(value || '').replace(/\D/g, '');
 
-    function resolveCountryCode(searchValue, fallbackCode) {
-        var query = String(searchValue || '').trim().toLowerCase();
-        if (query === '') {
-            return fallbackCode || '+60';
+        if (!digits) {
+            return '';
         }
 
-        var exact = countryOptions.find(function (option) {
-            return option.code === searchValue || option.label === searchValue;
+        return '+' + digits;
+    }
+
+    function getCallingCodeDisplay(value) {
+        return normalizeDialCode(value) || '+60';
+    }
+
+    function getCallingCodePickerElements(row) {
+        return {
+            hiddenInput: row.querySelector('.ctcw-calling-code-value'),
+            trigger: row.querySelector('.ctcw-calling-code-trigger'),
+            label: row.querySelector('.ctcw-calling-code-label'),
+            menu: row.querySelector('.ctcw-calling-code-menu'),
+            search: row.querySelector('.ctcw-calling-code-search'),
+            options: row.querySelector('.ctcw-calling-code-options')
+        };
+    }
+
+    function filterCallingCodeOptions(options, query) {
+        var normalizedQuery = normalizeDialCode(query);
+
+        if (!normalizedQuery) {
+            return options;
+        }
+
+        var exactMatch = options.filter(function (option) {
+            return option.dialCode === normalizedQuery;
         });
-        if (exact) {
-            return exact.code;
+
+        if (exactMatch.length) {
+            return exactMatch;
         }
 
-        var digitQuery = cleanDigits(query);
-        var matches = countryOptions.filter(function (option) {
-            var codeDigits = cleanDigits(option.code);
-            var label = String(option.label || '').toLowerCase();
-            var name = String(option.name || '').toLowerCase();
-            return label.indexOf(query) !== -1
-                || name.indexOf(query) !== -1
-                || (digitQuery !== '' && codeDigits.indexOf(digitQuery) === 0)
-                || (digitQuery !== '' && digitQuery.indexOf(codeDigits) === 0);
+        return options.filter(function (option) {
+            return option.dialCode.indexOf(normalizedQuery) === 0;
         });
-
-        if (matches.length === 1) {
-            return matches[0].code;
-        }
-
-        if (matches.length > 1) {
-            var best = matches.find(function (option) {
-                return String(option.label || '').toLowerCase() === query
-                    || String(option.name || '').toLowerCase() === query
-                    || cleanDigits(option.code) === digitQuery;
-            });
-            if (best) {
-                return best.code;
-            }
-        }
-
-        return fallbackCode || '+60';
     }
 
-    function syncCountryField(field, code) {
-        var match = countryOptions.find(function (option) {
-            return option.code === code;
-        });
-        var searchInput = field.querySelector('[data-country-search]');
-        var hiddenInput = field.querySelector('[data-country-value]');
-        if (hiddenInput) {
-            hiddenInput.value = code;
-        }
-        if (searchInput) {
-            searchInput.value = match ? match.label : code;
-        }
-    }
+    function renderCallingCodeOptions(row, query) {
+        var picker = getCallingCodePickerElements(row);
 
-    function bindCountrySearch(field) {
-        var searchInput = field.querySelector('[data-country-search]');
-        var hiddenInput = field.querySelector('[data-country-value]');
-        if (!searchInput || !hiddenInput) {
+        if (!picker.options) {
             return;
         }
 
-        searchInput.addEventListener('change', function () {
-            var resolved = resolveCountryCode(searchInput.value, hiddenInput.value || '+60');
-            syncCountryField(field, resolved);
-        });
+        var filtered = filterCallingCodeOptions(callingCodeOptions, query);
+        picker.options.innerHTML = '';
 
-        searchInput.addEventListener('blur', function () {
-            var resolved = resolveCountryCode(searchInput.value, hiddenInput.value || '+60');
-            syncCountryField(field, resolved);
+        filtered.forEach(function (option) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'ctcw-calling-code-option';
+            button.setAttribute('role', 'option');
+            button.dataset.dialCode = option.dialCode;
+            button.textContent = option.dialCode;
+            picker.options.appendChild(button);
         });
     }
 
+    function closeAllCallingCodeMenus(exceptRow) {
+        document.querySelectorAll('.ctcw-phone-row').forEach(function (row) {
+            if (row === exceptRow) {
+                return;
+            }
+
+            var picker = getCallingCodePickerElements(row);
+
+            if (!picker.menu || !picker.trigger) {
+                return;
+            }
+
+            picker.menu.hidden = true;
+            picker.trigger.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    function closeCallingCodeMenu(row) {
+        var picker = getCallingCodePickerElements(row);
+
+        if (!picker.menu || !picker.trigger) {
+            return;
+        }
+
+        picker.menu.hidden = true;
+        picker.trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleCallingCodeMenu(row) {
+        var picker = getCallingCodePickerElements(row);
+
+        if (!picker.menu || !picker.trigger) {
+            return;
+        }
+
+        var shouldOpen = picker.menu.hidden;
+
+        closeAllCallingCodeMenus(row);
+
+        picker.menu.hidden = !shouldOpen;
+        picker.trigger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+
+        if (shouldOpen) {
+            renderCallingCodeOptions(row, picker.search ? picker.search.value : '');
+
+            window.setTimeout(function () {
+                if (picker.search) {
+                    picker.search.focus();
+                }
+            }, 0);
+        }
+    }
+
+    function selectCallingCode(row, dialCode) {
+        var picker = getCallingCodePickerElements(row);
+
+        if (!picker.hiddenInput || !picker.label) {
+            return;
+        }
+
+        var normalizedCode = normalizeDialCode(dialCode);
+
+        picker.hiddenInput.value = normalizedCode;
+        picker.label.textContent = normalizedCode;
+
+        picker.hiddenInput.dispatchEvent(
+            new Event('change', { bubbles: true })
+        );
+
+        closeCallingCodeMenu(row);
+    }
+
+    function hydrateCallingCodePicker(row) {
+        var picker = getCallingCodePickerElements(row);
+
+        if (!picker.hiddenInput || !picker.label) {
+            return;
+        }
+
+        var callingCode = getCallingCodeDisplay(picker.hiddenInput.value);
+
+        picker.hiddenInput.value = callingCode;
+        picker.label.textContent = callingCode;
+    }
+
+    function initCallingCodePickers(list) {
+        if (list.dataset.callingCodePickerInit === 'true') {
+            return;
+        }
+
+        list.dataset.callingCodePickerInit = 'true';
+
+        list.addEventListener('click', function (event) {
+            var trigger = event.target.closest('.ctcw-calling-code-trigger');
+
+            if (trigger) {
+                event.preventDefault();
+
+                var row = trigger.closest('.ctcw-phone-row');
+
+                if (row) {
+                    toggleCallingCodeMenu(row);
+                }
+
+                return;
+            }
+
+            var option = event.target.closest('.ctcw-calling-code-option');
+
+            if (option) {
+                event.preventDefault();
+
+                var optionRow = option.closest('.ctcw-phone-row');
+
+                if (optionRow) {
+                    selectCallingCode(optionRow, option.dataset.dialCode);
+                }
+            }
+        });
+
+        list.addEventListener('input', function (event) {
+            var searchInput = event.target.closest('.ctcw-calling-code-search');
+
+            if (!searchInput) {
+                return;
+            }
+
+            var row = searchInput.closest('.ctcw-phone-row');
+
+            if (row) {
+                renderCallingCodeOptions(row, searchInput.value);
+            }
+        });
+    }
+
+    document.addEventListener('click', function (event) {
+        if (event.target.closest('.ctcw-calling-code-picker')) {
+            return;
+        }
+
+        closeAllCallingCodeMenus(null);
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        var openMenu = document.querySelector('.ctcw-calling-code-menu:not([hidden])');
+
+        if (!openMenu) {
+            return;
+        }
+
+        var row = openMenu.closest('.ctcw-phone-row');
+
+        closeCallingCodeMenu(row);
+
+        var picker = getCallingCodePickerElements(row);
+
+        if (picker.trigger) {
+            picker.trigger.focus();
+        }
+    });
+
     document.querySelectorAll('[data-phone-number-list]').forEach(function (list) {
+        initCallingCodePickers(list);
         list.querySelectorAll('[data-phone-number-row]').forEach(function (row) {
             preparePhoneRow(row, list);
         });
@@ -694,7 +812,7 @@
                 return;
             }
 
-            syncPhoneListCountryFields(phoneList);
+            syncPhoneListCallingCodes(phoneList);
 
             if (!phoneList.querySelector('[data-phone-number-row]')) {
                 event.preventDefault();

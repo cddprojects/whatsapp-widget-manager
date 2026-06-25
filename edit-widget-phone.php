@@ -51,6 +51,6 @@ require __DIR__ . '/includes/header.php';
     </form>
 </section>
 
-<script type="application/json" id="country-code-data"><?= json_for_html(country_code_options()) ?></script>
+<script type="application/json" id="country-code-data"><?= json_for_html(calling_code_options()) ?></script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
