@@ -14,6 +14,8 @@
         return text;
     }
 
+    window.ctcwI18n = ctcwI18n;
+
     var i18nNode = document.getElementById('ctcw-i18n');
     if (i18nNode) {
         try {
@@ -867,33 +869,6 @@
         }
     });
 
-    document.querySelectorAll('[data-phone-number-list]').forEach(function (list) {
-        initCallingCodePickers(list);
-        list.querySelectorAll('[data-phone-number-row]').forEach(function (row) {
-            preparePhoneRow(row, list);
-        });
-    });
-
-    document.querySelectorAll('[data-widget-form], [data-client-manual-form]').forEach(function (form) {
-        form.addEventListener('submit', function (event) {
-            var phoneList = form.querySelector('[data-phone-number-list]');
-            if (!phoneList) {
-                return;
-            }
-
-            syncPhoneListCallingCodes(phoneList);
-
-            if (!phoneList.querySelector('[data-phone-number-row]')) {
-                event.preventDefault();
-                window.alert(ctcwI18n('phone.min_one_form'));
-            }
-        });
-    });
-
-    document.querySelectorAll('[data-phone-numbers-card]').forEach(function (card) {
-        initPhoneBulkDelete(card);
-    });
-
     document.querySelectorAll('[data-strict-domain-check]').forEach(function (checkbox) {
         var warning = document.querySelector('[data-strict-domain-warning]');
 
@@ -909,8 +884,68 @@
         syncStrictDomainWarning();
     });
 
-    initLiveWidgetPreview();
-    initClientCreateForm();
+    function bootFeature(label, initFn) {
+        try {
+            initFn();
+        } catch (error) {
+            console.error('[CTC] ' + label + ' initialization failed:', error);
+        }
+    }
+
+    function initLanguageSwitcher() {
+        document.querySelectorAll('.language-switcher').forEach(function (languageForm) {
+            var languageSelect = languageForm.querySelector('select[name="language"]');
+
+            if (!languageSelect || languageSelect.dataset.ctcwLanguageInit === 'true') {
+                return;
+            }
+
+            languageSelect.dataset.ctcwLanguageInit = 'true';
+            languageSelect.addEventListener('change', function () {
+                languageForm.submit();
+            });
+        });
+    }
+
+    function runFeatureInits() {
+        bootFeature('Language switcher', initLanguageSwitcher);
+        bootFeature('Phone number manager', function () {
+            document.querySelectorAll('[data-phone-number-list]').forEach(function (list) {
+                initCallingCodePickers(list);
+                list.querySelectorAll('[data-phone-number-row]').forEach(function (row) {
+                    preparePhoneRow(row, list);
+                });
+            });
+
+            document.querySelectorAll('[data-widget-form], [data-client-manual-form]').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    var phoneList = form.querySelector('[data-phone-number-list]');
+                    if (!phoneList) {
+                        return;
+                    }
+
+                    syncPhoneListCallingCodes(phoneList);
+
+                    if (!phoneList.querySelector('[data-phone-number-row]')) {
+                        event.preventDefault();
+                        window.alert(ctcwI18n('phone.min_one_form'));
+                    }
+                });
+            });
+
+            document.querySelectorAll('[data-phone-numbers-card]').forEach(function (card) {
+                initPhoneBulkDelete(card);
+            });
+        });
+        bootFeature('Admin live preview', initAdminLivePreview);
+        bootFeature('Client create form', initClientCreateForm);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runFeatureInits);
+    } else {
+        runFeatureInits();
+    }
 })();
 
 function initClientCreateForm() {
@@ -979,7 +1014,7 @@ function initClientCreateForm() {
 
     function getPasswordStrength(password) {
         if (!password) {
-            return { level: 'weak', label: ctcwI18n('password.weak') };
+            return { level: 'weak', label: window.ctcwI18n('password.weak') };
         }
 
         var hasUpper = /[A-Z]/.test(password);
@@ -989,12 +1024,12 @@ function initClientCreateForm() {
         var types = [hasUpper, hasLower, hasNumber, hasSymbol].filter(Boolean).length;
 
         if (password.length >= 16 && hasUpper && hasLower && hasNumber && hasSymbol) {
-            return { level: 'strong', label: ctcwI18n('password.strong') };
+            return { level: 'strong', label: window.ctcwI18n('password.strong') };
         }
         if (password.length >= 8 && types >= 2) {
-            return { level: 'normal', label: ctcwI18n('password.normal') };
+            return { level: 'normal', label: window.ctcwI18n('password.normal') };
         }
-        return { level: 'weak', label: ctcwI18n('password.weak') };
+        return { level: 'weak', label: window.ctcwI18n('password.weak') };
     }
 
     function updateStrengthIndicator() {
@@ -1015,7 +1050,7 @@ function initClientCreateForm() {
 
         var mismatch = confirmInput.value !== '' && passwordInput.value !== confirmInput.value;
         matchError.hidden = !mismatch;
-        confirmInput.setCustomValidity(mismatch ? ctcwI18n('password.match_error') : '');
+        confirmInput.setCustomValidity(mismatch ? window.ctcwI18n('password.match_error') : '');
     }
 
     function fillGeneratedPassword(value) {
@@ -1024,7 +1059,7 @@ function initClientCreateForm() {
         passwordInput.type = 'text';
         confirmInput.type = 'text';
         if (toggleButton) {
-            toggleButton.textContent = ctcwI18n('password.hide');
+            toggleButton.textContent = window.ctcwI18n('password.hide');
         }
         updateStrengthIndicator();
         updateMatchError();
@@ -1043,7 +1078,7 @@ function initClientCreateForm() {
             var showing = passwordInput.type === 'text';
             passwordInput.type = showing ? 'password' : 'text';
             confirmInput.type = showing ? 'password' : 'text';
-            toggleButton.textContent = showing ? ctcwI18n('password.show') : ctcwI18n('password.hide');
+            toggleButton.textContent = showing ? window.ctcwI18n('password.show') : window.ctcwI18n('password.hide');
         });
     }
 
@@ -1070,7 +1105,7 @@ function initClientCreateForm() {
 
         if (passwordInput.value.length < 8) {
             event.preventDefault();
-            passwordInput.setCustomValidity(ctcwI18n('password.min_length'));
+            passwordInput.setCustomValidity(window.ctcwI18n('password.min_length'));
             passwordInput.reportValidity();
             passwordInput.setCustomValidity('');
             return;
@@ -1087,10 +1122,26 @@ function initClientCreateForm() {
     updateMatchError();
 }
 
-function initLiveWidgetPreview() {
+function initAdminLivePreview() {
     var form = document.querySelector('[data-widget-form]');
-    var previewToggle = document.querySelector('[data-live-preview-toggle]');
-    if (!form || !previewToggle) {
+    var previewToggle = document.querySelector('[data-role="admin-live-preview-toggle"], [data-live-preview-toggle]');
+    var previewDebugEnabled = new URLSearchParams(window.location.search).get('preview_debug') === '1';
+
+    function previewDebugLog() {
+        if (!previewDebugEnabled) {
+            return;
+        }
+
+        console.log.apply(console, arguments);
+    }
+
+    if (!previewToggle) {
+        console.warn('[CTC] Admin live-preview toggle was not found.');
+        return;
+    }
+
+    if (!form) {
+        console.warn('[CTC] Widget edit form was not found for admin live preview.');
         return;
     }
 
@@ -1198,7 +1249,7 @@ function initLiveWidgetPreview() {
             desktopStyle: getFieldValue('desktop_style') || 'style-1',
             desktopVerticalPosition: vertical === 'top' ? 'top' : 'bottom',
             desktopHorizontalPosition: horizontal === 'left' ? 'left' : 'right',
-            callToAction: getFieldValue('call_to_action') || ctcwI18n('preview.default_cta'),
+            callToAction: getFieldValue('call_to_action') || window.ctcwI18n('preview.default_cta'),
             greetingEnabled: !!getFieldValue('greeting_enabled'),
             greetingTitle: getFieldValue('greeting_title') || 'Hi 👋',
             greetingMessage: getFieldValue('greeting_message') || 'Need Help? Contact Us !',
@@ -1225,7 +1276,7 @@ function initLiveWidgetPreview() {
         var placeholder = escapeHtml(formState.greetingPhonePlaceholder);
         var submitText = escapeHtml(formState.greetingSubmitText);
         var forceNote = formState.greetingForcePhoneCapture
-            ? '<small class="ctcw-preview-force-note">' + escapeHtml(ctcwI18n('preview.phone_required')) + '</small>'
+            ? '<small class="ctcw-preview-force-note">' + escapeHtml(window.ctcwI18n('preview.phone_required')) + '</small>'
             : '';
 
         if (!formState.greetingCapturePhone) {
@@ -1258,7 +1309,7 @@ function initLiveWidgetPreview() {
         var cta = escapeHtml(formState.callToAction);
 
         return '<div class="ctcw-admin-live-preview-inner">'
-            + '<span class="ctcw-preview-badge">' + escapeHtml(ctcwI18n('preview.label')) + '</span>'
+            + '<span class="ctcw-preview-badge">' + escapeHtml(window.ctcwI18n('preview.label')) + '</span>'
             + '<div class="ctcw-container ' + style + ' is-online">'
             + buildGreetingHtml(formState)
             + '<button type="button" class="ctcw-widget" tabindex="-1" aria-label="Widget preview" data-preview-destination="' + escapeHtml(formState.previewDestination) + '">'
@@ -1327,6 +1378,9 @@ function initLiveWidgetPreview() {
         applyPreviewPosition(root, formState);
         customCssStyle.textContent = scopePreviewCss(formState.customCss);
         updateDebugFrameState(root);
+        previewDebugLog('[CTC] Preview enabled:', previewEnabled);
+        previewDebugLog('[CTC] Preview root:', root);
+        previewDebugLog('[CTC] Preview state:', formState);
     }
 
     function setLivePreviewEnabled(enabled) {
@@ -1367,4 +1421,5 @@ function initLiveWidgetPreview() {
     });
 
     initLivePreviewToggle();
+    previewDebugLog('[CTC] Admin preview initialized');
 }

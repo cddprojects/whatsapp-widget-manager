@@ -27,6 +27,7 @@
     filter: none !important;
 }
 
+#ctcw-admin-live-preview.ctcw-preview-bottom-right,
 .ctcw-admin-live-preview.ctcw-preview-bottom-right {
     right: 16px;
     bottom: 16px;
@@ -34,6 +35,7 @@
     left: auto;
 }
 
+#ctcw-admin-live-preview.ctcw-preview-bottom-left,
 .ctcw-admin-live-preview.ctcw-preview-bottom-left {
     left: 16px;
     bottom: 16px;
@@ -41,6 +43,7 @@
     right: auto;
 }
 
+#ctcw-admin-live-preview.ctcw-preview-top-right,
 .ctcw-admin-live-preview.ctcw-preview-top-right {
     right: 16px;
     top: 16px;
@@ -48,6 +51,7 @@
     left: auto;
 }
 
+#ctcw-admin-live-preview.ctcw-preview-top-left,
 .ctcw-admin-live-preview.ctcw-preview-top-left {
     left: 16px;
     top: 16px;
