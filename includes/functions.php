@@ -1492,6 +1492,37 @@ function update_widget_phone_fields(int $widgetId, array $data): void
     $stmt->execute($filtered);
 }
 
+function find_widget_with_owner(int $widgetId): ?array
+{
+    $stmt = db()->prepare(
+        'SELECT w.*, u.name AS owner_name, u.email AS owner_email
+         FROM widgets w
+         LEFT JOIN users u ON u.id = w.user_id
+         WHERE w.id = :id
+         LIMIT 1'
+    );
+    $stmt->execute(['id' => $widgetId]);
+    $widget = $stmt->fetch();
+
+    return $widget ?: null;
+}
+
+function format_widget_owner_display(array $widget): string
+{
+    $ownerName = trim((string) ($widget['owner_name'] ?? ''));
+    $ownerEmail = trim((string) ($widget['owner_email'] ?? ''));
+
+    if ($ownerName !== '' && $ownerEmail !== '') {
+        return $ownerName . ' · ' . $ownerEmail;
+    }
+
+    if ($ownerName !== '') {
+        return $ownerName;
+    }
+
+    return 'No client assigned';
+}
+
 function update_widget_admin(int $widgetId, array $data): void
 {
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));

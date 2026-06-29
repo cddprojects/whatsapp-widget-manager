@@ -5,7 +5,11 @@ require_once __DIR__ . '/includes/auth.php';
 require_superadmin();
 
 $widgetId = (int) ($_GET['id'] ?? 0);
-$widget = require_widget_access($widgetId);
+$widget = find_widget_with_owner($widgetId);
+if (!$widget) {
+    http_response_code(404);
+    exit('Widget not found.');
+}
 $errors = [];
 
 if (is_post()) {
@@ -33,6 +37,12 @@ if (is_post()) {
     }
 
     $widget = array_merge($widget, $updated);
+    $refreshedWidget = find_widget_with_owner($widgetId);
+    if ($refreshedWidget) {
+        $widget['owner_name'] = $refreshedWidget['owner_name'];
+        $widget['owner_email'] = $refreshedWidget['owner_email'];
+        $widget['user_id'] = $refreshedWidget['user_id'];
+    }
 }
 
 $pageTitle = 'Edit Widget';
@@ -44,7 +54,7 @@ require __DIR__ . '/includes/header.php';
 <div class="page-heading">
     <p class="eyebrow">Widget settings</p>
     <h1>Edit <?= e($widget['widget_name']) ?></h1>
-    <p>Full widget configuration. Owner: client #<?= (int) $widget['user_id'] ?>.</p>
+    <p>Full widget configuration. Owner: <?= e(format_widget_owner_display($widget)) ?>.</p>
 </div>
 
 <section class="settings-card">
