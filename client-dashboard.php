@@ -23,21 +23,21 @@ if (!$widget && $widgets !== []) {
 $activeNumbers = $widget ? widget_phone_list($widget) : [];
 $activeTab = (string) ($_GET['tab'] ?? 'manual');
 
-$pageTitle = 'My WhatsApp Number';
+$pageTitle = t('page.my_whatsapp_number');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <section class="page-heading">
-    <p class="eyebrow">Client account</p>
-    <h1>My WhatsApp Number</h1>
-    <p>Update the WhatsApp numbers used by your widget.</p>
+    <p class="eyebrow"><?= e(t('eyebrow.client_account')) ?></p>
+    <h1><?= e(t('heading.my_whatsapp_number')) ?></h1>
+    <p><?= e(t('desc.my_whatsapp_number')) ?></p>
 </section>
 
 <?php if (!$widgets): ?>
     <section class="settings-card">
         <div class="empty-state">
-            <h3>No widget assigned yet</h3>
-            <p>Your administrator has not assigned a widget to your account.</p>
+            <h3><?= e(t('heading.no_widget_assigned')) ?></h3>
+            <p><?= e(t('desc.no_widget_assigned')) ?></p>
         </div>
     </section>
 <?php else: ?>
@@ -45,7 +45,7 @@ require __DIR__ . '/includes/header.php';
         <?php if (count($widgets) > 1): ?>
             <form method="get" class="widget-selector-form">
                 <label>
-                    <span>Select widget</span>
+                    <span><?= e(t('label.select_widget')) ?></span>
                     <select name="widget_id" onchange="this.form.submit()">
                         <?php foreach ($widgets as $item): ?>
                             <option value="<?= (int) $item['id'] ?>"<?= (int) $item['id'] === $selectedWidgetId ? ' selected' : '' ?>>
@@ -59,16 +59,16 @@ require __DIR__ . '/includes/header.php';
         <?php endif; ?>
 
         <div class="profile-grid">
-            <div><span class="meta-label">Widget name</span><strong><?= e($widget['widget_name']) ?></strong></div>
-            <div><span class="meta-label">Domain</span><strong><?= e($widget['website_domain']) ?></strong></div>
-            <div><span class="meta-label">Active numbers</span><strong><?= format_whatsapp_display($widget) ?></strong></div>
+            <div><span class="meta-label"><?= e(t('meta.widget_name')) ?></span><strong><?= e($widget['widget_name']) ?></strong></div>
+            <div><span class="meta-label"><?= e(t('meta.domain')) ?></span><strong><?= e($widget['website_domain']) ?></strong></div>
+            <div><span class="meta-label"><?= e(t('meta.active_numbers')) ?></span><strong><?= format_whatsapp_display($widget) ?></strong></div>
         </div>
     </section>
 
     <section class="settings-card client-phone-card">
         <div class="tab-bar">
-            <a class="tab-link<?= $activeTab === 'manual' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=manual">Phone Numbers</a>
-            <a class="tab-link<?= $activeTab === 'upload' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=upload">Upload Numbers</a>
+            <a class="tab-link<?= $activeTab === 'manual' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=manual"><?= e(t('tab.phone_numbers')) ?></a>
+            <a class="tab-link<?= $activeTab === 'upload' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=upload"><?= e(t('tab.upload_numbers')) ?></a>
         </div>
 
         <?php if ($activeTab === 'upload'): ?>
@@ -76,26 +76,26 @@ require __DIR__ . '/includes/header.php';
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
                 <label>
-                    <span>Upload CSV or TXT</span>
+                    <span><?= e(t('label.upload_csv_or_txt')) ?></span>
                     <input type="file" name="phone_file" accept=".csv,.txt,text/csv,text/plain" required>
                 </label>
                 <div class="format-helper">
-                    <strong>CSV format</strong>
+                    <strong><?= e(t('helper.csv_format')) ?></strong>
                     <code>country_code,phone_number</code>
                     <pre>+60,123456789
 +65,81234567</pre>
-                    <strong>TXT format</strong>
-                    <p>One full international number per line:</p>
+                    <strong><?= e(t('helper.txt_format')) ?></strong>
+                    <p><?= e(t('helper.txt_one_per_line')) ?></p>
                     <pre>+60123456789
 +6581234567</pre>
                 </div>
                 <label class="checkbox-row">
                     <input type="checkbox" name="replace_existing" value="1">
-                    <span>Replace existing active numbers</span>
+                    <span><?= e(t('toggle.replace_existing_numbers')) ?></span>
                 </label>
-                <p class="upload-helper-text">If unchecked, uploaded numbers will be added to your current active numbers.</p>
+                <p class="upload-helper-text"><?= e(t('helper.upload_replace_existing')) ?></p>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Upload Numbers</button>
+                    <button type="submit" class="btn btn-primary"><?= e(t('button.upload_numbers')) ?></button>
                 </div>
             </form>
         <?php else: ?>
@@ -111,7 +111,7 @@ require __DIR__ . '/includes/header.php';
                 ?>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save Numbers</button>
+                    <button type="submit" class="btn btn-primary"><?= e(t('button.save_numbers')) ?></button>
                 </div>
             </form>
         <?php endif; ?>

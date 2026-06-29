@@ -15,16 +15,22 @@ function current_user(): ?array
     }
 
     static $user = null;
-    if ($user !== null) {
+    static $loadedUserId = null;
+
+    $userId = (int) $_SESSION['user_id'];
+    if ($user !== null && $loadedUserId === $userId && empty($_SESSION['force_reload_user'])) {
         return $user;
     }
 
+    unset($_SESSION['force_reload_user']);
+
     $stmt = db()->prepare(
-        'SELECT id, name, email, role, status, created_at, last_login_at, password_changed_at, updated_at
+        'SELECT id, name, email, role, status, preferred_language, created_at, last_login_at, password_changed_at, updated_at
          FROM users WHERE id = :id LIMIT 1'
     );
-    $stmt->execute(['id' => (int) $_SESSION['user_id']]);
+    $stmt->execute(['id' => $userId]);
     $user = $stmt->fetch() ?: null;
+    $loadedUserId = $userId;
 
     if ($user === null) {
         unset($_SESSION['user_id'], $_SESSION['user_role']);
@@ -32,6 +38,11 @@ function current_user(): ?array
     }
 
     $_SESSION['user_role'] = (string) $user['role'];
+    if (empty($_SESSION['locale'])) {
+        $_SESSION['locale'] = normalize_locale((string) ($user['preferred_language'] ?? DEFAULT_LOCALE));
+        set_current_locale((string) $_SESSION['locale']);
+    }
+
     return $user;
 }
 
@@ -70,7 +81,7 @@ function require_superadmin(): array
             redirect('client-dashboard.php');
         }
         http_response_code(403);
-        exit('Access denied.');
+        exit(t('error.access_denied'));
     }
 
     return $user;
@@ -108,7 +119,7 @@ function is_superadmin_user(array $user): bool
 
 function login_user(int $userId): void
 {
-    $stmt = db()->prepare('SELECT id, role, status FROM users WHERE id = :id LIMIT 1');
+    $stmt = db()->prepare('SELECT id, role, status, preferred_language FROM users WHERE id = :id LIMIT 1');
     $stmt->execute(['id' => $userId]);
     $user = $stmt->fetch();
 
@@ -119,10 +130,17 @@ function login_user(int $userId): void
     session_regenerate_id(true);
     $_SESSION['user_id'] = $userId;
     $_SESSION['user_role'] = (string) $user['role'];
-    unset($_SESSION['login_attempts'], $_SESSION['login_block_until']);
+    $_SESSION['locale'] = normalize_locale((string) ($user['preferred_language'] ?? DEFAULT_LOCALE));
+    set_current_locale((string) $_SESSION['locale']);
+    unset($_SESSION['login_attempts'], $_SESSION['login_block_until'], $_SESSION['force_reload_user']);
 
     $update = db()->prepare('UPDATE users SET last_login_at = NOW() WHERE id = :id');
     $update->execute(['id' => $userId]);
+}
+
+function auth_reset_current_user_cache(): void
+{
+    $_SESSION['force_reload_user'] = true;
 }
 
 function logout_user(): void
@@ -190,7 +208,7 @@ function require_widget_access(int $widgetId): array
     $widget = find_accessible_widget($widgetId);
     if (!$widget) {
         http_response_code(is_logged_in() ? 403 : 404);
-        exit(is_logged_in() ? 'Access denied.' : 'Widget not found.');
+        exit(is_logged_in() ? t('error.access_denied') : t('error.widget_not_found'));
     }
 
     return $widget;

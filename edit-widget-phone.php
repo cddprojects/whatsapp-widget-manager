@@ -12,24 +12,24 @@ if (is_post()) {
     verify_csrf();
     $data = sanitize_phone_numbers_from_post($_POST, 'manual_numbers');
     if ($data === null) {
-        $errors[] = 'Please keep at least one active WhatsApp number.';
+        $errors[] = t('validation.keep_one_number');
     } else {
         update_widget_phone_fields($widgetId, $data);
-        flash('success', 'Phone numbers updated.');
+        flash('success', t('flash.phone_numbers_updated'));
         redirect('edit-widget-phone.php?id=' . $widgetId);
     }
 }
 
 $phoneNumbers = widget_phone_list($widget);
 
-$pageTitle = 'Edit Phone Number';
+$pageTitle = t('page.edit_phone_number');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <section class="page-heading">
-    <p class="eyebrow">Phone settings</p>
+    <p class="eyebrow"><?= e(t('eyebrow.phone_settings')) ?></p>
     <h1><?= e($widget['widget_name']) ?></h1>
-    <p>Update WhatsApp phone numbers only.</p>
+    <p><?= e(t('desc.edit_phone_numbers')) ?></p>
 </section>
 
 <section class="settings-card">
@@ -45,8 +45,8 @@ require __DIR__ . '/includes/header.php';
         require __DIR__ . '/includes/phone-number-list.php';
         ?>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Save Numbers</button>
-            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>">Back to client</a>
+            <button type="submit" class="btn btn-primary"><?= e(t('button.save_numbers')) ?></button>
+            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>"><?= e(t('button.back_to_client')) ?></a>
         </div>
     </form>
 </section>

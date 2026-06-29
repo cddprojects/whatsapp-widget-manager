@@ -11,7 +11,7 @@ if (isset($_GET['user_id'])) {
     $clientContext = find_client_user((int) $_GET['user_id']);
     if (!$clientContext) {
         http_response_code(404);
-        exit('Client not found.');
+        exit(t('error.client_not_found'));
     }
     $targetUserId = (int) $clientContext['id'];
 }
@@ -28,7 +28,7 @@ if (is_post()) {
         $targetUserId = (int) ($_POST['owner_user_id'] ?? 0);
         $clientContext = find_client_user($targetUserId);
         if (!$clientContext) {
-            $errors[] = 'Please select a client to assign this widget to.';
+            $errors[] = t('validation.select_client');
         }
     }
 
@@ -38,22 +38,22 @@ if (is_post()) {
 
     if (!$errors) {
         $widgetId = insert_widget($targetUserId, $widget);
-        flash('success', 'Widget created for ' . $clientContext['name'] . '.');
+        flash('success', t('flash.widget_created', ['name' => $clientContext['name']]));
         redirect('edit-widget.php?id=' . $widgetId);
     }
 }
 
-$pageTitle = 'Create Widget';
+$pageTitle = t('page.create_widget');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <div class="page-heading">
-    <p class="eyebrow">New widget</p>
-    <h1>Create WhatsApp click-to-chat widget</h1>
+    <p class="eyebrow"><?= e(t('eyebrow.new_widget')) ?></p>
+    <h1><?= e(t('heading.create_widget')) ?></h1>
     <?php if ($clientContext): ?>
-        <p>Create a widget for <strong><?= e($clientContext['name']) ?></strong> (<?= e($clientContext['email']) ?>).</p>
+        <p><?= e(t('desc.create_widget_for_client', ['name' => $clientContext['name'], 'email' => $clientContext['email']])) ?></p>
     <?php else: ?>
-        <p>Configure the widget and assign it to a client account.</p>
+        <p><?= e(t('desc.create_widget_assign')) ?></p>
     <?php endif; ?>
 </div>
 

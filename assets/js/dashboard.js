@@ -1,6 +1,28 @@
 (function () {
     'use strict';
 
+    function ctcwI18n(key, replace) {
+        var bag = window.CTCW_I18N || {};
+        var text = bag[key] || key;
+
+        if (replace) {
+            Object.keys(replace).forEach(function (name) {
+                text = text.split('{' + name + '}').join(String(replace[name]));
+            });
+        }
+
+        return text;
+    }
+
+    var i18nNode = document.getElementById('ctcw-i18n');
+    if (i18nNode) {
+        try {
+            window.CTCW_I18N = JSON.parse(i18nNode.textContent || '{}');
+        } catch (error) {
+            window.CTCW_I18N = {};
+        }
+    }
+
     function updateCodeLines(textarea) {
         var editor = textarea.closest('.code-editor');
         if (!editor) return;
@@ -140,7 +162,7 @@
         var total = checkboxes.length;
 
         if (countEl) {
-            countEl.textContent = selected.length + ' selected';
+            countEl.textContent = ctcwI18n('phone.selected_count', { count: selected.length });
         }
 
         if (deleteButton) {
@@ -199,10 +221,10 @@
         var confirmButton = modal.querySelector('[data-phone-bulk-modal-confirm]');
 
         if (message) {
-            message.textContent = 'You are about to remove ' + count + ' phone numbers. This action cannot be undone until you save your changes.';
+            message.textContent = ctcwI18n('phone.bulk_delete_confirm', { count: count });
         }
         if (confirmButton) {
-            confirmButton.textContent = 'Delete ' + count + ' numbers';
+            confirmButton.textContent = ctcwI18n('phone.bulk_delete_button', { count: count });
         }
 
         modal.hidden = false;
@@ -412,8 +434,8 @@
             if (target) {
                 target.select();
                 navigator.clipboard.writeText(target.value).then(function () {
-                    copyButton.textContent = 'Copied!';
-                    setTimeout(function () { copyButton.textContent = 'Copy code'; }, 1600);
+                    copyButton.textContent = ctcwI18n('embed.copied');
+                    setTimeout(function () { copyButton.textContent = ctcwI18n('embed.copy_code'); }, 1600);
                 }).catch(function () {
                     document.execCommand('copy');
                 });
@@ -438,11 +460,11 @@
                 return;
             }
             if (!canRemovePhoneRows(phoneList, 1)) {
-                window.alert('At least one WhatsApp number must remain active.');
+                window.alert(ctcwI18n('phone.min_one_required'));
                 updateBulkDeleteUI(getPhoneCard(phoneList));
                 return;
             }
-            if (!window.confirm('Delete this number from the list?')) {
+            if (!window.confirm(ctcwI18n('phone.delete_confirm'))) {
                 return;
             }
             phoneRow.remove();
@@ -458,7 +480,7 @@
         }
 
         var resetButton = event.target.closest('[data-reset-custom-code]');
-        if (resetButton && !confirm('Reset all custom code fields?')) {
+        if (resetButton && !confirm(ctcwI18n('custom_code.reset_confirm'))) {
             event.preventDefault();
         }
 
@@ -863,7 +885,7 @@
 
             if (!phoneList.querySelector('[data-phone-number-row]')) {
                 event.preventDefault();
-                window.alert('Please keep at least one active WhatsApp number.');
+                window.alert(ctcwI18n('phone.min_one_form'));
             }
         });
     });
@@ -957,7 +979,7 @@ function initClientCreateForm() {
 
     function getPasswordStrength(password) {
         if (!password) {
-            return { level: 'weak', label: 'Weak' };
+            return { level: 'weak', label: ctcwI18n('password.weak') };
         }
 
         var hasUpper = /[A-Z]/.test(password);
@@ -967,12 +989,12 @@ function initClientCreateForm() {
         var types = [hasUpper, hasLower, hasNumber, hasSymbol].filter(Boolean).length;
 
         if (password.length >= 16 && hasUpper && hasLower && hasNumber && hasSymbol) {
-            return { level: 'strong', label: 'Strong' };
+            return { level: 'strong', label: ctcwI18n('password.strong') };
         }
         if (password.length >= 8 && types >= 2) {
-            return { level: 'normal', label: 'Normal' };
+            return { level: 'normal', label: ctcwI18n('password.normal') };
         }
-        return { level: 'weak', label: 'Weak' };
+        return { level: 'weak', label: ctcwI18n('password.weak') };
     }
 
     function updateStrengthIndicator() {
@@ -993,7 +1015,7 @@ function initClientCreateForm() {
 
         var mismatch = confirmInput.value !== '' && passwordInput.value !== confirmInput.value;
         matchError.hidden = !mismatch;
-        confirmInput.setCustomValidity(mismatch ? 'Password and confirm password do not match.' : '');
+        confirmInput.setCustomValidity(mismatch ? ctcwI18n('password.match_error') : '');
     }
 
     function fillGeneratedPassword(value) {
@@ -1002,7 +1024,7 @@ function initClientCreateForm() {
         passwordInput.type = 'text';
         confirmInput.type = 'text';
         if (toggleButton) {
-            toggleButton.textContent = 'Hide';
+            toggleButton.textContent = ctcwI18n('password.hide');
         }
         updateStrengthIndicator();
         updateMatchError();
@@ -1021,7 +1043,7 @@ function initClientCreateForm() {
             var showing = passwordInput.type === 'text';
             passwordInput.type = showing ? 'password' : 'text';
             confirmInput.type = showing ? 'password' : 'text';
-            toggleButton.textContent = showing ? 'Show' : 'Hide';
+            toggleButton.textContent = showing ? ctcwI18n('password.show') : ctcwI18n('password.hide');
         });
     }
 
@@ -1048,7 +1070,7 @@ function initClientCreateForm() {
 
         if (passwordInput.value.length < 8) {
             event.preventDefault();
-            passwordInput.setCustomValidity('Password must be at least 8 characters.');
+            passwordInput.setCustomValidity(ctcwI18n('password.min_length'));
             passwordInput.reportValidity();
             passwordInput.setCustomValidity('');
             return;
@@ -1208,7 +1230,7 @@ function initLiveWidgetPreview() {
         var placeholder = escapeHtml(getFieldValue('greeting_phone_placeholder') || 'Enter your phone number');
         var submitText = escapeHtml(getFieldValue('greeting_submit_text') || 'Continue to WhatsApp');
         var forceNote = forcePhone
-            ? '<small class="ctcw-preview-force-note">Phone required before WhatsApp</small>'
+            ? '<small class="ctcw-preview-force-note">' + escapeHtml(ctcwI18n('preview.phone_required')) + '</small>'
             : '';
 
         if (!capturePhone) {
@@ -1271,11 +1293,11 @@ function initLiveWidgetPreview() {
         var verticalType = getFieldValue('desktop_vertical_position_type') || 'bottom';
         var horizontalType = getFieldValue('desktop_horizontal_position_type') || 'right';
         var online = isPreviewOnline();
-        var cta = escapeHtml(online ? (getFieldValue('call_to_action') || 'WhatsApp us') : (getFieldValue('offline_message') || 'We are currently offline.'));
+        var cta = escapeHtml(online ? (getFieldValue('call_to_action') || ctcwI18n('preview.default_cta')) : (getFieldValue('offline_message') || ctcwI18n('preview.default_offline')));
         var onlineClass = online ? 'is-online' : 'is-offline';
 
         previewRoot.innerHTML = '<div class="ctcw-admin-live-preview-inner">'
-            + '<span class="ctcw-preview-badge">Preview</span>'
+            + '<span class="ctcw-preview-badge">' + escapeHtml(ctcwI18n('preview.label')) + '</span>'
             + '<div class="ctcw-container ' + escapeHtml(style) + ' ' + onlineClass + '">'
             + buildGreetingHtml(verticalType, horizontalType)
             + '<button type="button" class="ctcw-widget" tabindex="-1" aria-label="Widget preview">'

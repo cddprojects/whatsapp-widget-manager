@@ -14,7 +14,7 @@ if (is_post() && ($_POST['action'] ?? '') === 'delete_widget') {
     if ($widget) {
         $stmt = db()->prepare('DELETE FROM widgets WHERE id = :id');
         $stmt->execute(['id' => $widgetId]);
-        flash('success', 'Widget deleted.');
+        flash('success', t('flash.widget_deleted'));
     }
     $returnQuery = trim((string) ($_POST['return_q'] ?? ''));
     redirect('admin-widgets.php' . ($returnQuery !== '' ? '?q=' . urlencode($returnQuery) : ''));
@@ -22,53 +22,53 @@ if (is_post() && ($_POST['action'] ?? '') === 'delete_widget') {
 
 $result = search_all_widgets(['q' => $query, 'page' => $page, 'per_page' => 20]);
 
-$pageTitle = 'Widgets';
+$pageTitle = t('page.widgets');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <section class="page-heading page-heading-row">
     <div>
-        <p class="eyebrow">Super admin</p>
-        <h1>All widgets</h1>
-        <p>Browse widgets across every client account.</p>
+        <p class="eyebrow"><?= e(t('eyebrow.super_admin')) ?></p>
+        <h1><?= e(t('heading.all_widgets')) ?></h1>
+        <p><?= e(t('desc.all_widgets')) ?></p>
     </div>
-    <a class="btn btn-primary" href="create-widget.php">Create Widget</a>
+    <a class="btn btn-primary" href="create-widget.php"><?= e(t('button.create_widget')) ?></a>
 </section>
 
 <section class="settings-card table-card">
     <div class="card-header-row">
         <div>
-            <h2>Widget directory</h2>
-            <p class="results-meta inline-meta"><?= (int) $result['total'] ?> widget<?= $result['total'] === 1 ? '' : 's' ?> found</p>
+            <h2><?= e(t('heading.widget_directory')) ?></h2>
+            <p class="results-meta inline-meta"><?= e(t($result['total'] === 1 ? 'results.widgets_found_one' : 'results.widgets_found_other', ['count' => (string) $result['total']])) ?></p>
         </div>
     </div>
 
     <form class="admin-filter-bar" method="get">
         <label class="search-field span-2">
-            <span>Search</span>
-            <input type="search" name="q" value="<?= e($query) ?>" placeholder="Search widget, domain, client name, or email…">
+            <span><?= e(t('filter.search')) ?></span>
+            <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_widgets')) ?>">
         </label>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Search</button>
-            <a class="btn btn-light" href="admin-widgets.php">Reset</a>
+            <button type="submit" class="btn btn-primary"><?= e(t('button.search')) ?></button>
+            <a class="btn btn-light" href="admin-widgets.php"><?= e(t('button.reset')) ?></a>
         </div>
     </form>
 
     <?php if (!$result['rows']): ?>
-        <div class="empty-state compact-empty"><p>No widgets found.</p></div>
+        <div class="empty-state compact-empty"><p><?= e(t('empty.no_widgets_found')) ?></p></div>
     <?php else: ?>
         <div class="table-wrap">
             <table class="widget-table">
                 <thead>
                     <tr>
-                        <th>Widget</th>
-                        <th>Client</th>
-                        <th>Domain</th>
-                        <th>WhatsApp</th>
-                        <th>Random numbers</th>
-                        <th>Global display</th>
-                        <th>Updated</th>
-                        <th class="col-actions">Actions</th>
+                        <th><?= e(t('table.widget')) ?></th>
+                        <th><?= e(t('table.client')) ?></th>
+                        <th><?= e(t('table.domain')) ?></th>
+                        <th><?= e(t('table.whatsapp')) ?></th>
+                        <th><?= e(t('table.random_numbers')) ?></th>
+                        <th><?= e(t('table.global_display')) ?></th>
+                        <th><?= e(t('table.updated')) ?></th>
+                        <th class="col-actions"><?= e(t('table.actions')) ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,11 +96,11 @@ require __DIR__ . '/includes/header.php';
         <?php if ($result['pages'] > 1): ?>
             <div class="pagination-bar">
                 <?php if ($page > 1): ?>
-                    <a class="btn btn-light" href="?<?= e(http_build_query(['q' => $query, 'page' => $page - 1])) ?>">Previous</a>
+                    <a class="btn btn-light" href="?<?= e(http_build_query(['q' => $query, 'page' => $page - 1])) ?>"><?= e(t('pagination.previous')) ?></a>
                 <?php endif; ?>
-                <span>Page <?= (int) $page ?> of <?= (int) $result['pages'] ?></span>
+                <span><?= e(t('pagination.page_of', ['page' => (string) $page, 'pages' => (string) $result['pages']])) ?></span>
                 <?php if ($page < $result['pages']): ?>
-                    <a class="btn btn-light" href="?<?= e(http_build_query(['q' => $query, 'page' => $page + 1])) ?>">Next</a>
+                    <a class="btn btn-light" href="?<?= e(http_build_query(['q' => $query, 'page' => $page + 1])) ?>"><?= e(t('pagination.next')) ?></a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

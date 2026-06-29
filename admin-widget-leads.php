@@ -8,7 +8,7 @@ $widgetId = (int) ($_GET['widget_id'] ?? 0);
 $widget = find_widget_by_id($widgetId);
 if (!$widget) {
     http_response_code(404);
-    exit('Widget not found.');
+    exit(t('error.widget_not_found'));
 }
 
 $query = trim((string) ($_GET['q'] ?? ''));
@@ -24,53 +24,53 @@ $result = search_widget_leads($widgetId, [
     'per_page' => 25,
 ]);
 
-$pageTitle = 'Widget Leads';
+$pageTitle = t('page.widget_leads');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <section class="page-heading">
-    <p class="eyebrow">Lead capture</p>
-    <h1>Leads for <?= e($widget['widget_name']) ?></h1>
-    <p>Visitor phone numbers captured from the greeting dialog.</p>
+    <p class="eyebrow"><?= e(t('eyebrow.lead_capture')) ?></p>
+    <h1><?= e(t('heading.leads_for', ['name' => $widget['widget_name']])) ?></h1>
+    <p><?= e(t('desc.widget_leads')) ?></p>
 </section>
 
 <section class="settings-card">
     <form class="admin-filter-bar" method="get">
         <input type="hidden" name="widget_id" value="<?= (int) $widgetId ?>">
         <label class="search-field span-2">
-            <span>Search</span>
-            <input type="search" name="q" value="<?= e($query) ?>" placeholder="Search phone, domain, URL, or page title…">
+            <span><?= e(t('filter.search')) ?></span>
+            <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_leads')) ?>">
         </label>
         <label>
-            <span>From date</span>
+            <span><?= e(t('filter.from_date')) ?></span>
             <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
         </label>
         <label>
-            <span>To date</span>
+            <span><?= e(t('filter.to_date')) ?></span>
             <input type="date" name="date_to" value="<?= e($dateTo) ?>">
         </label>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Filter</button>
-            <a class="btn btn-light" href="export-widget-leads.php?widget_id=<?= (int) $widgetId ?>&amp;q=<?= e(urlencode($query)) ?>&amp;date_from=<?= e(urlencode($dateFrom)) ?>&amp;date_to=<?= e(urlencode($dateTo)) ?>">Export CSV</a>
+            <button type="submit" class="btn btn-primary"><?= e(t('button.filter')) ?></button>
+            <a class="btn btn-light" href="export-widget-leads.php?widget_id=<?= (int) $widgetId ?>&amp;q=<?= e(urlencode($query)) ?>&amp;date_from=<?= e(urlencode($dateFrom)) ?>&amp;date_to=<?= e(urlencode($dateTo)) ?>"><?= e(t('button.export_csv')) ?></a>
         </div>
     </form>
 
-    <p class="results-meta"><?= (int) $result['total'] ?> lead<?= $result['total'] === 1 ? '' : 's' ?> found</p>
+    <p class="results-meta"><?= e(t($result['total'] === 1 ? 'results.leads_found_one' : 'results.leads_found_other', ['count' => (string) $result['total']])) ?></p>
 
     <?php if (!$result['rows']): ?>
-        <div class="empty-state compact-empty"><p>No leads captured yet.</p></div>
+        <div class="empty-state compact-empty"><p><?= e(t('empty.no_leads')) ?></p></div>
     <?php else: ?>
         <div class="table-wrap">
             <table class="widget-table">
                 <thead>
                     <tr>
-                        <th>Visitor phone</th>
-                        <th>Source domain</th>
-                        <th>Source URL</th>
-                        <th>Page title</th>
-                        <th>Created</th>
-                        <th>Widget</th>
-                        <th>Client owner</th>
+                        <th><?= e(t('table.visitor_phone')) ?></th>
+                        <th><?= e(t('table.source_domain')) ?></th>
+                        <th><?= e(t('table.source_url')) ?></th>
+                        <th><?= e(t('table.page_title')) ?></th>
+                        <th><?= e(t('table.created')) ?></th>
+                        <th><?= e(t('table.widget')) ?></th>
+                        <th><?= e(t('table.client_owner')) ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,11 +92,11 @@ require __DIR__ . '/includes/header.php';
         <?php if ($result['pages'] > 1): ?>
             <div class="pagination-bar">
                 <?php if ($page > 1): ?>
-                    <a class="btn btn-light" href="?<?= e(http_build_query(['widget_id' => $widgetId, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page - 1])) ?>">Previous</a>
+                    <a class="btn btn-light" href="?<?= e(http_build_query(['widget_id' => $widgetId, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page - 1])) ?>"><?= e(t('pagination.previous')) ?></a>
                 <?php endif; ?>
-                <span>Page <?= (int) $page ?> of <?= (int) $result['pages'] ?></span>
+                <span><?= e(t('pagination.page_of', ['page' => (string) $page, 'pages' => (string) $result['pages']])) ?></span>
                 <?php if ($page < $result['pages']): ?>
-                    <a class="btn btn-light" href="?<?= e(http_build_query(['widget_id' => $widgetId, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page + 1])) ?>">Next</a>
+                    <a class="btn btn-light" href="?<?= e(http_build_query(['widget_id' => $widgetId, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page + 1])) ?>"><?= e(t('pagination.next')) ?></a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -104,8 +104,8 @@ require __DIR__ . '/includes/header.php';
 </section>
 
 <div class="form-actions">
-    <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>">Back to client</a>
-    <a class="btn btn-light" href="edit-widget.php?id=<?= (int) $widgetId ?>">Edit widget</a>
+    <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>"><?= e(t('button.back_to_client')) ?></a>
+    <a class="btn btn-light" href="edit-widget.php?id=<?= (int) $widgetId ?>"><?= e(t('button.edit_widget')) ?></a>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
