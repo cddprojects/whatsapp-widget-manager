@@ -64,9 +64,8 @@ require __DIR__ . '/includes/header.php';
                         <th><?= e(t('table.widget')) ?></th>
                         <th><?= e(t('table.client')) ?></th>
                         <th><?= e(t('table.domain')) ?></th>
-                        <th><?= e(t('table.whatsapp')) ?></th>
-                        <th><?= e(t('table.random_numbers')) ?></th>
-                        <th><?= e(t('table.global_display')) ?></th>
+                        <th><?= e(t('table.whatsapp_destinations')) ?></th>
+                        <th title="<?= e(t('table.display_tooltip')) ?>"><?= e(t('table.display')) ?></th>
                         <th><?= e(t('table.updated')) ?></th>
                         <th class="col-actions"><?= e(t('table.actions')) ?></th>
                     </tr>
@@ -80,8 +79,7 @@ require __DIR__ . '/includes/header.php';
                                 <small><?= e($widget['owner_email']) ?></small>
                             </td>
                             <td><?= e($widget['website_domain']) ?></td>
-                            <td><?= format_whatsapp_display($widget) ?></td>
-                            <td><?= feature_status_pill($widget['use_random_numbers'] ?? 0) ?></td>
+                            <td><?php render_widget_destination_summary($widget); ?></td>
                             <td><?= feature_status_pill($widget['show_global'] ?? 0) ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $widget['updated_at']))) ?></td>
                             <td class="col-actions">

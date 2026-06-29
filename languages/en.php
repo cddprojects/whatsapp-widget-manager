@@ -155,8 +155,11 @@ return [
     'table.domain' => 'Domain',
     'table.last_login' => 'Last login',
     'table.whatsapp' => 'WhatsApp',
+    'table.whatsapp_destinations' => 'WhatsApp destinations',
     'table.whatsapp_number' => 'WhatsApp number',
     'table.random_numbers' => 'Random numbers',
+    'table.display' => 'Display',
+    'table.display_tooltip' => 'Enabled = widget can appear on pages where its embed code is installed. Disabled = widget will not display publicly.',
     'table.global_display' => 'Global display',
     'table.visitor_phone' => 'Visitor phone',
     'table.source_domain' => 'Source domain',
@@ -457,6 +460,14 @@ return [
 
     // Widget
     'widget.delete_confirm' => 'Delete this widget?',
+
+    'widget_destinations.none' => 'No destinations',
+    'widget_destinations.setup_required' => 'Setup required',
+    'widget_destinations.one' => '1 number',
+    'widget_destinations.rotating' => '{count} numbers · Rotating',
+    'widget_destinations.multiple' => '{count} numbers',
+    'widget_destinations.rotating_tooltip' => '{count} active WhatsApp destination numbers. Visitors are sent to one at random.',
+    'widget_destinations.multiple_tooltip' => '{count} active WhatsApp destination numbers.',
 
     // Password
     'password.weak' => 'Weak',
