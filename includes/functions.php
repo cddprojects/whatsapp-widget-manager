@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/i18n.php';
 
 function e(?string $value): string
 {
@@ -38,7 +39,7 @@ function verify_csrf(): void
     $posted = $_POST['csrf_token'] ?? '';
     if (!is_string($posted) || !hash_equals(csrf_token(), $posted)) {
         http_response_code(419);
-        exit('Invalid security token. Please go back and try again.');
+        exit(t('csrf.invalid_token'));
     }
 }
 
@@ -1113,17 +1114,17 @@ function validate_widget_data(array $data): array
     $errors = [];
 
     if (!is_valid_domain($data['website_domain'])) {
-        $errors[] = 'Please enter a valid website domain.';
+        $errors[] = t('validation.domain_required');
     }
 
     $primaryFullNumber = clean_phone_number((string) ($data['whatsapp_country_code'] ?? ''))
         . clean_phone_number((string) ($data['whatsapp_number'] ?? ''));
     if ($primaryFullNumber === '' || !validate_phone_number($primaryFullNumber)) {
-        $errors[] = 'Please add at least one WhatsApp number.';
+        $errors[] = t('validation.whatsapp_number_required');
     }
 
     if ($data['custom_url'] !== '' && !filter_var($data['custom_url'], FILTER_VALIDATE_URL)) {
-        $errors[] = 'Custom URL must be a valid full URL.';
+        $errors[] = t('validation.custom_url_invalid');
     }
 
     return $errors;
@@ -1520,7 +1521,7 @@ function format_widget_owner_display(array $widget): string
         return $ownerName;
     }
 
-    return 'No client assigned';
+    return t('meta.no_client_assigned');
 }
 
 function update_widget_admin(int $widgetId, array $data): void
@@ -1578,16 +1579,16 @@ function validate_client_password(string $password, string $confirmPassword): ar
     $errors = [];
 
     if ($password === '') {
-        $errors[] = 'Password is required.';
+        $errors[] = t('validation.password_required');
     }
     if ($confirmPassword === '') {
-        $errors[] = 'Confirm password is required.';
+        $errors[] = t('validation.confirm_password_required');
     }
     if ($password !== '' && $confirmPassword !== '' && $password !== $confirmPassword) {
-        $errors[] = 'Password and confirm password do not match.';
+        $errors[] = t('validation.password_mismatch');
     }
     if ($password !== '' && strlen($password) < 8) {
-        $errors[] = 'Password must be at least 8 characters.';
+        $errors[] = t('validation.password_min_length');
     }
 
     return $errors;
@@ -1635,16 +1636,16 @@ function client_lead_count(int $clientId): int
 function delete_client_account(int $clientId, string $widgetMode, int $superadminId): array
 {
     if (!in_array($widgetMode, ['delete_all', 'reassign'], true)) {
-        return ['success' => false, 'message' => 'Invalid delete option selected.'];
+        return ['success' => false, 'message' => t('validation.invalid_delete_option')];
     }
 
     $client = find_client_user($clientId);
     if (!$client) {
-        return ['success' => false, 'message' => 'Client account not found.'];
+        return ['success' => false, 'message' => t('validation.client_not_found')];
     }
 
     if ($clientId === $superadminId) {
-        return ['success' => false, 'message' => 'You cannot delete your own account from this action.'];
+        return ['success' => false, 'message' => t('validation.cannot_delete_self')];
     }
 
     $pdo = db();
@@ -1685,7 +1686,7 @@ function delete_client_account(int $clientId, string $widgetMode, int $superadmi
         if ($stmt->rowCount() === 0) {
             $pdo->rollBack();
 
-            return ['success' => false, 'message' => 'Client account could not be deleted.'];
+            return ['success' => false, 'message' => t('validation.client_delete_failed')];
         }
 
         $pdo->commit();
@@ -1694,15 +1695,15 @@ function delete_client_account(int $clientId, string $widgetMode, int $superadmi
             'success' => true,
             'mode' => $widgetMode,
             'message' => $widgetMode === 'reassign'
-                ? 'Client deleted successfully. Their widgets were reassigned to superadmin.'
-                : 'Client and related widgets were deleted successfully.',
+                ? t('flash.client_deleted_reassign')
+                : t('flash.client_deleted_all'),
         ];
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
 
-        return ['success' => false, 'message' => 'Unable to delete client account. Please try again.'];
+        return ['success' => false, 'message' => t('validation.client_delete_retry')];
     }
 }
 
@@ -1871,7 +1872,7 @@ function feature_status_pill($value): string
     $enabled = !empty($value);
 
     return '<span class="status-pill ' . ($enabled ? 'status-active' : 'status-disabled') . '">'
-        . e($enabled ? 'Enabled' : 'Disabled') . '</span>';
+        . e(translate_feature_status($enabled)) . '</span>';
 }
 
 function nav_is_active(string $page): bool
@@ -1894,23 +1895,23 @@ function render_widget_action_menu(array $widget, array $options = []): void
     $deleteClientId = (int) ($options['delete_client_id'] ?? 0);
     ?>
     <div class="row-actions">
-        <a class="btn btn-small btn-primary" href="edit-widget.php?id=<?= $widgetId ?>">Manage</a>
-        <a class="btn btn-small btn-light" href="widget-preview.php?id=<?= $widgetId ?>">Preview</a>
+        <a class="btn btn-small btn-primary" href="edit-widget.php?id=<?= $widgetId ?>"><?= e(t('button.manage')) ?></a>
+        <a class="btn btn-small btn-light" href="widget-preview.php?id=<?= $widgetId ?>"><?= e(t('button.preview')) ?></a>
         <div class="action-menu" data-action-menu>
-            <button type="button" class="btn btn-small btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="More actions">⋯</button>
+            <button type="button" class="btn btn-small btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="<?= e(t('action.more_actions')) ?>">⋯</button>
             <div class="action-menu-panel" role="menu">
-                <a role="menuitem" href="edit-widget-phone.php?id=<?= $widgetId ?>">Phone Number</a>
-                <a role="menuitem" href="admin-widget-leads.php?widget_id=<?= $widgetId ?>">Leads</a>
-                <a role="menuitem" href="embed-code.php?id=<?= $widgetId ?>">Embed Code</a>
+                <a role="menuitem" href="edit-widget-phone.php?id=<?= $widgetId ?>"><?= e(t('action.phone_number')) ?></a>
+                <a role="menuitem" href="admin-widget-leads.php?widget_id=<?= $widgetId ?>"><?= e(t('action.leads')) ?></a>
+                <a role="menuitem" href="embed-code.php?id=<?= $widgetId ?>"><?= e(t('action.embed_code')) ?></a>
                 <?php if ($showDelete): ?>
-                    <form method="post" data-confirm="Delete this widget?">
+                    <form method="post" data-confirm="<?= e(t('widget.delete_confirm')) ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="delete_widget">
                         <input type="hidden" name="widget_id" value="<?= $widgetId ?>">
                         <?php if ($deleteClientId > 0): ?>
                             <input type="hidden" name="client_id" value="<?= $deleteClientId ?>">
                         <?php endif; ?>
-                        <button type="submit" class="action-menu-danger" role="menuitem">Delete</button>
+                        <button type="submit" class="action-menu-danger" role="menuitem"><?= e(t('button.delete')) ?></button>
                     </form>
                 <?php endif; ?>
             </div>
@@ -1919,10 +1920,10 @@ function render_widget_action_menu(array $widget, array $options = []): void
     <?php
 }
 
-function format_datetime(?string $value, string $fallback = 'Never'): string
+function format_datetime(?string $value, ?string $fallback = null): string
 {
     if ($value === null || trim($value) === '') {
-        return $fallback;
+        return $fallback ?? t('datetime.never');
     }
 
     return date('M j, Y g:i A', strtotime($value));
@@ -1931,16 +1932,16 @@ function format_datetime(?string $value, string $fallback = 'Never'): string
 function validate_uploaded_phone_file(array $file): array
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        return ['Upload failed. Please try again.'];
+        return [t('validation.upload_failed')];
     }
 
     if (($file['size'] ?? 0) > 1048576) {
-        return ['File must be 1MB or smaller.'];
+        return [t('validation.upload_file_size')];
     }
 
     $name = strtolower((string) ($file['name'] ?? ''));
     if (!preg_match('/\.(csv|txt)$/', $name)) {
-        return ['Only CSV or TXT files are allowed.'];
+        return [t('validation.upload_file_type')];
     }
 
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -1951,7 +1952,7 @@ function validate_uploaded_phone_file(array $file): array
 
     $allowed = ['text/plain', 'text/csv', 'application/csv', 'application/vnd.ms-excel'];
     if ($mime !== '' && !in_array($mime, $allowed, true)) {
-        return ['Invalid file type uploaded.'];
+        return [t('validation.upload_invalid_mime')];
     }
 
     return [];

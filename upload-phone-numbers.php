@@ -14,12 +14,12 @@ $widgetId = (int) ($_POST['widget_id'] ?? 0);
 $widget = find_user_widget($widgetId, (int) $user['id']);
 if (!$widget) {
     http_response_code(403);
-    exit('Access denied.');
+    exit(t('error.access_denied'));
 }
 
 $file = $_FILES['phone_file'] ?? null;
 if (!is_array($file)) {
-    flash('error', 'Please choose a file to upload.');
+    flash('error', t('flash.upload_choose_file'));
     redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
 }
 
@@ -37,7 +37,7 @@ $result = parse_phone_upload($tmpPath);
 
 $uploadedNumbers = $result['numbers'];
 if ($uploadedNumbers === []) {
-    flash('error', 'No valid phone numbers found. Your current active numbers were not changed.');
+    flash('error', t('flash.upload_no_valid_numbers'));
     redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
 }
 
@@ -55,18 +55,17 @@ if ($replaceExisting) {
     if ($addedCount === 0 && $duplicatesSkipped > 0) {
         flash(
             'success',
-            'Numbers uploaded successfully. 0 new numbers added, '
-            . $duplicatesSkipped
-            . ' duplicate'
-            . ($duplicatesSkipped === 1 ? '' : 's')
-            . ' skipped.'
+            t(
+                $duplicatesSkipped === 1 ? 'flash.upload_zero_added_dupes_one' : 'flash.upload_zero_added_dupes_other',
+                ['count' => (string) $duplicatesSkipped]
+            )
         );
         redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
     }
 }
 
 if ($finalNumbers === [] || !save_widget_phone_numbers($widgetId, $finalNumbers)) {
-    flash('error', 'No valid phone numbers found. Your current active numbers were not changed.');
+    flash('error', t('flash.upload_no_valid_numbers'));
     redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=upload');
 }
 
@@ -75,37 +74,30 @@ $activeCount = count($finalNumbers);
 if ($replaceExisting) {
     flash(
         'success',
-        'Numbers replaced successfully. '
-        . $activeCount
-        . ' number'
-        . ($activeCount === 1 ? ' is' : 's are')
-        . ' now active.'
+        t(
+            $activeCount === 1 ? 'flash.upload_replaced_one' : 'flash.upload_replaced_other',
+            ['count' => (string) $activeCount]
+        )
     );
 } elseif ($duplicatesSkipped > 0) {
+    $addedKey = $addedCount === 1 ? 'one' : 'other';
+    $dupeKey = $duplicatesSkipped === 1 ? 'one' : 'other';
     flash(
         'success',
-        'Numbers uploaded successfully. '
-        . $addedCount
-        . ' new number'
-        . ($addedCount === 1 ? '' : 's')
-        . ' added, '
-        . $duplicatesSkipped
-        . ' duplicate'
-        . ($duplicatesSkipped === 1 ? '' : 's')
-        . ' skipped.'
+        t(
+            'flash.upload_added_with_dupes_' . $addedKey . '_' . $dupeKey,
+            ['added' => (string) $addedCount, 'count' => (string) $duplicatesSkipped]
+        )
     );
 } else {
+    $addedKey = $addedCount === 1 ? 'one' : 'other';
+    $activeKey = $activeCount === 1 ? 'one' : 'other';
     flash(
         'success',
-        'Numbers uploaded successfully. '
-        . $addedCount
-        . ' new number'
-        . ($addedCount === 1 ? '' : 's')
-        . ' added. '
-        . $activeCount
-        . ' number'
-        . ($activeCount === 1 ? ' is' : 's are')
-        . ' now active.'
+        t(
+            'flash.upload_added_' . $addedKey . '_' . $activeKey,
+            ['added' => (string) $addedCount, 'active' => (string) $activeCount]
+        )
     );
 }
 

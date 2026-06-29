@@ -8,7 +8,7 @@ $widgetId = (int) ($_GET['id'] ?? 0);
 $widget = find_widget_with_owner($widgetId);
 if (!$widget) {
     http_response_code(404);
-    exit('Widget not found.');
+    exit(t('error.widget_not_found'));
 }
 $errors = [];
 
@@ -20,10 +20,10 @@ if (is_post()) {
         $newOwner = find_client_user($newOwnerId);
         if ($newOwner) {
             reassign_widget_owner($widgetId, (int) $newOwner['id']);
-            flash('success', 'Widget owner updated.');
+            flash('success', t('flash.widget_owner_updated'));
             redirect('edit-widget.php?id=' . $widgetId);
         }
-        flash('error', 'Please select a valid client.');
+        flash('error', t('flash.select_valid_client'));
         redirect('edit-widget.php?id=' . $widgetId);
     }
 
@@ -32,7 +32,7 @@ if (is_post()) {
 
     if (!$errors) {
         update_widget_admin($widgetId, $updated);
-        flash('success', 'Widget updated.');
+        flash('success', t('flash.widget_updated'));
         redirect('edit-widget.php?id=' . $widgetId);
     }
 
@@ -45,16 +45,16 @@ if (is_post()) {
     }
 }
 
-$pageTitle = 'Edit Widget';
+$pageTitle = t('page.edit_widget');
 $showLivePreview = true;
 $pageStylesheets = ['assets/css/widget-live-preview.css'];
 require __DIR__ . '/includes/header.php';
 ?>
 
 <div class="page-heading">
-    <p class="eyebrow">Widget settings</p>
-    <h1>Edit <?= e($widget['widget_name']) ?></h1>
-    <p>Full widget configuration. Owner: <?= e(format_widget_owner_display($widget)) ?>.</p>
+    <p class="eyebrow"><?= e(t('eyebrow.widget_settings')) ?></p>
+    <h1><?= e(t('heading.edit_widget', ['name' => $widget['widget_name']])) ?></h1>
+    <p><?= e(t('desc.edit_widget', ['owner' => format_widget_owner_display($widget)])) ?></p>
 </div>
 
 <section class="settings-card">
@@ -62,7 +62,7 @@ require __DIR__ . '/includes/header.php';
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="reassign_owner">
         <label>
-            <span>Widget owner</span>
+            <span><?= e(t('label.widget_owner')) ?></span>
             <select name="owner_user_id" required>
                 <?php
                 $clientOptions = db()->query("SELECT id, name, email FROM users WHERE role = '" . ROLE_CLIENT . "' ORDER BY name ASC")->fetchAll();
@@ -75,8 +75,8 @@ require __DIR__ . '/includes/header.php';
             </select>
         </label>
         <div class="form-actions">
-            <button type="submit" class="btn btn-light">Reassign owner</button>
-            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>">View client</a>
+            <button type="submit" class="btn btn-light"><?= e(t('button.reassign_owner')) ?></button>
+            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>"><?= e(t('button.view_client')) ?></a>
         </div>
     </form>
 </section>

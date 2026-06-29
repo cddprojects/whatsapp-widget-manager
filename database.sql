@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     role VARCHAR(30) NOT NULL DEFAULT 'client',
     status VARCHAR(30) NOT NULL DEFAULT 'active',
+    preferred_language VARCHAR(10) NOT NULL DEFAULT 'en',
     last_login_at DATETIME NULL,
     password_changed_at DATETIME NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -8,7 +8,7 @@ $clientId = (int) ($_GET['id'] ?? 0);
 $client = find_client_user($clientId);
 if (!$client) {
     http_response_code(404);
-    exit('Client not found.');
+    exit(t('error.client_not_found'));
 }
 
 if (is_post() && ($_POST['action'] ?? '') === 'delete_widget') {
@@ -18,7 +18,7 @@ if (is_post() && ($_POST['action'] ?? '') === 'delete_widget') {
     if ($widget && (int) $widget['user_id'] === $clientId) {
         $stmt = db()->prepare('DELETE FROM widgets WHERE id = :id AND user_id = :user_id');
         $stmt->execute(['id' => $widgetId, 'user_id' => $clientId]);
-        flash('success', 'Widget deleted.');
+        flash('success', t('flash.widget_deleted'));
     }
     redirect('admin-client-detail.php?id=' . $clientId);
 }
@@ -28,11 +28,11 @@ if (is_post() && ($_POST['action'] ?? '') === 'toggle_status') {
     if ((string) $client['status'] === USER_STATUS_ACTIVE) {
         $stmt = db()->prepare('UPDATE users SET status = :status WHERE id = :id AND role = :role');
         $stmt->execute(['status' => USER_STATUS_DISABLED, 'id' => $clientId, 'role' => ROLE_CLIENT]);
-        flash('success', 'Client disabled.');
+        flash('success', t('flash.client_disabled'));
     } else {
         $stmt = db()->prepare('UPDATE users SET status = :status WHERE id = :id AND role = :role');
         $stmt->execute(['status' => USER_STATUS_ACTIVE, 'id' => $clientId, 'role' => ROLE_CLIENT]);
-        flash('success', 'Client enabled.');
+        flash('success', t('flash.client_enabled'));
     }
     redirect('admin-client-detail.php?id=' . $clientId);
 }
@@ -43,29 +43,31 @@ $createdPassword = $_SESSION['created_client_password'] ?? null;
 $createdClientEmail = $_SESSION['created_client_email'] ?? null;
 unset($_SESSION['created_client_password'], $_SESSION['created_client_email']);
 
-$pageTitle = 'Client Profile';
+$pageTitle = t('page.client_profile');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <section class="page-heading page-heading-row">
     <div>
-        <p class="eyebrow">Client profile</p>
+        <p class="eyebrow"><?= e(t('eyebrow.client_profile')) ?></p>
         <h1><?= e($client['name']) ?></h1>
-        <p>Manage this client account and their widgets.</p>
+        <p><?= e(t('desc.client_profile')) ?></p>
     </div>
-    <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>">Create Widget for This Client</a>
+    <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>"><?= e(t('button.create_widget_for_client')) ?></a>
 </section>
 
 <?php if ($createdPassword !== null): ?>
     <div class="alert alert-success">
-        Client created successfully<?= $createdClientEmail ? ' for ' . e((string) $createdClientEmail) : '' ?>.
+        <?= e($createdClientEmail
+            ? t('alert.client_created_for', ['email' => (string) $createdClientEmail])
+            : t('alert.client_created')) ?>
     </div>
     <div class="alert alert-warning">
-        Copy this password now. It will not be shown again.
+        <?= e(t('alert.copy_password_now')) ?>
     </div>
     <section class="settings-card">
         <div class="temp-password-box">
-            <span class="meta-label">Password</span>
+            <span class="meta-label"><?= e(t('meta.password')) ?></span>
             <code><?= e((string) $createdPassword) ?></code>
         </div>
     </section>
@@ -74,55 +76,55 @@ require __DIR__ . '/includes/header.php';
 <section class="settings-card profile-card">
     <div class="card-header-row">
         <div>
-            <h2>Client profile</h2>
-            <p>Account overview and admin actions.</p>
+            <h2><?= e(t('heading.client_profile')) ?></h2>
+            <p><?= e(t('desc.client_profile_overview')) ?></p>
         </div>
         <div class="action-list">
-            <a class="btn btn-light" href="admin-client-edit.php?id=<?= (int) $client['id'] ?>">Edit Client</a>
+            <a class="btn btn-light" href="admin-client-edit.php?id=<?= (int) $client['id'] ?>"><?= e(t('button.edit_client')) ?></a>
             <form method="post">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="toggle_status">
                 <button type="submit" class="btn btn-light">
-                    <?= (string) $client['status'] === USER_STATUS_ACTIVE ? 'Disable Client' : 'Enable Client' ?>
+                    <?= e((string) $client['status'] === USER_STATUS_ACTIVE ? t('button.disable_client') : t('button.enable_client')) ?>
                 </button>
             </form>
-            <a class="btn btn-primary-soft" href="admin-client-reset-password.php?id=<?= (int) $client['id'] ?>">Reset Password</a>
+            <a class="btn btn-primary-soft" href="admin-client-reset-password.php?id=<?= (int) $client['id'] ?>"><?= e(t('button.reset_password')) ?></a>
         </div>
     </div>
     <div class="profile-grid">
-        <div><span class="meta-label">Email</span><strong><?= e($client['email']) ?></strong></div>
-        <div><span class="meta-label">Status</span><span class="<?= e(user_status_badge_class((string) $client['status'])) ?>"><?= e(ucfirst((string) $client['status'])) ?></span></div>
-        <div><span class="meta-label">Created</span><strong><?= e(date('M j, Y', strtotime((string) $client['created_at']))) ?></strong></div>
-        <div><span class="meta-label">Last login</span><strong><?= e(format_datetime($client['last_login_at'] ?? null)) ?></strong></div>
-        <div><span class="meta-label">Total widgets</span><strong><?= (int) $widgetCount ?></strong></div>
+        <div><span class="meta-label"><?= e(t('meta.email')) ?></span><strong><?= e($client['email']) ?></strong></div>
+        <div><span class="meta-label"><?= e(t('meta.status')) ?></span><span class="<?= e(user_status_badge_class((string) $client['status'])) ?>"><?= e(translate_user_status((string) $client['status'])) ?></span></div>
+        <div><span class="meta-label"><?= e(t('meta.created')) ?></span><strong><?= e(date('M j, Y', strtotime((string) $client['created_at']))) ?></strong></div>
+        <div><span class="meta-label"><?= e(t('meta.last_login')) ?></span><strong><?= e(format_datetime($client['last_login_at'] ?? null)) ?></strong></div>
+        <div><span class="meta-label"><?= e(t('meta.total_widgets')) ?></span><strong><?= (int) $widgetCount ?></strong></div>
     </div>
 </section>
 
 <section class="settings-card table-card">
     <div class="card-header-row">
         <div>
-            <h2>Client widgets</h2>
-            <p>Widgets owned by this client only.</p>
+            <h2><?= e(t('heading.client_widgets')) ?></h2>
+            <p><?= e(t('desc.client_widgets')) ?></p>
         </div>
     </div>
 
     <?php if (!$widgets): ?>
         <div class="empty-state compact-empty">
-            <p>This client has no widgets yet.</p>
-            <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>">Create Widget for This Client</a>
+            <p><?= e(t('empty.client_no_widgets')) ?></p>
+            <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>"><?= e(t('button.create_widget_for_client')) ?></a>
         </div>
     <?php else: ?>
         <div class="table-wrap">
             <table class="widget-table">
                 <thead>
                     <tr>
-                        <th>Widget name</th>
-                        <th>Domain</th>
-                        <th>WhatsApp number</th>
-                        <th>Random numbers</th>
-                        <th>Global display</th>
-                        <th>Updated</th>
-                        <th class="col-actions">Actions</th>
+                        <th><?= e(t('table.widget_name')) ?></th>
+                        <th><?= e(t('table.domain')) ?></th>
+                        <th><?= e(t('table.whatsapp_number')) ?></th>
+                        <th><?= e(t('table.random_numbers')) ?></th>
+                        <th><?= e(t('table.global_display')) ?></th>
+                        <th><?= e(t('table.updated')) ?></th>
+                        <th class="col-actions"><?= e(t('table.actions')) ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -149,13 +151,13 @@ require __DIR__ . '/includes/header.php';
 </section>
 
 <section class="settings-card danger-zone-card">
-    <h2>Danger Zone</h2>
-    <p class="danger-zone-copy">Delete this client account. You can either reassign their widgets to superadmin or delete all related widgets.</p>
-    <a class="btn btn-danger-soft" href="admin-client-delete.php?id=<?= (int) $client['id'] ?>">Delete Client</a>
+    <h2><?= e(t('heading.danger_zone')) ?></h2>
+    <p class="danger-zone-copy"><?= e(t('desc.danger_zone')) ?></p>
+    <a class="btn btn-danger-soft" href="admin-client-delete.php?id=<?= (int) $client['id'] ?>"><?= e(t('button.delete_client')) ?></a>
 </section>
 
 <div class="form-actions">
-    <a class="btn btn-light" href="admin-clients.php">Back to Clients</a>
+    <a class="btn btn-light" href="admin-clients.php"><?= e(t('button.back_to_clients')) ?></a>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

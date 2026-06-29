@@ -9,7 +9,7 @@ $clientId = (int) (is_post() ? ($_POST['client_id'] ?? 0) : ($_GET['id'] ?? 0));
 $client = find_client_user($clientId);
 if (!$client) {
     http_response_code(404);
-    exit('Client not found.');
+    exit(t('error.client_not_found'));
 }
 
 $widgetCount = client_widget_count($clientId);
@@ -25,13 +25,13 @@ if (is_post()) {
     $postedClientId = (int) ($_POST['client_id'] ?? 0);
 
     if ($postedClientId !== $clientId) {
-        $errors[] = 'Invalid client reference.';
+        $errors[] = t('validation.invalid_client_reference');
     }
     if ($confirmation !== 'DELETE') {
-        $errors[] = 'Confirmation text must exactly match DELETE.';
+        $errors[] = t('validation.delete_confirmation');
     }
     if (!in_array($widgetMode, ['reassign', 'delete_all'], true)) {
-        $errors[] = 'Please choose what to do with this client’s widgets.';
+        $errors[] = t('validation.widget_mode_required');
     }
 
     if (!$errors) {
@@ -41,18 +41,18 @@ if (is_post()) {
             redirect('admin-clients.php');
         }
 
-        $errors[] = (string) ($result['message'] ?? 'Unable to delete client account. Please try again.');
+        $errors[] = (string) ($result['message'] ?? t('validation.client_delete_retry'));
     }
 }
 
-$pageTitle = 'Delete Client';
+$pageTitle = t('page.delete_client');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <section class="page-heading">
-    <p class="eyebrow">Client account</p>
-    <h1>Delete client</h1>
-    <p>Review this action carefully before permanently deleting a client account.</p>
+    <p class="eyebrow"><?= e(t('eyebrow.client_account')) ?></p>
+    <h1><?= e(t('heading.delete_client')) ?></h1>
+    <p><?= e(t('desc.delete_client')) ?></p>
 </section>
 
 <section class="settings-card danger-zone-card">
@@ -67,16 +67,16 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 
     <div class="alert alert-warning">
-        You are about to delete this client account. This action cannot be undone.
+        <?= e(t('alert.delete_client_warning')) ?>
     </div>
 
     <div class="profile-grid danger-zone-summary">
-        <div><span class="meta-label">Client name</span><strong><?= e($client['name']) ?></strong></div>
-        <div><span class="meta-label">Client email</span><strong><?= e($client['email']) ?></strong></div>
-        <div><span class="meta-label">Status</span><span class="<?= e(user_status_badge_class((string) $client['status'])) ?>"><?= e(ucfirst((string) $client['status'])) ?></span></div>
-        <div><span class="meta-label">Total widgets</span><strong><?= (int) $widgetCount ?></strong></div>
+        <div><span class="meta-label"><?= e(t('meta.client_name')) ?></span><strong><?= e($client['name']) ?></strong></div>
+        <div><span class="meta-label"><?= e(t('meta.client_email')) ?></span><strong><?= e($client['email']) ?></strong></div>
+        <div><span class="meta-label"><?= e(t('meta.status')) ?></span><span class="<?= e(user_status_badge_class((string) $client['status'])) ?>"><?= e(translate_user_status((string) $client['status'])) ?></span></div>
+        <div><span class="meta-label"><?= e(t('meta.total_widgets')) ?></span><strong><?= (int) $widgetCount ?></strong></div>
         <?php if ($leadCount > 0 || database_table_exists('widget_leads')): ?>
-            <div><span class="meta-label">Total leads</span><strong><?= (int) $leadCount ?></strong></div>
+            <div><span class="meta-label"><?= e(t('meta.total_leads')) ?></span><strong><?= (int) $leadCount ?></strong></div>
         <?php endif; ?>
     </div>
 
@@ -85,33 +85,33 @@ require __DIR__ . '/includes/header.php';
         <input type="hidden" name="client_id" value="<?= (int) $clientId ?>">
 
         <fieldset class="danger-zone-options">
-            <legend>What should happen to this client’s widgets?</legend>
+            <legend><?= e(t('danger.widgets_legend')) ?></legend>
 
             <label class="radio-card">
                 <input type="radio" name="widget_mode" value="reassign"<?= $widgetMode === 'reassign' ? ' checked' : '' ?>>
                 <span>
-                    <strong>Delete client only and keep widgets under superadmin</strong>
-                    <small>Reassign all widgets to your superadmin account and keep them active.</small>
+                    <strong><?= e(t('danger.reassign_title')) ?></strong>
+                    <small><?= e(t('danger.reassign_description')) ?></small>
                 </span>
             </label>
 
             <label class="radio-card">
                 <input type="radio" name="widget_mode" value="delete_all"<?= $widgetMode === 'delete_all' ? ' checked' : '' ?>>
                 <span>
-                    <strong>Delete client and all widgets</strong>
-                    <small>Delete the client account, all owned widgets, and related widget leads.</small>
+                    <strong><?= e(t('danger.delete_all_title')) ?></strong>
+                    <small><?= e(t('danger.delete_all_description')) ?></small>
                 </span>
             </label>
         </fieldset>
 
         <label class="danger-zone-confirm">
-            <span>Type DELETE to confirm</span>
-            <input type="text" name="confirmation" autocomplete="off" spellcheck="false" placeholder="DELETE">
+            <span><?= e(t('label.type_delete_to_confirm')) ?></span>
+            <input type="text" name="confirmation" autocomplete="off" spellcheck="false" placeholder="<?= e(t('placeholder.delete_confirm')) ?>">
         </label>
 
         <div class="form-actions">
-            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $clientId ?>">Cancel</a>
-            <button type="submit" class="btn btn-danger-soft">Delete Client Permanently</button>
+            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $clientId ?>"><?= e(t('button.cancel')) ?></a>
+            <button type="submit" class="btn btn-danger-soft"><?= e(t('button.delete_client_permanently')) ?></button>
         </div>
     </form>
 </section>

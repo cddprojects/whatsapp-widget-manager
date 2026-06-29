@@ -8,7 +8,7 @@ $clientId = (int) ($_GET['id'] ?? 0);
 $client = find_client_user($clientId);
 if (!$client) {
     http_response_code(404);
-    exit('Client not found.');
+    exit(t('error.client_not_found'));
 }
 
 $generatedPassword = null;
@@ -27,35 +27,35 @@ if (is_post()) {
     ]);
 }
 
-$pageTitle = 'Reset Client Password';
+$pageTitle = t('page.reset_client_password');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <section class="page-heading">
-    <p class="eyebrow">Client account</p>
-    <h1>Reset password</h1>
-    <p>Generate a temporary password for <?= e($client['name']) ?>.</p>
+    <p class="eyebrow"><?= e(t('eyebrow.client_account')) ?></p>
+    <h1><?= e(t('heading.reset_password')) ?></h1>
+    <p><?= e(t('desc.reset_password', ['name' => $client['name']])) ?></p>
 </section>
 
 <section class="settings-card">
     <?php if ($generatedPassword !== null): ?>
         <div class="alert alert-warning">
-            Copy this password now. It will not be shown again.
+            <?= e(t('alert.copy_password_now')) ?>
         </div>
         <div class="temp-password-box">
-            <span class="meta-label">Temporary password</span>
+            <span class="meta-label"><?= e(t('meta.temporary_password')) ?></span>
             <code><?= e($generatedPassword) ?></code>
         </div>
         <div class="form-actions">
-            <a class="btn btn-primary" href="admin-client-detail.php?id=<?= (int) $clientId ?>">Back to client</a>
+            <a class="btn btn-primary" href="admin-client-detail.php?id=<?= (int) $clientId ?>"><?= e(t('button.back_to_client')) ?></a>
         </div>
     <?php else: ?>
-        <p>This will generate a new temporary password and invalidate the client’s current password.</p>
+        <p><?= e(t('desc.reset_password_confirm')) ?></p>
         <form method="post">
             <?= csrf_field() ?>
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Generate temporary password</button>
-                <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $clientId ?>">Cancel</a>
+                <button type="submit" class="btn btn-primary"><?= e(t('button.generate_temporary_password')) ?></button>
+                <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $clientId ?>"><?= e(t('button.cancel')) ?></a>
             </div>
         </form>
     <?php endif; ?>

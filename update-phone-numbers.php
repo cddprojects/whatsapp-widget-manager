@@ -14,12 +14,12 @@ $widgetId = (int) ($_POST['widget_id'] ?? 0);
 $widget = find_user_widget($widgetId, (int) $user['id']);
 if (!$widget) {
     http_response_code(403);
-    exit('Access denied.');
+    exit(t('error.access_denied'));
 }
 
 $data = sanitize_client_phone_manual_input($_POST);
 if ($data === null) {
-    flash('error', 'Please keep at least one active WhatsApp number.');
+    flash('error', t('validation.keep_one_number'));
     redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');
 }
 
@@ -30,7 +30,7 @@ $activeCount = !empty($data['use_random_numbers'])
 flash(
     'success',
     $activeCount > 1
-        ? 'Numbers saved successfully. ' . $activeCount . ' numbers are now active.'
-        : 'Number saved successfully. 1 number is now active.'
+        ? t('flash.numbers_saved_other', ['count' => (string) $activeCount])
+        : t('flash.number_saved_one')
 );
 redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');

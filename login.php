@@ -13,14 +13,14 @@ if (is_post()) {
     $password = (string) ($_POST['password'] ?? '');
 
     if (login_is_limited()) {
-        $errors[] = 'Too many failed login attempts. Please wait a few minutes and try again.';
+        $errors[] = t('login.error.too_many_attempts');
     } else {
         $stmt = db()->prepare('SELECT id, password, role, status FROM users WHERE email = :email LIMIT 1');
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
 
         if ($user && (string) $user['status'] === USER_STATUS_DISABLED) {
-            $errors[] = 'Your account has been disabled. Please contact support.';
+            $errors[] = t('login.error.account_disabled');
             record_failed_login();
         } elseif ($user && password_verify($password, (string) $user['password'])) {
             login_user((int) $user['id']);
@@ -30,18 +30,18 @@ if (is_post()) {
             }
         } else {
             record_failed_login();
-            $errors[] = 'Invalid email or password.';
+            $errors[] = t('login.error.invalid_credentials');
         }
     }
 }
 
-$pageTitle = 'Login';
+$pageTitle = t('page.login');
 require __DIR__ . '/includes/header.php';
 ?>
 
 <div class="auth-card">
-    <h1>Login</h1>
-    <p>Access your Click To Chat Manager dashboard.</p>
+    <h1><?= e(t('login.title')) ?></h1>
+    <p><?= e(t('login.subtitle')) ?></p>
     <?php if ($errors): ?>
         <div class="alert alert-error">
             <ul>
@@ -54,14 +54,14 @@ require __DIR__ . '/includes/header.php';
     <form method="post">
         <?= csrf_field() ?>
         <label>
-            <span>Email</span>
+            <span><?= e(t('label.email')) ?></span>
             <input type="email" name="email" value="<?= e($email) ?>" required>
         </label>
         <label>
-            <span>Password</span>
+            <span><?= e(t('label.password')) ?></span>
             <input type="password" name="password" required>
         </label>
-        <button type="submit" class="btn btn-primary btn-full">Login</button>
+        <button type="submit" class="btn btn-primary btn-full"><?= e(t('button.login')) ?></button>
     </form>
 </div>
 
