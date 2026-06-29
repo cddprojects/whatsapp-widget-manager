@@ -1561,6 +1561,63 @@ function format_whatsapp_display(array $widget): string
     return e((string) $number['country_code']) . ' ' . e((string) $number['number']);
 }
 
+function widget_destination_summary(array $widget): array
+{
+    $numbers = widget_phone_list($widget);
+    $destinationCount = count($numbers);
+    $isRotating = !empty($widget['use_random_numbers']) && $destinationCount > 1;
+
+    if ($destinationCount === 0) {
+        return [
+            'summary' => t('widget_destinations.none'),
+            'state' => 'setup_required',
+            'tooltip' => '',
+        ];
+    }
+
+    if ($isRotating) {
+        return [
+            'summary' => t('widget_destinations.rotating', ['count' => (string) $destinationCount]),
+            'state' => 'active',
+            'tooltip' => t('widget_destinations.rotating_tooltip', ['count' => (string) $destinationCount]),
+        ];
+    }
+
+    if ($destinationCount === 1) {
+        $number = $numbers[0];
+        $tooltip = trim((string) ($number['country_code'] ?? '') . ' ' . (string) ($number['number'] ?? ''));
+
+        return [
+            'summary' => t('widget_destinations.one'),
+            'state' => 'active',
+            'tooltip' => $tooltip,
+        ];
+    }
+
+    return [
+        'summary' => t('widget_destinations.multiple', ['count' => (string) $destinationCount]),
+        'state' => 'active',
+        'tooltip' => t('widget_destinations.multiple_tooltip', ['count' => (string) $destinationCount]),
+    ];
+}
+
+function render_widget_destination_summary(array $widget): void
+{
+    $info = widget_destination_summary($widget);
+    $titleAttr = $info['tooltip'] !== '' ? ' title="' . e($info['tooltip']) . '"' : '';
+
+    if ($info['state'] === 'setup_required') {
+        echo '<div class="widget-destination-summary widget-destination-summary--setup">';
+        echo '<span class="widget-destination-summary-text">' . e($info['summary']) . '</span>';
+        echo '<span class="widget-destination-setup-required">' . e(t('widget_destinations.setup_required')) . '</span>';
+        echo '</div>';
+
+        return;
+    }
+
+    echo '<span class="widget-destination-summary-text"' . $titleAttr . '>' . e($info['summary']) . '</span>';
+}
+
 function generate_temporary_password(int $length = 14): string
 {
     $alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%^&*';

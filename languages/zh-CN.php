@@ -155,8 +155,11 @@ return [
     'table.domain' => '域名',
     'table.last_login' => '上次登录',
     'table.whatsapp' => 'WhatsApp',
+    'table.whatsapp_destinations' => 'WhatsApp 目的地',
     'table.whatsapp_number' => 'WhatsApp 号码',
     'table.random_numbers' => '随机号码',
+    'table.display' => '显示',
+    'table.display_tooltip' => '已启用 = 小组件可在已安装嵌入代码的页面上显示。已停用 = 小组件不会公开显示。',
     'table.global_display' => '全局显示',
     'table.visitor_phone' => '访客电话',
     'table.source_domain' => '来源域名',
@@ -457,6 +460,14 @@ return [
 
     // Widget
     'widget.delete_confirm' => '删除此小组件？',
+
+    'widget_destinations.none' => '无目的地',
+    'widget_destinations.setup_required' => '需要设置',
+    'widget_destinations.one' => '1 个号码',
+    'widget_destinations.rotating' => '{count} 个号码 · 轮换',
+    'widget_destinations.multiple' => '{count} 个号码',
+    'widget_destinations.rotating_tooltip' => '{count} 个有效的 WhatsApp 目的地号码。访客将随机分配其中一个。',
+    'widget_destinations.multiple_tooltip' => '{count} 个有效的 WhatsApp 目的地号码。',
 
     // Password
     'password.weak' => '弱',

@@ -1860,6 +1860,29 @@ code {
     background: #f1f5f9;
 }
 
+.widget-destination-summary {
+    display: grid;
+    gap: 4px;
+}
+
+.widget-destination-summary-text {
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.widget-destination-setup-required {
+    display: inline-block;
+    width: fit-content;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #c2410c;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
 .tab-bar {
     display: flex;
     gap: 10px;
