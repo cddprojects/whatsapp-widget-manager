@@ -44,7 +44,7 @@ $currentLocale = current_locale();
                 <?= csrf_field() ?>
                 <input type="hidden" name="redirect" value="<?= e(current_request_path()) ?>">
                 <label class="sr-only" for="language-select"><?= e(t('nav.language')) ?></label>
-                <select id="language-select" name="language" class="language-switcher-select" onchange="this.form.submit()">
+                <select id="language-select" name="language" class="language-switcher-select">
                     <option value="en"<?= $currentLocale === 'en' ? ' selected' : '' ?>>English</option>
                     <option value="zh-CN"<?= $currentLocale === 'zh-CN' ? ' selected' : '' ?>>中文</option>
                 </select>
@@ -73,7 +73,7 @@ $currentLocale = current_locale();
                 <?= csrf_field() ?>
                 <input type="hidden" name="redirect" value="<?= e(current_request_path()) ?>">
                 <label class="sr-only" for="language-select-guest"><?= e(t('nav.language')) ?></label>
-                <select id="language-select-guest" name="language" class="language-switcher-select" onchange="this.form.submit()">
+                <select id="language-select-guest" name="language" class="language-switcher-select">
                     <option value="en"<?= $currentLocale === 'en' ? ' selected' : '' ?>>English</option>
                     <option value="zh-CN"<?= $currentLocale === 'zh-CN' ? ' selected' : '' ?>>中文</option>
                 </select>

@@ -69,7 +69,7 @@ $settingsSections = [
             <div class="ctcw-save-actions">
                 <?php if (!empty($showLivePreview)): ?>
                     <label class="ctcw-preview-toggle" for="ctcwEnableLivePreview">
-                        <input type="checkbox" id="ctcwEnableLivePreview" data-live-preview-toggle checked>
+                        <input type="checkbox" id="ctcwEnableLivePreview" data-live-preview-toggle data-role="admin-live-preview-toggle" checked>
                         <span class="ctcw-toggle-ui" aria-hidden="true"></span>
                         <span class="ctcw-toggle-text"><?= e(t('save_bar.enable_live_preview')) ?></span>
                     </label>
