@@ -1089,14 +1089,19 @@ function initClientCreateForm() {
 
 function initLiveWidgetPreview() {
     var form = document.querySelector('[data-widget-form]');
-    var previewRoot = document.getElementById('ctcwAdminLivePreview');
-    if (!form || !previewRoot) {
+    var previewToggle = document.querySelector('[data-live-preview-toggle]');
+    if (!form || !previewToggle) {
         return;
     }
 
-    var customCssStyle = document.getElementById('ctcwAdminLivePreviewCustomCss');
-    var previewToggle = document.querySelector('[data-live-preview-toggle]');
     var previewEnabledStorageKey = 'ctcw_admin_live_preview_enabled';
+    var previewPlaceholderDestination = '+60123456789';
+    var previewPositionClasses = [
+        'ctcw-preview-bottom-right',
+        'ctcw-preview-bottom-left',
+        'ctcw-preview-top-right',
+        'ctcw-preview-top-left'
+    ];
     var debugFrameEnabled = new URLSearchParams(window.location.search).get('debug_preview_frame') === '1';
     var iconNode = document.getElementById('ctcw-preview-icon');
     var whatsappIcon = '';
@@ -1109,71 +1114,42 @@ function initLiveWidgetPreview() {
         }
     }
 
-    function isLivePreviewEnabled() {
-        if (!previewToggle) {
-            return true;
+    function getOrCreateAdminPreviewRoot() {
+        var root = document.getElementById('ctcw-admin-live-preview')
+            || document.getElementById('ctcwAdminLivePreview');
+
+        if (!root) {
+            root = document.createElement('div');
+            root.id = 'ctcw-admin-live-preview';
+            root.className = 'ctcw-admin-live-preview';
+            root.setAttribute('aria-hidden', 'true');
+        } else if (root.id !== 'ctcw-admin-live-preview') {
+            root.id = 'ctcw-admin-live-preview';
         }
+
+        if (root.parentNode !== document.body) {
+            document.body.appendChild(root);
+        }
+
+        return root;
+    }
+
+    function getOrCreateCustomCssStyle() {
+        var style = document.getElementById('ctcwAdminLivePreviewCustomCss');
+
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'ctcwAdminLivePreviewCustomCss';
+            document.head.appendChild(style);
+        } else if (style.parentNode !== document.head) {
+            document.head.appendChild(style);
+        }
+
+        return style;
+    }
+
+    function getPreviewEnabledState() {
         return previewToggle.checked;
-    }
-
-    function setLivePreviewEnabled(enabled) {
-        try {
-            window.localStorage.setItem(previewEnabledStorageKey, enabled ? '1' : '0');
-        } catch (error) {
-            // Ignore storage failures in restricted browsers.
-        }
-
-        if (previewRoot) {
-            previewRoot.style.display = enabled ? 'block' : 'none';
-            previewRoot.setAttribute('aria-hidden', enabled ? 'false' : 'true');
-        }
-
-        if (enabled) {
-            renderLiveWidgetPreview();
-            return;
-        }
-
-        if (previewRoot) {
-            previewRoot.innerHTML = '';
-        }
-    }
-
-    function initLivePreviewToggle() {
-        if (!previewToggle) {
-            setLivePreviewEnabled(true);
-            return;
-        }
-
-        var saved = null;
-        try {
-            saved = window.localStorage.getItem(previewEnabledStorageKey);
-        } catch (error) {
-            saved = null;
-        }
-
-        var enabled = saved === null ? true : saved === '1';
-        previewToggle.checked = enabled;
-        previewToggle.addEventListener('change', function () {
-            setLivePreviewEnabled(this.checked);
-        });
-        setLivePreviewEnabled(enabled);
-    }
-
-    function updateDebugFrameState() {
-        if (!previewRoot || !debugFrameEnabled) {
-            if (previewRoot) {
-                previewRoot.classList.remove('is-frame-debug');
-            }
-            return;
-        }
-
-        previewRoot.classList.add('is-frame-debug');
-        if (!document.querySelector('style[data-preview-frame-debug]')) {
-            var debugStyle = document.createElement('style');
-            debugStyle.setAttribute('data-preview-frame-debug', 'true');
-            debugStyle.textContent = '#ctcwAdminLivePreview.is-frame-debug .ctcw-admin-live-preview-inner{outline:2px dashed rgba(37,99,235,.65);background:rgba(37,99,235,.08);}';
-            document.head.appendChild(debugStyle);
-        }
     }
 
     function getFieldValue(name) {
@@ -1207,33 +1183,52 @@ function initLiveWidgetPreview() {
                 if (token === '') {
                     return token;
                 }
-                return '#ctcwAdminLivePreview ' + token;
+                return '#ctcw-admin-live-preview ' + token;
             }).join(', ');
 
             return before + scoped + '{';
         });
     }
 
-    function isPreviewOnline() {
-        return getFieldValue('business_hours_mode') !== 'always_closed';
+    function collectCurrentWidgetFormState() {
+        var vertical = getFieldValue('desktop_vertical_position_type') || 'bottom';
+        var horizontal = getFieldValue('desktop_horizontal_position_type') || 'right';
+
+        return {
+            desktopStyle: getFieldValue('desktop_style') || 'style-1',
+            desktopVerticalPosition: vertical === 'top' ? 'top' : 'bottom',
+            desktopHorizontalPosition: horizontal === 'left' ? 'left' : 'right',
+            callToAction: getFieldValue('call_to_action') || ctcwI18n('preview.default_cta'),
+            greetingEnabled: !!getFieldValue('greeting_enabled'),
+            greetingTitle: getFieldValue('greeting_title') || 'Hi 👋',
+            greetingMessage: getFieldValue('greeting_message') || 'Need Help? Contact Us !',
+            greetingCapturePhone: !!getFieldValue('greeting_capture_phone'),
+            greetingForcePhoneCapture: !!getFieldValue('greeting_force_phone_capture'),
+            greetingPhonePlaceholder: getFieldValue('greeting_phone_placeholder') || 'Enter your phone number',
+            greetingSubmitText: getFieldValue('greeting_submit_text') || 'Continue to WhatsApp',
+            customCss: getFieldValue('custom_css') || '',
+            previewDestination: previewPlaceholderDestination
+        };
     }
 
-    function buildGreetingHtml(verticalType, horizontalType) {
-        if (!getFieldValue('greeting_enabled')) {
+    function getPreviewPositionClass(formState) {
+        return 'ctcw-preview-' + formState.desktopVerticalPosition + '-' + formState.desktopHorizontalPosition;
+    }
+
+    function buildGreetingHtml(formState) {
+        if (!formState.greetingEnabled) {
             return '';
         }
 
-        var title = escapeHtml(getFieldValue('greeting_title') || 'Hi 👋');
-        var message = escapeHtml(getFieldValue('greeting_message') || 'Need Help? Contact Us !');
-        var capturePhone = !!getFieldValue('greeting_capture_phone');
-        var forcePhone = !!getFieldValue('greeting_force_phone_capture');
-        var placeholder = escapeHtml(getFieldValue('greeting_phone_placeholder') || 'Enter your phone number');
-        var submitText = escapeHtml(getFieldValue('greeting_submit_text') || 'Continue to WhatsApp');
-        var forceNote = forcePhone
+        var title = escapeHtml(formState.greetingTitle);
+        var message = escapeHtml(formState.greetingMessage);
+        var placeholder = escapeHtml(formState.greetingPhonePlaceholder);
+        var submitText = escapeHtml(formState.greetingSubmitText);
+        var forceNote = formState.greetingForcePhoneCapture
             ? '<small class="ctcw-preview-force-note">' + escapeHtml(ctcwI18n('preview.phone_required')) + '</small>'
             : '';
 
-        if (!capturePhone) {
+        if (!formState.greetingCapturePhone) {
             return '<div class="ctcw-greeting is-visible">'
                 + '<strong>' + title + '</strong>'
                 + '<p>' + message + '</p>'
@@ -1258,105 +1253,118 @@ function initLiveWidgetPreview() {
             + '</div>';
     }
 
-    function updatePreviewPosition() {
-        var verticalType = getFieldValue('desktop_vertical_position_type') || 'bottom';
-        var verticalValue = getFieldValue('desktop_vertical_position_value') || '25px';
-        var horizontalType = getFieldValue('desktop_horizontal_position_type') || 'right';
-        var horizontalValue = getFieldValue('desktop_horizontal_position_value') || '25px';
+    function buildAdminPreviewMarkup(formState) {
+        var style = escapeHtml(formState.desktopStyle);
+        var cta = escapeHtml(formState.callToAction);
 
-        previewRoot.style.position = 'fixed';
-        previewRoot.style.top = 'auto';
-        previewRoot.style.bottom = 'auto';
-        previewRoot.style.left = 'auto';
-        previewRoot.style.right = 'auto';
-        previewRoot.style[verticalType] = verticalValue;
-        previewRoot.style[horizontalType] = horizontalValue;
-
-        previewRoot.classList.toggle('is-anchor-top', verticalType === 'top');
-        previewRoot.classList.toggle('is-anchor-left', horizontalType === 'left');
-    }
-
-    function updateCustomCssPreview() {
-        if (!customCssStyle) {
-            return;
-        }
-
-        customCssStyle.textContent = scopePreviewCss(getFieldValue('custom_css'));
-    }
-
-    function renderLiveWidgetPreview() {
-        if (!isLivePreviewEnabled()) {
-            return;
-        }
-
-        var style = getFieldValue('desktop_style') || 'style-1';
-        var verticalType = getFieldValue('desktop_vertical_position_type') || 'bottom';
-        var horizontalType = getFieldValue('desktop_horizontal_position_type') || 'right';
-        var online = isPreviewOnline();
-        var cta = escapeHtml(online ? (getFieldValue('call_to_action') || ctcwI18n('preview.default_cta')) : (getFieldValue('offline_message') || ctcwI18n('preview.default_offline')));
-        var onlineClass = online ? 'is-online' : 'is-offline';
-
-        previewRoot.innerHTML = '<div class="ctcw-admin-live-preview-inner">'
+        return '<div class="ctcw-admin-live-preview-inner">'
             + '<span class="ctcw-preview-badge">' + escapeHtml(ctcwI18n('preview.label')) + '</span>'
-            + '<div class="ctcw-container ' + escapeHtml(style) + ' ' + onlineClass + '">'
-            + buildGreetingHtml(verticalType, horizontalType)
-            + '<button type="button" class="ctcw-widget" tabindex="-1" aria-label="Widget preview">'
+            + '<div class="ctcw-container ' + style + ' is-online">'
+            + buildGreetingHtml(formState)
+            + '<button type="button" class="ctcw-widget" tabindex="-1" aria-label="Widget preview" data-preview-destination="' + escapeHtml(formState.previewDestination) + '">'
             + '<span class="ctcw-icon">' + whatsappIcon + '</span>'
             + '<span class="ctcw-text">' + cta + '</span>'
             + '</button>'
             + '</div>'
             + '</div>';
-
-        updatePreviewPosition();
-        updateCustomCssPreview();
-        updateDebugFrameState();
     }
 
-    var watchedNames = [
-        'desktop_style',
-        'mobile_style',
-        'call_to_action',
-        'desktop_vertical_position_type',
-        'desktop_vertical_position_value',
-        'desktop_horizontal_position_type',
-        'desktop_horizontal_position_value',
-        'mobile_vertical_position_type',
-        'mobile_vertical_position_value',
-        'mobile_horizontal_position_type',
-        'mobile_horizontal_position_value',
-        'same_mobile_desktop_settings',
-        'show_desktop',
-        'show_mobile',
-        'show_global',
-        'business_hours_mode',
-        'offline_message',
-        'greeting_enabled',
-        'greeting_title',
-        'greeting_message',
-        'greeting_capture_phone',
-        'greeting_force_phone_capture',
-        'greeting_phone_placeholder',
-        'greeting_submit_text',
-        'custom_css'
-    ];
-
-    watchedNames.forEach(function (name) {
-        var field = form.querySelector('[name="' + name + '"]');
-        if (!field) {
+    function updateDebugFrameState(root) {
+        if (!debugFrameEnabled) {
+            root.classList.remove('is-frame-debug');
             return;
         }
-        field.addEventListener('input', renderLiveWidgetPreview);
-        field.addEventListener('change', renderLiveWidgetPreview);
-    });
 
-    var greetingCaptureToggle = form.querySelector('[data-greeting-capture-toggle]');
-    var greetingForceToggle = form.querySelector('[data-greeting-force-toggle]');
-    if (greetingCaptureToggle) {
-        greetingCaptureToggle.addEventListener('change', renderLiveWidgetPreview);
+        root.classList.add('is-frame-debug');
+        if (!document.querySelector('style[data-preview-frame-debug]')) {
+            var debugStyle = document.createElement('style');
+            debugStyle.setAttribute('data-preview-frame-debug', 'true');
+            debugStyle.textContent = '#ctcw-admin-live-preview.is-frame-debug .ctcw-admin-live-preview-inner{outline:2px dashed rgba(37,99,235,.65);background:rgba(37,99,235,.08);}';
+            document.head.appendChild(debugStyle);
+        }
     }
-    if (greetingForceToggle) {
-        greetingForceToggle.addEventListener('change', renderLiveWidgetPreview);
+
+    function applyPreviewPosition(root, formState) {
+        previewPositionClasses.forEach(function (className) {
+            root.classList.remove(className);
+        });
+
+        root.classList.add(getPreviewPositionClass(formState));
+        root.classList.toggle('is-anchor-top', formState.desktopVerticalPosition === 'top');
+        root.classList.toggle('is-anchor-left', formState.desktopHorizontalPosition === 'left');
+        root.style.removeProperty('top');
+        root.style.removeProperty('right');
+        root.style.removeProperty('bottom');
+        root.style.removeProperty('left');
+        root.style.removeProperty('display');
     }
+
+    function renderAdminLivePreview() {
+        var previewEnabled = getPreviewEnabledState();
+        var root = getOrCreateAdminPreviewRoot();
+        var customCssStyle = getOrCreateCustomCssStyle();
+
+        if (!previewEnabled) {
+            root.classList.remove('is-enabled');
+            root.innerHTML = '';
+            root.setAttribute('aria-hidden', 'true');
+            customCssStyle.textContent = '';
+            root.classList.remove('is-frame-debug');
+            return;
+        }
+
+        var formState = collectCurrentWidgetFormState();
+
+        root.className = [
+            'ctcw-admin-live-preview',
+            'is-enabled',
+            getPreviewPositionClass(formState)
+        ].join(' ');
+        root.classList.toggle('is-anchor-top', formState.desktopVerticalPosition === 'top');
+        root.classList.toggle('is-anchor-left', formState.desktopHorizontalPosition === 'left');
+        root.setAttribute('aria-hidden', 'false');
+        root.innerHTML = buildAdminPreviewMarkup(formState);
+        applyPreviewPosition(root, formState);
+        customCssStyle.textContent = scopePreviewCss(formState.customCss);
+        updateDebugFrameState(root);
+    }
+
+    function setLivePreviewEnabled(enabled) {
+        try {
+            window.localStorage.setItem(previewEnabledStorageKey, enabled ? '1' : '0');
+        } catch (error) {
+            // Ignore storage failures in restricted browsers.
+        }
+
+        previewToggle.checked = enabled;
+        renderAdminLivePreview();
+    }
+
+    function initLivePreviewToggle() {
+        var saved = null;
+
+        try {
+            saved = window.localStorage.getItem(previewEnabledStorageKey);
+        } catch (error) {
+            saved = null;
+        }
+
+        var enabled = saved === null ? true : saved === '1';
+        previewToggle.checked = enabled;
+        previewToggle.addEventListener('change', function () {
+            setLivePreviewEnabled(this.checked);
+        });
+        renderAdminLivePreview();
+    }
+
+    form.addEventListener('input', renderAdminLivePreview);
+    form.addEventListener('change', renderAdminLivePreview);
+
+    document.querySelectorAll('[data-section-target]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            window.requestAnimationFrame(renderAdminLivePreview);
+        });
+    });
 
     initLivePreviewToggle();
 }

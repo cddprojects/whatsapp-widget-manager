@@ -84,8 +84,6 @@ require __DIR__ . '/includes/header.php';
 <?php require __DIR__ . '/includes/widget-form.php'; ?>
 
 <?php if (!empty($showLivePreview)): ?>
-    <div id="ctcwAdminLivePreview" class="ctcw-admin-live-preview" aria-hidden="true"></div>
-    <style id="ctcwAdminLivePreviewCustomCss"></style>
     <script type="application/json" id="ctcw-preview-icon"><?= json_for_html(whatsapp_icon_svg()) ?></script>
 <?php endif; ?>
 
