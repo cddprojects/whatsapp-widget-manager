@@ -2311,16 +2311,318 @@ function normalize_visitor_phone(string $phone): ?array
     ];
 }
 
+const LEAD_DEDUPE_WINDOW_SECONDS = 60;
+const LEAD_BULK_DELETE_MAX_IDS = 200;
+
+function lead_dedupe_window_seconds(): int
+{
+    return LEAD_DEDUPE_WINDOW_SECONDS;
+}
+
 function lead_recently_saved(int $widgetId, string $fullPhone): bool
 {
     $stmt = db()->prepare(
         'SELECT id FROM widget_leads
          WHERE widget_id = :widget_id AND visitor_full_phone = :phone
-           AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+           AND created_at >= DATE_SUB(NOW(), INTERVAL ' . (int) lead_dedupe_window_seconds() . ' SECOND)
          LIMIT 1'
     );
     $stmt->execute(['widget_id' => $widgetId, 'phone' => $fullPhone]);
-    return (bool) $stmt->fetchColumn();
+    if ($stmt->fetchColumn()) {
+        return true;
+    }
+
+    if (!database_table_exists('widget_lead_dedupe_keys')) {
+        return false;
+    }
+
+    $dedupeStmt = db()->prepare(
+        'SELECT id FROM widget_lead_dedupe_keys
+         WHERE widget_id = :widget_id AND visitor_full_phone = :phone
+           AND expires_at > NOW()
+         LIMIT 1'
+    );
+    $dedupeStmt->execute(['widget_id' => $widgetId, 'phone' => $fullPhone]);
+
+    return (bool) $dedupeStmt->fetchColumn();
+}
+
+function record_widget_lead_dedupe_key(int $widgetId, string $fullPhone, int $leadId): void
+{
+    if (!database_table_exists('widget_lead_dedupe_keys')) {
+        return;
+    }
+
+    $expiresAt = date('Y-m-d H:i:s', time() + lead_dedupe_window_seconds());
+    $stmt = db()->prepare(
+        'INSERT INTO widget_lead_dedupe_keys (widget_id, visitor_full_phone, first_lead_id, expires_at)
+         VALUES (:widget_id, :phone, :lead_id, :expires_at)
+         ON DUPLICATE KEY UPDATE
+            expires_at = GREATEST(expires_at, VALUES(expires_at)),
+            first_lead_id = COALESCE(first_lead_id, VALUES(first_lead_id))'
+    );
+    $stmt->execute([
+        'widget_id' => $widgetId,
+        'phone' => $fullPhone,
+        'lead_id' => $leadId,
+        'expires_at' => $expiresAt,
+    ]);
+}
+
+function preserve_widget_lead_dedupe_on_delete(array $lead): void
+{
+    if (!database_table_exists('widget_lead_dedupe_keys')) {
+        return;
+    }
+
+    $widgetId = (int) ($lead['widget_id'] ?? 0);
+    $leadId = (int) ($lead['id'] ?? 0);
+    $fullPhone = trim((string) ($lead['visitor_full_phone'] ?? ''));
+    if ($widgetId <= 0 || $leadId <= 0 || $fullPhone === '') {
+        return;
+    }
+
+    $createdAt = strtotime((string) ($lead['created_at'] ?? ''));
+    if ($createdAt === false) {
+        $createdAt = time();
+    }
+
+    $expiresAt = date('Y-m-d H:i:s', $createdAt + lead_dedupe_window_seconds());
+    if (strtotime($expiresAt) <= time()) {
+        return;
+    }
+
+    $stmt = db()->prepare(
+        'INSERT INTO widget_lead_dedupe_keys (widget_id, visitor_full_phone, first_lead_id, expires_at)
+         VALUES (:widget_id, :phone, :lead_id, :expires_at)
+         ON DUPLICATE KEY UPDATE expires_at = GREATEST(expires_at, VALUES(expires_at))'
+    );
+    $stmt->execute([
+        'widget_id' => $widgetId,
+        'phone' => $fullPhone,
+        'lead_id' => $leadId,
+        'expires_at' => $expiresAt,
+    ]);
+
+    $clearStmt = db()->prepare(
+        'UPDATE widget_lead_dedupe_keys
+         SET first_lead_id = NULL
+         WHERE widget_id = :widget_id
+           AND visitor_full_phone = :phone
+           AND first_lead_id = :lead_id'
+    );
+    $clearStmt->execute([
+        'widget_id' => $widgetId,
+        'phone' => $fullPhone,
+        'lead_id' => $leadId,
+    ]);
+}
+
+function mask_lead_phone(string $phone): string
+{
+    $raw = trim($phone);
+    if ($raw === '') {
+        return '••••';
+    }
+
+    $hasPlus = str_starts_with($raw, '+');
+    $digits = preg_replace('/\D+/', '', $raw) ?? '';
+    if ($digits === '') {
+        return '••••';
+    }
+
+    if (strlen($digits) <= 4) {
+        return ($hasPlus ? '+' : '') . str_repeat('•', strlen($digits));
+    }
+
+    $prefixLength = min(2, strlen($digits) - 4);
+    $prefix = substr($digits, 0, $prefixLength);
+    $suffix = substr($digits, -4);
+    $maskedLength = max(4, strlen($digits) - $prefixLength - 4);
+
+    return ($hasPlus ? '+' : '') . $prefix . str_repeat('•', $maskedLength) . $suffix;
+}
+
+function find_widget_lead_by_id(int $leadId): ?array
+{
+    if ($leadId <= 0 || !database_table_exists('widget_leads')) {
+        return null;
+    }
+
+    $stmt = db()->prepare(
+        'SELECT wl.*, w.widget_name
+         FROM widget_leads wl
+         INNER JOIN widgets w ON w.id = wl.widget_id
+         WHERE wl.id = :id
+         LIMIT 1'
+    );
+    $stmt->execute(['id' => $leadId]);
+
+    $lead = $stmt->fetch();
+    return $lead ?: null;
+}
+
+function log_lead_deletion_action(string $action, int $superadminId, int $widgetId, ?int $clientId, array $leadIds): void
+{
+    error_log(sprintf(
+        '[CTC] %s superadmin_id=%d widget_id=%d client_id=%s lead_count=%d lead_ids=%s',
+        $action,
+        $superadminId,
+        $widgetId,
+        $clientId === null ? 'null' : (string) $clientId,
+        count($leadIds),
+        implode(',', $leadIds)
+    ));
+}
+
+function delete_widget_lead(int $leadId, int $superadminId, bool $logAction = true): array
+{
+    $lead = find_widget_lead_by_id($leadId);
+    if ($lead === null) {
+        return [
+            'success' => false,
+            'message' => t('lead.delete_not_found'),
+            'http_status' => 404,
+        ];
+    }
+
+    $pdo = db();
+
+    try {
+        $pdo->beginTransaction();
+        preserve_widget_lead_dedupe_on_delete($lead);
+
+        $stmt = $pdo->prepare('DELETE FROM widget_leads WHERE id = :id');
+        $stmt->execute(['id' => $leadId]);
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+
+            return [
+                'success' => false,
+                'message' => t('lead.delete_failed'),
+                'http_status' => 500,
+            ];
+        }
+
+        if ($logAction) {
+            log_lead_deletion_action(
+                'lead_deleted',
+                $superadminId,
+                (int) $lead['widget_id'],
+                (int) ($lead['user_id'] ?? 0) ?: null,
+                [$leadId]
+            );
+        }
+
+        $pdo->commit();
+
+        return [
+            'success' => true,
+            'deleted' => 1,
+            'skipped' => 0,
+            'lead_id' => $leadId,
+            'widget_id' => (int) $lead['widget_id'],
+            'client_id' => (int) ($lead['user_id'] ?? 0) ?: null,
+            'message' => t('lead.deleted_one'),
+        ];
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        return [
+            'success' => false,
+            'message' => t('lead.delete_failed'),
+            'http_status' => 500,
+        ];
+    }
+}
+
+function bulk_delete_widget_leads(array $leadIds, int $superadminId): array
+{
+    $normalizedIds = [];
+    foreach ($leadIds as $leadId) {
+        $id = (int) $leadId;
+        if ($id > 0) {
+            $normalizedIds[$id] = $id;
+        }
+    }
+
+    $normalizedIds = array_values($normalizedIds);
+    if ($normalizedIds === []) {
+        return [
+            'success' => false,
+            'message' => t('lead.delete_none_selected'),
+            'http_status' => 422,
+            'deleted' => 0,
+            'skipped' => 0,
+        ];
+    }
+
+    if (count($normalizedIds) > LEAD_BULK_DELETE_MAX_IDS) {
+        return [
+            'success' => false,
+            'message' => t('lead.delete_too_many'),
+            'http_status' => 422,
+            'deleted' => 0,
+            'skipped' => count($normalizedIds),
+        ];
+    }
+
+    $deleted = 0;
+    $skipped = 0;
+    $deletedIds = [];
+    $widgetIds = [];
+    $clientIds = [];
+
+    foreach ($normalizedIds as $leadId) {
+        $result = delete_widget_lead($leadId, $superadminId, false);
+        if (!empty($result['success'])) {
+            $deleted++;
+            $deletedIds[] = $leadId;
+            if (!empty($result['widget_id'])) {
+                $widgetIds[(int) $result['widget_id']] = true;
+            }
+            if (array_key_exists('client_id', $result) && $result['client_id'] !== null) {
+                $clientIds[(int) $result['client_id']] = true;
+            }
+            continue;
+        }
+
+        $skipped++;
+    }
+
+    if ($deleted > 0) {
+        $widgetId = count($widgetIds) === 1 ? (int) array_key_first($widgetIds) : 0;
+        $clientId = count($clientIds) === 1 ? (int) array_key_first($clientIds) : null;
+        log_lead_deletion_action(
+            'leads_bulk_deleted',
+            $superadminId,
+            $widgetId,
+            $clientId,
+            $deletedIds
+        );
+    }
+
+    if ($deleted === 0) {
+        return [
+            'success' => false,
+            'message' => t('lead.delete_failed'),
+            'http_status' => 404,
+            'deleted' => 0,
+            'skipped' => $skipped,
+        ];
+    }
+
+    return [
+        'success' => true,
+        'deleted' => $deleted,
+        'skipped' => $skipped,
+        'deleted_ids' => $deletedIds,
+        'message' => $deleted === 1 ? t('lead.deleted_bulk_one') : t('lead.deleted_other', ['count' => (string) $deleted]),
+        'partial' => $skipped > 0,
+        'partial_message' => $skipped > 0 ? t('lead.delete_partial', ['deleted' => (string) $deleted, 'skipped' => (string) $skipped]) : null,
+    ];
 }
 
 function insert_widget_lead(array $widget, array $lead): int
@@ -2348,7 +2650,14 @@ function insert_widget_lead(array $widget, array $lead): int
         'user_agent' => $lead['user_agent'],
     ]);
 
-    return (int) db()->lastInsertId();
+    $leadId = (int) db()->lastInsertId();
+    record_widget_lead_dedupe_key(
+        (int) $widget['id'],
+        (string) $lead['visitor_full_phone'],
+        $leadId
+    );
+
+    return $leadId;
 }
 
 function search_widget_leads(int $widgetId, array $options): array
@@ -2414,3 +2723,59 @@ function json_response(array $payload, int $status = 200): void
     exit;
 }
 
+function ensure_widget_lead_dedupe_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (!database_table_exists('widget_leads')) {
+        return;
+    }
+
+    if (database_table_exists('widget_lead_dedupe_keys')) {
+        return;
+    }
+
+    $pdo = db();
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS widget_lead_dedupe_keys (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            widget_id INT UNSIGNED NOT NULL,
+            visitor_full_phone VARCHAR(50) NOT NULL,
+            first_lead_id INT UNSIGNED NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uk_widget_lead_dedupe (widget_id, visitor_full_phone),
+            INDEX idx_widget_lead_dedupe_expires (expires_at),
+            CONSTRAINT fk_widget_lead_dedupe_widget FOREIGN KEY (widget_id) REFERENCES widgets(id) ON DELETE CASCADE,
+            CONSTRAINT fk_widget_lead_dedupe_lead FOREIGN KEY (first_lead_id) REFERENCES widget_leads(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+}
+
+function require_superadmin_json(): array
+{
+    $user = current_user();
+    if ($user === null) {
+        json_response(['success' => false, 'message' => t('error.access_denied')], 401);
+    }
+
+    if (!is_superadmin()) {
+        json_response(['success' => false, 'message' => t('error.access_denied')], 403);
+    }
+
+    if ((string) $user['status'] === USER_STATUS_DISABLED) {
+        json_response(['success' => false, 'message' => t('error.access_denied')], 403);
+    }
+
+    return $user;
+}
+
+try {
+    ensure_widget_lead_dedupe_schema();
+} catch (Throwable $exception) {
+    // Leave connection errors to the calling page; schema ensure runs when DB is available.
+}

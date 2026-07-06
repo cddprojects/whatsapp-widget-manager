@@ -104,6 +104,19 @@ CREATE TABLE IF NOT EXISTS widget_leads (
     CONSTRAINT fk_widget_leads_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS widget_lead_dedupe_keys (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    widget_id INT UNSIGNED NOT NULL,
+    visitor_full_phone VARCHAR(50) NOT NULL,
+    first_lead_id INT UNSIGNED NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_widget_lead_dedupe (widget_id, visitor_full_phone),
+    INDEX idx_widget_lead_dedupe_expires (expires_at),
+    CONSTRAINT fk_widget_lead_dedupe_widget FOREIGN KEY (widget_id) REFERENCES widgets(id) ON DELETE CASCADE,
+    CONSTRAINT fk_widget_lead_dedupe_lead FOREIGN KEY (first_lead_id) REFERENCES widget_leads(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO users (id, name, email, password, role, status)
 VALUES
     (1, 'Demo Client', 'demo@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi', 'client', 'active')

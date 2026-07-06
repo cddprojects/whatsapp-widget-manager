@@ -166,6 +166,8 @@ return [
     'table.source_url' => 'Source URL',
     'table.page_title' => 'Page title',
     'table.client_owner' => 'Client owner',
+    'table.select_all' => 'Select all',
+    'table.select_all_aria' => 'Select all visible leads',
 
     // Status
     'status.active' => 'Active',
@@ -226,6 +228,8 @@ return [
     'empty.no_clients_matched' => 'No clients matched your search.',
     'empty.no_widgets_found' => 'No widgets found.',
     'empty.no_leads' => 'No leads captured yet.',
+    'empty.no_leads_found' => 'No leads found',
+    'empty.no_leads_subtitle' => 'Captured phone submissions for this widget will appear here.',
     'empty.client_no_widgets' => 'This client has no widgets yet.',
     'empty.no_phone_numbers' => 'No numbers added yet. Click Add number to get started.',
 
@@ -443,6 +447,27 @@ return [
     'action.phone_number' => 'Phone Number',
     'action.leads' => 'Leads',
     'action.embed_code' => 'Embed Code',
+
+    // Lead deletion
+    'lead.delete_title' => 'Delete lead?',
+    'lead.delete_title_with_phone' => 'Delete lead {phone}?',
+    'lead.delete_body' => 'This will permanently remove this captured lead and its associated source details. This action cannot be undone.',
+    'lead.delete_button' => 'Delete lead',
+    'lead.bulk_delete_title' => 'Delete selected leads?',
+    'lead.bulk_delete_body_one' => 'This will permanently remove 1 captured lead. This action cannot be undone.',
+    'lead.bulk_delete_body_other' => 'This will permanently remove {count} captured leads. This action cannot be undone.',
+    'lead.bulk_delete_button_one' => 'Delete 1 lead',
+    'lead.bulk_delete_button_other' => 'Delete {count} leads',
+    'lead.deleted_one' => 'Lead deleted.',
+    'lead.deleted_bulk_one' => '1 lead deleted.',
+    'lead.deleted_other' => '{count} leads deleted.',
+    'lead.delete_failed' => 'We could not delete this lead. Please try again.',
+    'lead.delete_partial' => '{deleted} leads deleted. {skipped} could not be deleted.',
+    'lead.delete_not_found' => 'Lead not found.',
+    'lead.delete_none_selected' => 'No valid leads were selected.',
+    'lead.delete_too_many' => 'Too many leads were selected for one request.',
+    'lead.selected_count' => '{count} selected',
+    'lead.select_row_aria' => 'Select lead {phone}',
 
     // Embed
     'embed.domain_locked_warning' => 'This iframe widget is locked to your registered domain. It will not work if copied to another website.',
