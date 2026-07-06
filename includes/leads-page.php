@@ -29,8 +29,12 @@ $showDeleteActions = !$isRecycleBin;
 $showRestoreActions = $isRecycleBin;
 $showClientWidgetColumn = $isSuperadminPage && $showClientColumn && $clientFilterId <= 0;
 $hasWidgetFilter = $widgetOptions !== [];
+$hasClientFilter = $showClientColumn && $clientOptions !== [];
+$recyclePrimaryRowClass = 'recycle-bin-filter-row recycle-bin-filter-row-primary'
+    . ($hasClientFilter ? '' : ' recycle-bin-filter-row-primary--no-client');
 $hasExport = !$isRecycleBin && $result['total'] > 0;
 $tableClass = 'widget-table lead-table' . ($isRecycleBin ? ' lead-table-layout--recycle' : ' lead-table-layout--active');
+$leadPageCardClass = 'settings-card lead-page-card' . ($isRecycleBin ? ' lead-recycle-bin-card' : '');
 if ($showClientWidgetColumn) {
     $tableClass .= ' lead-table-layout--global';
 }
@@ -79,7 +83,7 @@ $toolbarSelectedButtons = static function () use (
 ?>
 
 <section
-    class="settings-card lead-page-card"
+    class="<?= e($leadPageCardClass) ?>"
     data-leads-page
     data-leads-mode="<?= e($leadPageMode) ?>"
     data-csrf-token="<?= e($csrfToken) ?>"
@@ -88,12 +92,12 @@ $toolbarSelectedButtons = static function () use (
 >
     <?php if ($isRecycleBin): ?>
         <form class="recycle-bin-filter-form admin-filter-bar" method="get" action="<?= e($formAction) ?>">
-            <div class="recycle-bin-filter-row recycle-bin-filter-row-primary">
+            <div class="<?= e($recyclePrimaryRowClass) ?>">
                 <label class="search-field lead-filter-search">
                     <span><?= e(t('filter.search')) ?></span>
                     <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_leads')) ?>">
                 </label>
-                <?php if ($showClientColumn && $clientOptions !== []): ?>
+                <?php if ($hasClientFilter): ?>
                     <label class="lead-filter-client">
                         <span><?= e(t('filter.client')) ?></span>
                         <select name="client_id">
@@ -129,17 +133,15 @@ $toolbarSelectedButtons = static function () use (
                 </label>
             </div>
             <div class="recycle-bin-filter-row recycle-bin-filter-row-secondary">
-                <div class="lead-date-range">
-                    <label class="lead-filter-from">
-                        <span><?= e(t('filter.from_date')) ?></span>
-                        <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
-                    </label>
-                    <label class="lead-filter-to">
-                        <span><?= e(t('filter.to_date')) ?></span>
-                        <input type="date" name="date_to" value="<?= e($dateTo) ?>">
-                    </label>
-                </div>
-                <div class="recycle-bin-filter-actions lead-toolbar-actions">
+                <label class="lead-filter-from">
+                    <span><?= e(t('filter.from_date')) ?></span>
+                    <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
+                </label>
+                <label class="lead-filter-to">
+                    <span><?= e(t('filter.to_date')) ?></span>
+                    <input type="date" name="date_to" value="<?= e($dateTo) ?>">
+                </label>
+                <div class="recycle-bin-filter-actions">
                     <div class="lead-toolbar-default" data-lead-toolbar-default>
                         <?php $toolbarDefaultButtons(); ?>
                     </div>
@@ -226,7 +228,7 @@ $toolbarSelectedButtons = static function () use (
                         <col class="col-captured">
                         <?php if ($showRecycleMeta): ?>
                             <col class="col-deleted-by">
-                            <col class="col-days-remaining">
+                            <col class="col-expires-in">
                         <?php endif; ?>
                     <?php endif; ?>
                     <col class="col-actions">
@@ -258,7 +260,7 @@ $toolbarSelectedButtons = static function () use (
                             <th scope="col"><?= e(t('lead.deleted_at')) ?></th>
                             <?php if ($showRecycleMeta): ?>
                                 <th scope="col"><?= e(t('lead.deleted_by')) ?></th>
-                                <th scope="col"><?= e(t('lead.days_remaining')) ?></th>
+                                <th scope="col"><?= e(t('lead.expires_in')) ?></th>
                             <?php endif; ?>
                         <?php endif; ?>
                         <th class="col-actions" scope="col"><?= e(t('table.actions')) ?></th>
@@ -324,15 +326,44 @@ $toolbarSelectedButtons = static function () use (
                                 </td>
                                 <?php if ($showRecycleMeta): ?>
                                     <td class="col-deleted-by" data-label="<?= e(t('lead.deleted_by')) ?>">
-                                        <span class="lead-deleted-by"><?= e(translate_deleted_by_role((string) ($lead['deleted_by_role'] ?? ''))) ?></span>
+                                        <span class="lead-deleted-by"><?= e(format_recycle_bin_deleted_by_label($lead)) ?></span>
                                     </td>
-                                    <td class="col-days-remaining" data-label="<?= e(t('lead.days_remaining')) ?>">
-                                        <span class="lead-days-remaining"><?= e(format_retention_days_label($daysRemaining)) ?></span>
+                                    <td class="col-expires-in" data-label="<?= e(t('lead.expires_in')) ?>">
+                                        <span class="lead-expires-in"><?= e(format_recycle_bin_expires_label($daysRemaining)) ?></span>
                                     </td>
                                 <?php endif; ?>
                             <?php endif; ?>
                             <td class="col-actions" data-label="<?= e(t('table.actions')) ?>">
-                                <div class="lead-row-actions<?= $showRestoreActions ? ' recycle-bin-actions' : '' ?>">
+                                <?php if ($showRestoreActions): ?>
+                                    <div class="recycle-bin-actions recycle-bin-actions--menu">
+                                        <button type="button" class="btn btn-primary-soft btn-compact btn-lead-action" data-restore-lead data-lead-id="<?= (int) $lead['id'] ?>"><?= e(t('lead.restore')) ?></button>
+                                        <div class="action-menu" data-action-menu>
+                                            <button
+                                                type="button"
+                                                class="btn btn-light btn-compact action-menu-toggle"
+                                                aria-haspopup="true"
+                                                aria-expanded="false"
+                                                aria-label="<?= e(t('lead.more_actions_for_lead')) ?>"
+                                            >⋯</button>
+                                            <div class="action-menu-panel" role="menu">
+                                                <button
+                                                    type="button"
+                                                    class="action-menu-danger btn-lead-action"
+                                                    role="menuitem"
+                                                    data-permanent-delete-lead
+                                                    data-lead-id="<?= (int) $lead['id'] ?>"
+                                                ><?= e(t('lead.delete_permanently')) ?></button>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="btn btn-danger-soft btn-compact btn-lead-action recycle-bin-delete-fallback"
+                                            data-permanent-delete-lead
+                                            data-lead-id="<?= (int) $lead['id'] ?>"
+                                        ><?= e(t('lead.delete_permanently')) ?></button>
+                                    </div>
+                                <?php else: ?>
+                                <div class="lead-row-actions">
                                     <?php if ($showDeleteActions): ?>
                                         <?php if ($isSuperadminPage): ?>
                                             <button
@@ -358,11 +389,8 @@ $toolbarSelectedButtons = static function () use (
                                             ><?= e(t('button.delete')) ?></button>
                                         <?php endif; ?>
                                     <?php endif; ?>
-                                    <?php if ($showRestoreActions): ?>
-                                        <button type="button" class="btn btn-primary-soft btn-compact btn-lead-action" data-restore-lead data-lead-id="<?= (int) $lead['id'] ?>"><?= e(t('lead.restore')) ?></button>
-                                        <button type="button" class="btn btn-danger-soft btn-compact btn-lead-action" data-permanent-delete-lead data-lead-id="<?= (int) $lead['id'] ?>"><?= e(t('lead.delete_permanently')) ?></button>
-                                    <?php endif; ?>
                                 </div>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

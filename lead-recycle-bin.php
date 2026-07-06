@@ -31,7 +31,7 @@ $pageScripts = ['assets/js/leads.js'];
 require __DIR__ . '/includes/header.php';
 ?>
 
-<section class="page-heading">
+<section class="page-heading lead-recycle-bin-heading">
     <p class="eyebrow"><?= e(t('eyebrow.lead_capture')) ?></p>
     <h1><?= e(t('heading.lead_recycle_bin')) ?></h1>
     <p><?= e(t('desc.lead_recycle_bin')) ?></p>

@@ -242,6 +242,16 @@
         };
     }
 
+    function closeActionMenus() {
+        document.querySelectorAll('.action-menu.is-open').forEach(function (menu) {
+            menu.classList.remove('is-open');
+            var toggle = menu.querySelector('.action-menu-toggle');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
     function initLeadManagement() {
         var root = document.querySelector('[data-leads-page]');
         if (!root) {
