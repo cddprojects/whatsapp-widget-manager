@@ -166,6 +166,7 @@ return [
     'table.source_url' => 'Source URL',
     'table.page_title' => 'Page title',
     'table.client_owner' => 'Client owner',
+    'table.widget_status' => 'Widget status',
 
     // Status
     'status.active' => 'Active',
@@ -190,6 +191,7 @@ return [
     'meta.widget_name' => 'Widget name',
     'meta.domain' => 'Domain',
     'meta.active_numbers' => 'Active numbers',
+    'meta.widget_status' => 'Widget status',
     'meta.distribution' => 'Distribution',
     'meta.never' => 'Never',
     'meta.no_client_assigned' => 'No client assigned',
@@ -426,6 +428,7 @@ return [
     'phone.min_one_required' => 'At least one WhatsApp number must remain active.',
     'phone.min_one_form' => 'Please keep at least one active WhatsApp number.',
     'phone.delete_confirm' => 'Delete this number from the list?',
+    'phone.delete_last_confirm' => 'No WhatsApp destination numbers will remain. Your widget will be paused until you add a new number. Continue?',
     'phone.bulk_delete_title' => 'Delete selected numbers?',
     'phone.bulk_delete_confirm' => 'You are about to remove {count} phone numbers. This action cannot be undone until you save your changes.',
     'phone.bulk_delete_button' => 'Delete {count} numbers',
@@ -515,6 +518,22 @@ return [
     'alert.url_structure_notice' => 'Desktop and mobile open behavior are separate. Set both to "Open new tab only" if you want the widget to never redirect the current page.',
     'alert.settings_credentials' => 'Super admin credentials are managed through .env and seed-superadmin.php. Do not store plain passwords in the repository.',
 
+    // Widget activation status
+    'widget_status.setup_required' => 'Setup Required',
+    'widget_status.active' => 'Active',
+    'widget_status.paused' => 'Paused',
+    'widget_status.disabled' => 'Disabled',
+    'widget_status.no_destination' => 'No WhatsApp number added',
+    'widget_status.hint.setup_required' => 'Waiting for client to add a destination number',
+    'widget_status.hint.paused' => 'Waiting for client to add a destination number',
+    'widget_status.hint.disabled' => 'Disabled by Superadmin',
+    'widget_status.hint.active' => '',
+
+    // Client setup
+    'client_setup.title' => 'Your WhatsApp widget is waiting for setup',
+    'client_setup.description' => 'Add at least one WhatsApp destination number to activate your widget.',
+    'client_setup.add_number' => 'Add WhatsApp Number',
+
     // Danger zone
     'danger.widgets_legend' => 'What should happen to this client\'s widgets?',
     'danger.reassign_title' => 'Delete client only and keep widgets under superadmin',
@@ -531,6 +550,9 @@ return [
     'flash.widget_owner_updated' => 'Widget owner updated.',
     'flash.widget_updated' => 'Widget updated.',
     'flash.widget_created' => 'Widget created for {name}.',
+    'flash.widget_created_setup_required' => 'Widget created successfully. It will remain inactive until the client adds at least one WhatsApp number.',
+    'flash.widget_active_after_number_save' => 'WhatsApp number saved. Your widget is now active.',
+    'flash.widget_paused_no_numbers' => 'No WhatsApp destination numbers remain. Your widget is paused until you add a new number.',
     'flash.phone_numbers_updated' => 'Phone numbers updated.',
     'flash.client_deleted_reassign' => 'Client deleted successfully. Their widgets were reassigned to superadmin.',
     'flash.client_deleted_all' => 'Client and related widgets were deleted successfully.',
@@ -564,6 +586,7 @@ return [
     'validation.password_min_length' => 'Password must be at least 8 characters.',
     'validation.domain_required' => 'Please enter a valid website domain.',
     'validation.whatsapp_number_required' => 'Please add at least one WhatsApp number.',
+    'validation.invalid_phone_numbers' => 'Please enter at least one valid WhatsApp number, or remove all numbers to pause the widget.',
     'validation.custom_url_invalid' => 'Custom URL must be a valid full URL.',
     'validation.select_client' => 'Please select a client to assign this widget to.',
     'validation.keep_one_number' => 'Please keep at least one active WhatsApp number.',

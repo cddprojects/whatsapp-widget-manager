@@ -1873,6 +1873,39 @@ code {
     background: #f1f5f9;
 }
 
+.status-pill.status-setup {
+    color: #92400e;
+    background: #fef3c7;
+}
+
+.status-pill.status-paused {
+    color: #9a3412;
+    background: #ffedd5;
+}
+
+.widget-status-hint {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.widget-setup-card {
+    margin-bottom: 20px;
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+
+.widget-setup-card h2 {
+    margin: 0 0 8px;
+}
+
+.widget-setup-card p {
+    margin: 0 0 16px;
+    color: var(--muted);
+}
+
 .widget-destination-summary {
     display: grid;
     gap: 4px;

@@ -65,6 +65,7 @@ require __DIR__ . '/includes/header.php';
                         <th><?= e(t('table.client')) ?></th>
                         <th><?= e(t('table.domain')) ?></th>
                         <th><?= e(t('table.whatsapp_destinations')) ?></th>
+                        <th><?= e(t('table.widget_status')) ?></th>
                         <th title="<?= e(t('table.display_tooltip')) ?>"><?= e(t('table.display')) ?></th>
                         <th><?= e(t('table.updated')) ?></th>
                         <th class="col-actions"><?= e(t('table.actions')) ?></th>
@@ -80,6 +81,7 @@ require __DIR__ . '/includes/header.php';
                             </td>
                             <td><?= e($widget['website_domain']) ?></td>
                             <td><?php render_widget_destination_summary($widget); ?></td>
+                            <td><?php render_widget_activation_status($widget, true); ?></td>
                             <td><?= feature_status_pill($widget['show_global'] ?? 0) ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $widget['updated_at']))) ?></td>
                             <td class="col-actions">

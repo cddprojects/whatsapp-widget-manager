@@ -121,6 +121,7 @@ require __DIR__ . '/includes/header.php';
                         <th><?= e(t('table.widget_name')) ?></th>
                         <th><?= e(t('table.domain')) ?></th>
                         <th><?= e(t('table.whatsapp_number')) ?></th>
+                        <th><?= e(t('table.widget_status')) ?></th>
                         <th><?= e(t('table.random_numbers')) ?></th>
                         <th><?= e(t('table.global_display')) ?></th>
                         <th><?= e(t('table.updated')) ?></th>
@@ -133,6 +134,7 @@ require __DIR__ . '/includes/header.php';
                             <td><strong><?= e($widget['widget_name']) ?></strong></td>
                             <td><?= e($widget['website_domain']) ?></td>
                             <td><?= format_whatsapp_display($widget) ?></td>
+                            <td><?php render_widget_activation_status($widget, true); ?></td>
                             <td><?= feature_status_pill($widget['use_random_numbers'] ?? 0) ?></td>
                             <td><?= feature_status_pill($widget['show_global'] ?? 0) ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $widget['updated_at']))) ?></td>

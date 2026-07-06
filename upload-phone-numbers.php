@@ -30,6 +30,7 @@ if ($errors !== []) {
 }
 
 $replaceExisting = isset($_POST['replace_existing']) && (string) $_POST['replace_existing'] === '1';
+$previousStatus = normalize_widget_activation_status((string) ($widget['widget_status'] ?? WIDGET_STATUS_SETUP_REQUIRED));
 
 $tmpPath = (string) $file['tmp_name'];
 $result = parse_phone_upload($tmpPath);
@@ -70,8 +71,16 @@ if ($finalNumbers === [] || !save_widget_phone_numbers($widgetId, $finalNumbers)
 }
 
 $activeCount = count($finalNumbers);
+$updatedWidget = find_user_widget($widgetId, (int) $user['id']) ?? find_widget_by_id($widgetId);
+$newStatus = $updatedWidget
+    ? normalize_widget_activation_status((string) ($updatedWidget['widget_status'] ?? WIDGET_STATUS_SETUP_REQUIRED))
+    : WIDGET_STATUS_SETUP_REQUIRED;
+$activatedWidget = in_array($previousStatus, [WIDGET_STATUS_SETUP_REQUIRED, WIDGET_STATUS_PAUSED], true)
+    && $newStatus === WIDGET_STATUS_ACTIVE;
 
-if ($replaceExisting) {
+if ($activatedWidget) {
+    flash('success', t('flash.widget_active_after_number_save'));
+} elseif ($replaceExisting) {
     flash(
         'success',
         t(

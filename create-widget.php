@@ -38,7 +38,12 @@ if (is_post()) {
 
     if (!$errors) {
         $widgetId = insert_widget($targetUserId, $widget);
-        flash('success', t('flash.widget_created', ['name' => $clientContext['name']]));
+        $createdWidget = find_widget_by_id($widgetId);
+        if ($createdWidget && widget_has_valid_destinations($createdWidget)) {
+            flash('success', t('flash.widget_created', ['name' => $clientContext['name']]));
+        } else {
+            flash('success', t('flash.widget_created_setup_required'));
+        }
         redirect('edit-widget.php?id=' . $widgetId);
     }
 }
