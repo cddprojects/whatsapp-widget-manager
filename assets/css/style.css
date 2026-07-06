@@ -2301,7 +2301,10 @@ code {
     display: none !important;
 }
 
-.lead-toolbar-actions .btn,
+.lead-toolbar-actions .btn {
+    white-space: nowrap;
+}
+
 .recycle-bin-filter-form {
     display: flex;
     flex-direction: column;
@@ -2317,17 +2320,20 @@ code {
 
 .recycle-bin-filter-row-primary {
     grid-template-columns:
-        minmax(300px, 2.2fr)
-        minmax(170px, 0.85fr)
-        minmax(170px, 0.85fr)
-        minmax(160px, 0.8fr);
+        minmax(320px, 2.2fr)
+        minmax(185px, 0.9fr)
+        minmax(185px, 0.9fr);
 }
 
-.recycle-bin-filter-row-primary--no-client {
+.recycle-bin-filter-row-primary--no-client,
+.recycle-bin-filter-row-primary--no-widget {
     grid-template-columns:
-        minmax(300px, 2.4fr)
-        minmax(170px, 1fr)
-        minmax(160px, 0.85fr);
+        minmax(320px, 2.2fr)
+        minmax(185px, 0.9fr);
+}
+
+.recycle-bin-filter-row-primary--search-only {
+    grid-template-columns: minmax(320px, 1fr);
 }
 
 .recycle-bin-filter-row-secondary {
@@ -2417,10 +2423,6 @@ code {
     width: 140px;
 }
 
-.lead-table-layout--recycle col.col-deleted-by {
-    width: 128px;
-}
-
 .lead-table-layout--recycle col.col-expires-in {
     width: 92px;
 }
@@ -2462,7 +2464,6 @@ code {
 }
 
 .lead-client-name,
-.lead-deleted-by,
 .lead-expires-in {
     display: block;
     overflow: hidden;
@@ -2746,8 +2747,18 @@ code {
     }
 
     .recycle-bin-filter-row-primary,
-    .recycle-bin-filter-row-primary--no-client {
+    .recycle-bin-filter-row-primary--no-client,
+    .recycle-bin-filter-row-primary--no-widget,
+    .recycle-bin-filter-row-primary--search-only {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .recycle-bin-filter-row-primary .lead-filter-widget {
+        grid-column: 1 / -1;
+    }
+
+    .recycle-bin-filter-row-primary--no-client .lead-filter-widget {
+        grid-column: auto;
     }
 
     .recycle-bin-filter-row-secondary {
@@ -2769,15 +2780,6 @@ code {
 
     .lead-table-layout--active col.col-actions {
         width: 108px;
-    }
-
-    .recycle-bin-filter-row-secondary {
-        grid-template-columns: 1fr;
-    }
-
-    .recycle-bin-filter-actions {
-        border-left: 0;
-        padding-left: 0;
     }
 }
 

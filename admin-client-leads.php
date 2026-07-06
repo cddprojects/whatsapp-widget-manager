@@ -60,7 +60,6 @@ require __DIR__ . '/includes/header.php';
 <?php
 $leadPageMode = 'superadmin';
 $clientFilterId = $clientId;
-$deletedByRoleFilter = '';
 $widgetOptions = widgets_for_client_filter($clientId);
 $clientOptions = [];
 $formAction = 'admin-client-leads.php';
