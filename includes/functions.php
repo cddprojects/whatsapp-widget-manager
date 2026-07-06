@@ -2406,11 +2406,75 @@ function widget_leads_for_export(int $widgetId, array $options): array
     return $result['rows'];
 }
 
+function table_has_column(string $table, string $column): bool
+{
+    static $cache = [];
+
+    $key = $table . '.' . $column;
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
+    $stmt = db()->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = :table
+           AND COLUMN_NAME = :column'
+    );
+    $stmt->execute([
+        'table' => $table,
+        'column' => $column,
+    ]);
+    $cache[$key] = ((int) $stmt->fetchColumn()) > 0;
+
+    return $cache[$key];
+}
+
+function ensure_widget_destination_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (table_has_column('widgets', 'destination_selection_method')) {
+        return;
+    }
+
+    $pdo = db();
+    $pdo->exec(
+        'ALTER TABLE widgets
+            ADD COLUMN destination_selection_method VARCHAR(30) NOT NULL DEFAULT \'random\' AFTER random_numbers_json,
+            ADD COLUMN round_robin_next_index INT UNSIGNED NOT NULL DEFAULT 0 AFTER destination_selection_method'
+    );
+    $pdo->exec(
+        'UPDATE widgets
+         SET destination_selection_method = \'random\'
+         WHERE use_random_numbers = 1'
+    );
+    $pdo->exec(
+        'UPDATE widgets
+         SET destination_selection_method = \'single\'
+         WHERE use_random_numbers = 0
+            OR random_numbers_json IS NULL
+            OR random_numbers_json = \'\'
+            OR random_numbers_json = \'[]\''
+    );
+}
+
 function json_response(array $payload, int $status = 200): void
 {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($payload);
     exit;
+}
+
+try {
+    ensure_widget_destination_schema();
+} catch (Throwable $exception) {
+    // Leave connection errors to the calling page; schema ensure runs when DB is available.
 }
 

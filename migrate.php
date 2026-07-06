@@ -2,11 +2,14 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/includes/functions.php';
 
 if (PHP_SAPI !== 'cli') {
     http_response_code(403);
     exit('Run this script from the command line only.');
 }
+
+ensure_widget_destination_schema();
 
 $migrationDir = __DIR__ . '/migrations';
 $files = glob($migrationDir . '/*.sql');

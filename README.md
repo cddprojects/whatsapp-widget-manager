@@ -67,13 +67,15 @@ A standalone PHP 8 + MySQL "Click to WhatsApp Chat" manager. Clients can registe
 
 ### Updating an existing database
 
-If you already imported an older version of the database, run the domain-lock migration once:
+If you already imported an older version of the database, run pending migrations once:
 
 ```bash
-mysql -u root -p click_to_chat_manager < migrations/001_domain_lock.sql
+php migrate.php
 ```
 
-In phpMyAdmin, open the `click_to_chat_manager` database, choose the **Import** tab, and import `migrations/001_domain_lock.sql`.
+Or in phpMyAdmin, open the `click_to_chat_manager` database, choose the **Import** tab, and import the needed files from `migrations/` (for example `migrations/008_round_robin_distribution.sql` for Round Robin / Random distribution).
+
+The app also auto-applies the widget destination schema on startup when those columns are missing.
 
 ## Example iframe embed code
 
