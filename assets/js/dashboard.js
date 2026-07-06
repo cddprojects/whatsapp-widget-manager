@@ -712,6 +712,14 @@
         });
     }
 
+    function setCallingCodeMenuOpenState(row, isOpen) {
+        if (!row) {
+            return;
+        }
+
+        row.classList.toggle('is-calling-code-menu-open', isOpen);
+    }
+
     function closeAllCallingCodeMenus(exceptRow) {
         document.querySelectorAll('.ctcw-phone-row').forEach(function (row) {
             if (row === exceptRow) {
@@ -726,6 +734,7 @@
 
             picker.menu.hidden = true;
             picker.trigger.setAttribute('aria-expanded', 'false');
+            setCallingCodeMenuOpenState(row, false);
         });
     }
 
@@ -738,6 +747,7 @@
 
         picker.menu.hidden = true;
         picker.trigger.setAttribute('aria-expanded', 'false');
+        setCallingCodeMenuOpenState(row, false);
     }
 
     function toggleCallingCodeMenu(row) {
@@ -753,6 +763,7 @@
 
         picker.menu.hidden = !shouldOpen;
         picker.trigger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        setCallingCodeMenuOpenState(row, shouldOpen);
 
         if (shouldOpen) {
             renderCallingCodeOptions(row, picker.search ? picker.search.value : '');

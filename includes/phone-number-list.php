@@ -8,7 +8,7 @@ $listId = (string) ($listId ?? 'phone-number-list');
 $hasPhoneNumbers = $phoneNumbers !== [];
 ?>
 
-<div class="phone-numbers-card" data-phone-numbers-card>
+<div class="phone-numbers-card ctcw-phone-numbers-card" data-phone-numbers-card>
     <div class="panel-heading">
         <div>
             <h3><?= e(t('phone.numbers_title')) ?></h3>
@@ -40,7 +40,7 @@ $hasPhoneNumbers = $phoneNumbers !== [];
     <p class="ctcw-phone-bulk-error" data-phone-bulk-error hidden><?= e(t('phone.min_one_required')) ?></p>
 
     <div
-        class="phone-number-list"
+        class="phone-number-list ctcw-phone-list"
         data-phone-number-list
         data-field-prefix="<?= e($fieldPrefix) ?>"
         id="<?= e($listId) ?>"
