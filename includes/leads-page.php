@@ -28,13 +28,54 @@ $showSelection = true;
 $showDeleteActions = !$isRecycleBin;
 $showRestoreActions = $isRecycleBin;
 $showClientWidgetColumn = $isSuperadminPage && $showClientColumn && $clientFilterId <= 0;
-$showWidgetColumn = !$showClientWidgetColumn;
+$hasWidgetFilter = $widgetOptions !== [];
 $hasExport = !$isRecycleBin && $result['total'] > 0;
-$filterBarClass = 'admin-filter-bar lead-filter-bar' . ($isRecycleBin ? ' lead-filter-bar--recycle' : '');
 $tableClass = 'widget-table lead-table' . ($isRecycleBin ? ' lead-table-layout--recycle' : ' lead-table-layout--active');
 if ($showClientWidgetColumn) {
     $tableClass .= ' lead-table-layout--global';
 }
+
+$toolbarDefaultButtons = static function () use ($hasExport, $exportUrl, $isRecycleBin): void {
+    ?>
+    <button type="submit" class="btn btn-primary"><?= e(t('button.filter')) ?></button>
+    <?php if ($hasExport): ?>
+        <a class="btn btn-light" href="<?= e($exportUrl) ?>"><?= e(t('button.export_csv')) ?></a>
+    <?php elseif (!$isRecycleBin): ?>
+        <span class="btn btn-light is-disabled" aria-disabled="true"><?= e(t('button.export_csv')) ?></span>
+    <?php endif; ?>
+    <?php
+};
+
+$toolbarSelectedButtons = static function () use (
+    $hasExport,
+    $exportUrl,
+    $showDeleteActions,
+    $showRestoreActions,
+    $isSuperadminPage
+): void {
+    ?>
+    <span class="lead-selected-pill" data-selected-lead-count><?= e(t('lead.selected_count', ['count' => '0'])) ?></span>
+    <?php if ($hasExport): ?>
+        <a class="btn btn-light" href="<?= e($exportUrl) ?>"><?= e(t('button.export_csv')) ?></a>
+    <?php endif; ?>
+    <?php if ($showDeleteActions): ?>
+        <?php if ($isSuperadminPage): ?>
+            <button type="button" class="btn btn-light btn-lead-bulk-action" data-delete-selected-leads>
+                <span class="lead-action-icon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M2.5 4.5A1.5 1.5 0 0 1 4 3h12a1.5 1.5 0 0 1 1.415 1.002l-2 6A1.5 1.5 0 0 1 14.001 11H6.236l-.586 2.344A1.5 1.5 0 0 1 4.18 14.5H3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h.68l2-8H4a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1.5Zm3.736 6 1-4h7.265l1.333 4H6.236Z"/></svg>
+                </span>
+                <?= e(t('lead.move_to_bin')) ?>
+            </button>
+        <?php else: ?>
+            <button type="button" class="btn btn-danger-soft btn-lead-bulk-action" data-delete-selected-leads><?= e(t('button.delete_selected')) ?></button>
+        <?php endif; ?>
+    <?php endif; ?>
+    <?php if ($showRestoreActions): ?>
+        <button type="button" class="btn btn-primary-soft btn-lead-bulk-action" data-restore-selected-leads><?= e(t('lead.restore_selected')) ?></button>
+        <button type="button" class="btn btn-danger-soft btn-lead-bulk-action" data-permanent-delete-selected-leads><?= e(t('lead.permanent_delete_selected')) ?></button>
+    <?php endif; ?>
+    <?php
+};
 ?>
 
 <section
@@ -45,93 +86,119 @@ if ($showClientWidgetColumn) {
     data-total-leads="<?= (int) $result['total'] ?>"
     data-empty-message="<?= e($emptyMessage) ?>"
 >
-    <form class="<?= e($filterBarClass) ?>" method="get" action="<?= e($formAction) ?>">
-        <?php if ($clientFilterId > 0 && $leadPageMode === 'superadmin'): ?>
-            <input type="hidden" name="client_id" value="<?= (int) $clientFilterId ?>">
-        <?php endif; ?>
-        <label class="search-field lead-filter-search">
-            <span><?= e(t('filter.search')) ?></span>
-            <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_leads')) ?>">
-        </label>
-        <?php if ($showClientColumn && $clientOptions !== []): ?>
-            <label class="lead-filter-client">
-                <span><?= e(t('filter.client')) ?></span>
-                <select name="client_id">
-                    <option value="0"><?= e(t('filter.all_clients')) ?></option>
-                    <?php foreach ($clientOptions as $clientOption): ?>
-                        <option value="<?= (int) $clientOption['id'] ?>"<?= (int) $clientOption['id'] === $clientFilterId ? ' selected' : '' ?>>
-                            <?= e($clientOption['name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-        <?php endif; ?>
-        <?php if ($widgetOptions !== []): ?>
-            <label class="lead-filter-widget">
-                <span><?= e(t('filter.widget')) ?></span>
-                <select name="widget_id">
-                    <option value="0"><?= e(t('filter.all_widgets')) ?></option>
-                    <?php foreach ($widgetOptions as $widgetOption): ?>
-                        <option value="<?= (int) $widgetOption['id'] ?>"<?= (int) $widgetOption['id'] === $widgetFilterId ? ' selected' : '' ?>>
-                            <?= e($widgetOption['widget_name']) ?><?php if (!empty($widgetOption['owner_name'])): ?> — <?= e($widgetOption['owner_name']) ?><?php endif; ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-        <?php endif; ?>
-        <?php if ($isRecycleBin): ?>
-            <label class="lead-filter-deleted-by">
-                <span><?= e(t('lead.deleted_by')) ?></span>
-                <select name="deleted_by_role">
-                    <option value=""><?= e(t('filter.all')) ?></option>
-                    <option value="client"<?= $deletedByRoleFilter === 'client' ? ' selected' : '' ?>><?= e(t('lead.deleted_by_client')) ?></option>
-                    <option value="superadmin"<?= $deletedByRoleFilter === 'superadmin' ? ' selected' : '' ?>><?= e(t('lead.deleted_by_superadmin')) ?></option>
-                </select>
-            </label>
-        <?php endif; ?>
-        <label class="lead-filter-from">
-            <span><?= e(t('filter.from_date')) ?></span>
-            <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
-        </label>
-        <label class="lead-filter-to">
-            <span><?= e(t('filter.to_date')) ?></span>
-            <input type="date" name="date_to" value="<?= e($dateTo) ?>">
-        </label>
-        <div class="lead-toolbar">
-            <div class="lead-toolbar-default" data-lead-toolbar-default>
-                <button type="submit" class="btn btn-primary"><?= e(t('button.filter')) ?></button>
-                <?php if ($hasExport): ?>
-                    <a class="btn btn-light" href="<?= e($exportUrl) ?>"><?= e(t('button.export_csv')) ?></a>
-                <?php elseif (!$isRecycleBin): ?>
-                    <span class="btn btn-light is-disabled" aria-disabled="true"><?= e(t('button.export_csv')) ?></span>
+    <?php if ($isRecycleBin): ?>
+        <form class="recycle-bin-filter-form admin-filter-bar" method="get" action="<?= e($formAction) ?>">
+            <div class="recycle-bin-filter-row recycle-bin-filter-row-primary">
+                <label class="search-field lead-filter-search">
+                    <span><?= e(t('filter.search')) ?></span>
+                    <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_leads')) ?>">
+                </label>
+                <?php if ($showClientColumn && $clientOptions !== []): ?>
+                    <label class="lead-filter-client">
+                        <span><?= e(t('filter.client')) ?></span>
+                        <select name="client_id">
+                            <option value="0"><?= e(t('filter.all_clients')) ?></option>
+                            <?php foreach ($clientOptions as $clientOption): ?>
+                                <option value="<?= (int) $clientOption['id'] ?>"<?= (int) $clientOption['id'] === $clientFilterId ? ' selected' : '' ?>>
+                                    <?= e($clientOption['name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
                 <?php endif; ?>
+                <?php if ($hasWidgetFilter): ?>
+                    <label class="lead-filter-widget">
+                        <span><?= e(t('filter.widget')) ?></span>
+                        <select name="widget_id">
+                            <option value="0"><?= e(t('filter.all_widgets')) ?></option>
+                            <?php foreach ($widgetOptions as $widgetOption): ?>
+                                <option value="<?= (int) $widgetOption['id'] ?>"<?= (int) $widgetOption['id'] === $widgetFilterId ? ' selected' : '' ?>>
+                                    <?= e($widgetOption['widget_name']) ?><?php if (!empty($widgetOption['owner_name'])): ?> — <?= e($widgetOption['owner_name']) ?><?php endif; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                <?php endif; ?>
+                <label class="lead-filter-deleted-by">
+                    <span><?= e(t('lead.deleted_by')) ?></span>
+                    <select name="deleted_by_role">
+                        <option value=""><?= e(t('filter.all')) ?></option>
+                        <option value="client"<?= $deletedByRoleFilter === 'client' ? ' selected' : '' ?>><?= e(t('lead.deleted_by_client')) ?></option>
+                        <option value="superadmin"<?= $deletedByRoleFilter === 'superadmin' ? ' selected' : '' ?>><?= e(t('lead.deleted_by_superadmin')) ?></option>
+                    </select>
+                </label>
             </div>
-            <?php if ($showDeleteActions || $showRestoreActions): ?>
-                <div class="lead-toolbar-selected" data-lead-toolbar-selected hidden>
-                    <span class="lead-selected-pill" data-selected-lead-count><?= e(t('lead.selected_count', ['count' => '0'])) ?></span>
-                    <?php if ($hasExport): ?>
-                        <a class="btn btn-light" href="<?= e($exportUrl) ?>"><?= e(t('button.export_csv')) ?></a>
-                    <?php endif; ?>
-                    <?php if ($showDeleteActions): ?>
-                        <?php if ($isSuperadminPage): ?>
-                            <button type="button" class="btn btn-light btn-lead-bulk-action" data-delete-selected-leads>
-                                <span class="lead-action-icon" aria-hidden="true">
-                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M2.5 4.5A1.5 1.5 0 0 1 4 3h12a1.5 1.5 0 0 1 1.415 1.002l-2 6A1.5 1.5 0 0 1 14.001 11H6.236l-.586 2.344A1.5 1.5 0 0 1 4.18 14.5H3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h.68l2-8H4a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1.5Zm3.736 6 1-4h7.265l1.333 4H6.236Z"/></svg>
-                                </span>
-                                <?= e(t('lead.move_to_bin')) ?>
-                            </button>
-                        <?php else: ?>
-                            <button type="button" class="btn btn-danger-soft btn-lead-bulk-action" data-delete-selected-leads><?= e(t('button.delete_selected')) ?></button>
-                        <?php endif; ?>
-                    <?php endif; ?>
+            <div class="recycle-bin-filter-row recycle-bin-filter-row-secondary">
+                <div class="lead-date-range">
+                    <label class="lead-filter-from">
+                        <span><?= e(t('filter.from_date')) ?></span>
+                        <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
+                    </label>
+                    <label class="lead-filter-to">
+                        <span><?= e(t('filter.to_date')) ?></span>
+                        <input type="date" name="date_to" value="<?= e($dateTo) ?>">
+                    </label>
+                </div>
+                <div class="recycle-bin-filter-actions lead-toolbar-actions">
+                    <div class="lead-toolbar-default" data-lead-toolbar-default>
+                        <?php $toolbarDefaultButtons(); ?>
+                    </div>
                     <?php if ($showRestoreActions): ?>
-                        <button type="button" class="btn btn-primary-soft btn-lead-bulk-action" data-restore-selected-leads><?= e(t('lead.restore_selected')) ?></button>
-                        <button type="button" class="btn btn-danger-soft btn-lead-bulk-action" data-permanent-delete-selected-leads><?= e(t('lead.permanent_delete_selected')) ?></button>
+                        <div class="lead-toolbar-selected" data-lead-toolbar-selected hidden>
+                            <?php $toolbarSelectedButtons(); ?>
+                        </div>
                     <?php endif; ?>
                 </div>
+            </div>
+        </form>
+    <?php else: ?>
+        <form
+            class="lead-filter-toolbar admin-filter-bar<?= $hasWidgetFilter ? '' : ' lead-filter-toolbar--no-widget' ?>"
+            method="get"
+            action="<?= e($formAction) ?>"
+        >
+            <?php if ($clientFilterId > 0 && $leadPageMode === 'superadmin'): ?>
+                <input type="hidden" name="client_id" value="<?= (int) $clientFilterId ?>">
             <?php endif; ?>
-        </div>
-    </form>
+            <label class="search-field lead-filter-search">
+                <span><?= e(t('filter.search')) ?></span>
+                <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_leads')) ?>">
+            </label>
+            <?php if ($hasWidgetFilter): ?>
+                <label class="lead-filter-widget">
+                    <span><?= e(t('filter.widget')) ?></span>
+                    <select name="widget_id">
+                        <option value="0"><?= e(t('filter.all_widgets')) ?></option>
+                        <?php foreach ($widgetOptions as $widgetOption): ?>
+                            <option value="<?= (int) $widgetOption['id'] ?>"<?= (int) $widgetOption['id'] === $widgetFilterId ? ' selected' : '' ?>>
+                                <?= e($widgetOption['widget_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            <?php endif; ?>
+            <div class="lead-date-range">
+                <label class="lead-filter-from">
+                    <span><?= e(t('filter.from_date')) ?></span>
+                    <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
+                </label>
+                <label class="lead-filter-to">
+                    <span><?= e(t('filter.to_date')) ?></span>
+                    <input type="date" name="date_to" value="<?= e($dateTo) ?>">
+                </label>
+            </div>
+            <div class="lead-toolbar-actions">
+                <div class="lead-toolbar-default" data-lead-toolbar-default>
+                    <?php $toolbarDefaultButtons(); ?>
+                </div>
+                <?php if ($showDeleteActions): ?>
+                    <div class="lead-toolbar-selected" data-lead-toolbar-selected hidden>
+                        <?php $toolbarSelectedButtons(); ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </form>
+    <?php endif; ?>
 
     <p class="results-meta" data-leads-results-meta><?= e(t($result['total'] === 1 ? 'results.leads_found_one' : 'results.leads_found_other', ['count' => (string) $result['total']])) ?></p>
 
@@ -142,10 +209,10 @@ if ($showClientWidgetColumn) {
     <?php else: ?>
         <div class="table-wrap lead-table-wrap">
             <table class="<?= e($tableClass) ?>">
-                <?php if (!$isRecycleBin): ?>
-                    <colgroup>
-                        <col class="col-select">
-                        <col class="col-lead">
+                <colgroup>
+                    <col class="col-select">
+                    <col class="col-lead">
+                    <?php if (!$isRecycleBin): ?>
                         <col class="col-source">
                         <?php if ($showClientWidgetColumn): ?>
                             <col class="col-client-widget">
@@ -153,9 +220,17 @@ if ($showClientWidgetColumn) {
                             <col class="col-widget">
                         <?php endif; ?>
                         <col class="col-captured">
-                        <col class="col-actions">
-                    </colgroup>
-                <?php endif; ?>
+                    <?php else: ?>
+                        <?php if ($showRecycleMeta): ?><col class="col-client"><?php endif; ?>
+                        <col class="col-widget">
+                        <col class="col-captured">
+                        <?php if ($showRecycleMeta): ?>
+                            <col class="col-deleted-by">
+                            <col class="col-days-remaining">
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    <col class="col-actions">
+                </colgroup>
                 <thead>
                     <tr>
                         <?php if ($showSelection): ?>
@@ -195,6 +270,7 @@ if ($showClientWidgetColumn) {
                         $displayPhone = format_lead_display_phone($lead);
                         $maskedPhone = mask_lead_phone($displayPhone);
                         $copyPhone = $displayPhone !== '' ? $displayPhone : (string) ($lead['visitor_full_phone'] ?? '');
+                        $daysRemaining = max(0, (int) ($lead['days_remaining'] ?? 0));
                         ?>
                         <tr data-lead-row data-lead-id="<?= (int) $lead['id'] ?>">
                             <?php if ($showSelection): ?>
@@ -236,23 +312,27 @@ if ($showClientWidgetColumn) {
                                 </td>
                             <?php else: ?>
                                 <?php if ($showRecycleMeta): ?>
-                                    <td data-label="<?= e(t('table.client')) ?>">
-                                        <strong><?= e($lead['owner_name']) ?></strong>
+                                    <td class="col-client" data-label="<?= e(t('table.client')) ?>">
+                                        <span class="lead-client-name"><?= e($lead['owner_name']) ?></span>
                                     </td>
                                 <?php endif; ?>
-                                <td data-label="<?= e(t('lead.original_widget')) ?>"><?= e($lead['widget_name']) ?></td>
-                                <td data-label="<?= e(t('lead.deleted_at')) ?>">
+                                <td class="col-widget" data-label="<?= e(t('lead.original_widget')) ?>">
+                                    <span class="lead-widget-name"><?= e($lead['widget_name']) ?></span>
+                                </td>
+                                <td class="col-captured" data-label="<?= e(t('lead.deleted_at')) ?>">
                                     <?php render_lead_captured_cell($lead['deleted_at'] ?? null); ?>
                                 </td>
                                 <?php if ($showRecycleMeta): ?>
-                                    <td data-label="<?= e(t('lead.deleted_by')) ?>">
-                                        <?= e(translate_deleted_by_role((string) ($lead['deleted_by_role'] ?? ''))) ?>
+                                    <td class="col-deleted-by" data-label="<?= e(t('lead.deleted_by')) ?>">
+                                        <span class="lead-deleted-by"><?= e(translate_deleted_by_role((string) ($lead['deleted_by_role'] ?? ''))) ?></span>
                                     </td>
-                                    <td data-label="<?= e(t('lead.days_remaining')) ?>"><?= e((string) ($lead['days_remaining'] ?? '0')) ?></td>
+                                    <td class="col-days-remaining" data-label="<?= e(t('lead.days_remaining')) ?>">
+                                        <span class="lead-days-remaining"><?= e(format_retention_days_label($daysRemaining)) ?></span>
+                                    </td>
                                 <?php endif; ?>
                             <?php endif; ?>
                             <td class="col-actions" data-label="<?= e(t('table.actions')) ?>">
-                                <div class="lead-row-actions">
+                                <div class="lead-row-actions<?= $showRestoreActions ? ' recycle-bin-actions' : '' ?>">
                                     <?php if ($showDeleteActions): ?>
                                         <?php if ($isSuperadminPage): ?>
                                             <button
