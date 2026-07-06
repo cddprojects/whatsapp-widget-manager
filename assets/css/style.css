@@ -2457,6 +2457,7 @@ code {
     vertical-align: middle;
     padding-top: 10px;
     padding-bottom: 10px;
+    text-align: right;
 }
 
 .lead-table tbody tr {
@@ -2464,7 +2465,8 @@ code {
 }
 
 .lead-client-name,
-.lead-expires-in {
+.lead-expires-in,
+.lead-widget-name {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2484,7 +2486,7 @@ code {
     color: var(--text);
     font: inherit;
     font-weight: 600;
-    text-align: left;
+    text-align: right;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2503,6 +2505,7 @@ code {
     display: flex;
     min-width: 0;
     flex-direction: column;
+    align-items: flex-end;
     gap: 3px;
     text-decoration: none;
 }
@@ -2540,6 +2543,7 @@ code {
     display: flex;
     min-width: 0;
     flex-direction: column;
+    align-items: flex-end;
     gap: 3px;
 }
 
@@ -2551,6 +2555,7 @@ code {
 .lead-captured-cell {
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     gap: 2px;
     white-space: nowrap;
 }
@@ -2832,6 +2837,18 @@ code {
         gap: 12px;
         padding: 8px 0;
         border: 0;
+        text-align: right;
+    }
+
+    .lead-table-layout--active tbody td > *,
+    .lead-table-layout--recycle tbody td > * {
+        margin-left: auto;
+        text-align: right;
+    }
+
+    .lead-table-layout--active tbody td.col-select > *,
+    .lead-table-layout--recycle tbody td.col-select > * {
+        margin-left: 0;
     }
 
     .lead-table-layout--active tbody td::before,
