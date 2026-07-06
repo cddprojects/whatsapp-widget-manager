@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS widgets (
 CREATE TABLE IF NOT EXISTS widget_leads (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     widget_id INT UNSIGNED NOT NULL,
+    client_id INT UNSIGNED NULL,
     user_id INT UNSIGNED NOT NULL,
     visitor_phone VARCHAR(50) NOT NULL,
     visitor_country_code VARCHAR(10) NULL,
@@ -96,14 +97,33 @@ CREATE TABLE IF NOT EXISTS widget_leads (
     whatsapp_redirect_url TEXT NULL,
     ip_address VARCHAR(100) NULL,
     user_agent TEXT NULL,
+    deleted_at DATETIME NULL DEFAULT NULL,
+    deleted_by_user_id INT UNSIGNED NULL DEFAULT NULL,
+    deleted_by_role VARCHAR(30) NULL DEFAULT NULL,
+    restored_at DATETIME NULL DEFAULT NULL,
+    restored_by_user_id INT UNSIGNED NULL DEFAULT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_widget_leads_widget_id (widget_id),
     INDEX idx_widget_leads_user_id (user_id),
+    INDEX idx_widget_leads_client_active_created (client_id, deleted_at, created_at),
+    INDEX idx_widget_leads_client_widget (client_id, widget_id),
+    INDEX idx_widget_leads_deleted_at (deleted_at),
     INDEX idx_widget_leads_visitor_phone (visitor_full_phone),
     INDEX idx_widget_leads_created_at (created_at),
     CONSTRAINT fk_widget_leads_widget FOREIGN KEY (widget_id) REFERENCES widgets(id) ON DELETE CASCADE,
     CONSTRAINT fk_widget_leads_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    setting_key VARCHAR(100) NOT NULL PRIMARY KEY,
+    setting_value TEXT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO app_settings (setting_key, setting_value) VALUES
+    ('lead_recycle_bin_auto_purge_enabled', '1'),
+    ('lead_recycle_bin_retention_days', '30')
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
 
 INSERT INTO users (id, name, email, password, role, status)
 VALUES

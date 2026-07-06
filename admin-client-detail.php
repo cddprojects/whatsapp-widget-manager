@@ -54,6 +54,7 @@ require __DIR__ . '/includes/header.php';
         <p><?= e(t('desc.client_profile')) ?></p>
     </div>
     <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>"><?= e(t('button.create_widget_for_client')) ?></a>
+    <a class="btn btn-light" href="admin-client-leads.php?client_id=<?= (int) $client['id'] ?>"><?= e(t('button.view_leads')) ?></a>
 </section>
 
 <?php if ($createdPassword !== null): ?>

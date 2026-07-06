@@ -42,6 +42,19 @@ require __DIR__ . '/includes/header.php';
     </article>
 </section>
 
+<section class="summary-grid lead-summary-grid">
+    <article class="summary-card">
+        <span class="summary-label"><?= e(t('lead.today_title')) ?></span>
+        <strong><?= (int) ($stats['today_leads'] ?? 0) ?></strong>
+        <small><?= e(t('lead.today_scope_all')) ?></small>
+    </article>
+    <article class="summary-card">
+        <span class="summary-label"><?= e(t('lead.total_active_title')) ?></span>
+        <strong><?= number_format((int) ($stats['total_active_leads'] ?? 0)) ?></strong>
+        <small><?= e(t('lead.total_scope_all')) ?></small>
+    </article>
+</section>
+
 <section class="settings-card table-card">
     <div class="card-header-row">
         <div>

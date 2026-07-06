@@ -2152,14 +2152,7 @@ function client_widget_count(int $clientId): int
 
 function client_lead_count(int $clientId): int
 {
-    if (!database_table_exists('widget_leads')) {
-        return 0;
-    }
-
-    $stmt = db()->prepare('SELECT COUNT(*) FROM widget_leads WHERE user_id = :user_id');
-    $stmt->execute(['user_id' => $clientId]);
-
-    return (int) $stmt->fetchColumn();
+    return count_active_leads($clientId, false);
 }
 
 function delete_client_account(int $clientId, string $widgetMode, int $superadminId): array
@@ -2248,6 +2241,8 @@ function dashboard_summary_stats(): array
         'active_clients' => (int) $activeClients,
         'disabled_clients' => (int) $disabledClients,
         'total_widgets' => (int) $widgets,
+        'today_leads' => count_active_leads(null, true),
+        'total_active_leads' => count_active_leads(null, false),
     ];
 }
 
@@ -2430,7 +2425,7 @@ function render_widget_action_menu(array $widget, array $options = []): void
             <button type="button" class="btn btn-small btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="<?= e(t('action.more_actions')) ?>">⋯</button>
             <div class="action-menu-panel" role="menu">
                 <a role="menuitem" href="edit-widget-phone.php?id=<?= $widgetId ?>"><?= e(t('action.phone_number')) ?></a>
-                <a role="menuitem" href="admin-widget-leads.php?widget_id=<?= $widgetId ?>"><?= e(t('action.leads')) ?></a>
+                <a role="menuitem" href="admin-client-leads.php?client_id=<?= (int) $widget['user_id'] ?>&widget_id=<?= $widgetId ?>"><?= e(t('action.leads')) ?></a>
                 <a role="menuitem" href="embed-code.php?id=<?= $widgetId ?>"><?= e(t('action.embed_code')) ?></a>
                 <?php if ($showDelete): ?>
                     <form method="post" data-confirm="<?= e(t('widget.delete_confirm')) ?>">
@@ -2525,18 +2520,14 @@ function lead_recently_saved(int $widgetId, string $fullPhone): bool
 
 function insert_widget_lead(array $widget, array $lead): int
 {
-    $stmt = db()->prepare(
-        'INSERT INTO widget_leads (
-            widget_id, user_id, visitor_phone, visitor_country_code, visitor_full_phone,
-            source_domain, source_url, page_title, whatsapp_redirect_url, ip_address, user_agent
-         ) VALUES (
-            :widget_id, :user_id, :visitor_phone, :visitor_country_code, :visitor_full_phone,
-            :source_domain, :source_url, :page_title, :whatsapp_redirect_url, :ip_address, :user_agent
-         )'
-    );
-    $stmt->execute([
+    $clientId = (int) ($widget['user_id'] ?? 0);
+    $columns = [
+        'widget_id', 'user_id', 'visitor_phone', 'visitor_country_code', 'visitor_full_phone',
+        'source_domain', 'source_url', 'page_title', 'whatsapp_redirect_url', 'ip_address', 'user_agent',
+    ];
+    $values = [
         'widget_id' => (int) $widget['id'],
-        'user_id' => (int) $widget['user_id'],
+        'user_id' => $clientId,
         'visitor_phone' => $lead['visitor_phone'],
         'visitor_country_code' => $lead['visitor_country_code'],
         'visitor_full_phone' => $lead['visitor_full_phone'],
@@ -2546,58 +2537,30 @@ function insert_widget_lead(array $widget, array $lead): int
         'whatsapp_redirect_url' => $lead['whatsapp_redirect_url'],
         'ip_address' => $lead['ip_address'],
         'user_agent' => $lead['user_agent'],
-    ]);
+    ];
+
+    if (table_has_column('widget_leads', 'client_id')) {
+        $columns[] = 'client_id';
+        $values['client_id'] = $clientId;
+    }
+
+    $placeholders = array_map(static fn ($column) => ':' . $column, $columns);
+    $sql = 'INSERT INTO widget_leads (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($values);
 
     return (int) db()->lastInsertId();
 }
 
 function search_widget_leads(int $widgetId, array $options): array
 {
-    $page = max(1, (int) ($options['page'] ?? 1));
-    $perPage = max(1, min(100, (int) ($options['per_page'] ?? 25)));
-    $offset = ($page - 1) * $perPage;
-    $query = trim((string) ($options['q'] ?? ''));
-    $dateFrom = trim((string) ($options['date_from'] ?? ''));
-    $dateTo = trim((string) ($options['date_to'] ?? ''));
+    $clientId = (int) ($options['client_id'] ?? 0);
 
-    $where = ['wl.widget_id = :widget_id'];
-    $params = ['widget_id' => $widgetId];
-
-    if ($query !== '') {
-        $where[] = '(wl.visitor_phone LIKE :q OR wl.visitor_full_phone LIKE :q OR wl.source_domain LIKE :q OR wl.source_url LIKE :q OR wl.page_title LIKE :q)';
-        $params['q'] = '%' . $query . '%';
-    }
-    if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
-        $where[] = 'DATE(wl.created_at) >= :date_from';
-        $params['date_from'] = $dateFrom;
-    }
-    if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
-        $where[] = 'DATE(wl.created_at) <= :date_to';
-        $params['date_to'] = $dateTo;
-    }
-
-    $whereSql = implode(' AND ', $where);
-    $countStmt = db()->prepare('SELECT COUNT(*) FROM widget_leads wl WHERE ' . $whereSql);
-    $countStmt->execute($params);
-    $total = (int) $countStmt->fetchColumn();
-
-    $sql = 'SELECT wl.*, w.widget_name, u.name AS owner_name, u.email AS owner_email
-            FROM widget_leads wl
-            INNER JOIN widgets w ON w.id = wl.widget_id
-            INNER JOIN users u ON u.id = wl.user_id
-            WHERE ' . $whereSql . '
-            ORDER BY wl.created_at DESC
-            LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
-    $stmt = db()->prepare($sql);
-    $stmt->execute($params);
-
-    return [
-        'rows' => $stmt->fetchAll(),
-        'total' => $total,
-        'page' => $page,
-        'per_page' => $perPage,
-        'pages' => (int) max(1, ceil($total / $perPage)),
-    ];
+    return search_client_leads(array_merge($options, [
+        'widget_id' => $widgetId,
+        'client_id' => $clientId > 0 ? $clientId : 0,
+        'recycle_bin' => false,
+    ]));
 }
 
 function widget_leads_for_export(int $widgetId, array $options): array
@@ -2613,6 +2576,8 @@ function json_response(array $payload, int $status = 200): void
     echo json_encode($payload);
     exit;
 }
+
+require_once __DIR__ . '/lead-management.php';
 
 function ensure_widget_activation_schema(): void
 {
@@ -2653,6 +2618,7 @@ function ensure_widget_activation_schema(): void
 
 try {
     ensure_widget_activation_schema();
+    ensure_lead_recycle_schema();
 } catch (Throwable $exception) {
     // Leave connection errors to the calling page; schema ensure runs when DB is available.
 }

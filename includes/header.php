@@ -30,12 +30,14 @@ $currentLocale = current_locale();
         <?php if ($isSuperAdmin): ?>
             <nav class="topnav-main" aria-label="<?= e(t('nav.main')) ?>">
                 <a class="<?= nav_link_class('dashboard.php') ?>" href="dashboard.php"><?= e(t('nav.dashboard')) ?></a>
-                <a class="<?= nav_link_class('admin-clients.php', ['admin-client-create.php', 'admin-client-detail.php', 'admin-client-edit.php', 'admin-client-reset-password.php', 'admin-client-delete.php']) ?>" href="admin-clients.php"><?= e(t('nav.clients')) ?></a>
+                <a class="<?= nav_link_class('admin-clients.php', ['admin-client-create.php', 'admin-client-detail.php', 'admin-client-edit.php', 'admin-client-reset-password.php', 'admin-client-delete.php', 'admin-client-leads.php']) ?>" href="admin-clients.php"><?= e(t('nav.clients')) ?></a>
                 <a class="<?= nav_link_class('admin-widgets.php', ['create-widget.php', 'edit-widget.php', 'edit-widget-phone.php', 'embed-code.php', 'admin-widget-leads.php']) ?>" href="admin-widgets.php"><?= e(t('nav.widgets')) ?></a>
+                <a class="<?= nav_link_class('lead-recycle-bin.php') ?>" href="lead-recycle-bin.php"><?= e(t('nav.lead_recycle_bin')) ?></a>
             </nav>
         <?php elseif ($isClient): ?>
             <nav class="topnav-main" aria-label="<?= e(t('nav.main')) ?>">
                 <a class="<?= nav_link_class('client-dashboard.php') ?>" href="client-dashboard.php"><?= e(t('nav.my_whatsapp_number')) ?></a>
+                <a class="<?= nav_link_class('client-leads.php') ?>" href="client-leads.php"><?= e(t('nav.my_leads')) ?></a>
             </nav>
         <?php endif; ?>
 
