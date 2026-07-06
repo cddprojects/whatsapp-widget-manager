@@ -74,19 +74,29 @@
 
         if (countEl) {
             countEl.textContent = ctcwI18n('lead.selected_count', { count: selected.length });
-            countEl.hidden = selected.length === 0;
+        }
+
+        var toolbarDefault = root.querySelector('[data-lead-toolbar-default]');
+        var toolbarSelected = root.querySelector('[data-lead-toolbar-selected]');
+
+        if (toolbarDefault) {
+            toolbarDefault.hidden = selected.length > 0;
+        }
+
+        if (toolbarSelected) {
+            toolbarSelected.hidden = selected.length === 0;
         }
 
         if (deleteButton) {
-            deleteButton.disabled = selected.length === 0;
+            deleteButton.hidden = selected.length === 0;
         }
 
         if (restoreButton) {
-            restoreButton.disabled = selected.length === 0;
+            restoreButton.hidden = selected.length === 0;
         }
 
         if (permanentButton) {
-            permanentButton.disabled = selected.length === 0;
+            permanentButton.hidden = selected.length === 0;
         }
 
         if (selectAll) {
@@ -287,6 +297,25 @@
         });
 
         root.addEventListener('click', function (event) {
+            var copyButton = event.target.closest('[data-copy-lead-phone]');
+            if (copyButton) {
+                var phoneValue = copyButton.getAttribute('data-phone') || '';
+                if (phoneValue === '') {
+                    return;
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(phoneValue)
+                        .then(function () {
+                            showLeadToast(root, ctcwI18n('lead.phone_copied'), false);
+                        })
+                        .catch(function () {
+                            showLeadToast(root, ctcwI18n('lead.action_failed'), true);
+                        });
+                }
+                return;
+            }
+
             var deleteButton = event.target.closest('[data-delete-lead]');
             if (deleteButton) {
                 pendingLeadId = parseInt(deleteButton.getAttribute('data-lead-id') || '0', 10);

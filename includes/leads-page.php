@@ -23,29 +23,38 @@ declare(strict_types=1);
 
 $isRecycleBin = $leadPageMode === 'recycle_bin';
 $isClientPage = $leadPageMode === 'client';
+$isSuperadminPage = $leadPageMode === 'superadmin';
 $showSelection = true;
 $showDeleteActions = !$isRecycleBin;
 $showRestoreActions = $isRecycleBin;
+$showClientWidgetColumn = $isSuperadminPage && $showClientColumn && $clientFilterId <= 0;
+$showWidgetColumn = !$showClientWidgetColumn;
+$hasExport = !$isRecycleBin && $result['total'] > 0;
+$filterBarClass = 'admin-filter-bar lead-filter-bar' . ($isRecycleBin ? ' lead-filter-bar--recycle' : '');
+$tableClass = 'widget-table lead-table' . ($isRecycleBin ? ' lead-table-layout--recycle' : ' lead-table-layout--active');
+if ($showClientWidgetColumn) {
+    $tableClass .= ' lead-table-layout--global';
+}
 ?>
 
 <section
-    class="settings-card"
+    class="settings-card lead-page-card"
     data-leads-page
     data-leads-mode="<?= e($leadPageMode) ?>"
     data-csrf-token="<?= e($csrfToken) ?>"
     data-total-leads="<?= (int) $result['total'] ?>"
     data-empty-message="<?= e($emptyMessage) ?>"
 >
-    <form class="admin-filter-bar" method="get" action="<?= e($formAction) ?>">
+    <form class="<?= e($filterBarClass) ?>" method="get" action="<?= e($formAction) ?>">
         <?php if ($clientFilterId > 0 && $leadPageMode === 'superadmin'): ?>
             <input type="hidden" name="client_id" value="<?= (int) $clientFilterId ?>">
         <?php endif; ?>
-        <label class="search-field span-2">
+        <label class="search-field lead-filter-search">
             <span><?= e(t('filter.search')) ?></span>
             <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_leads')) ?>">
         </label>
         <?php if ($showClientColumn && $clientOptions !== []): ?>
-            <label>
+            <label class="lead-filter-client">
                 <span><?= e(t('filter.client')) ?></span>
                 <select name="client_id">
                     <option value="0"><?= e(t('filter.all_clients')) ?></option>
@@ -58,7 +67,7 @@ $showRestoreActions = $isRecycleBin;
             </label>
         <?php endif; ?>
         <?php if ($widgetOptions !== []): ?>
-            <label>
+            <label class="lead-filter-widget">
                 <span><?= e(t('filter.widget')) ?></span>
                 <select name="widget_id">
                     <option value="0"><?= e(t('filter.all_widgets')) ?></option>
@@ -71,7 +80,7 @@ $showRestoreActions = $isRecycleBin;
             </label>
         <?php endif; ?>
         <?php if ($isRecycleBin): ?>
-            <label>
+            <label class="lead-filter-deleted-by">
                 <span><?= e(t('lead.deleted_by')) ?></span>
                 <select name="deleted_by_role">
                     <option value=""><?= e(t('filter.all')) ?></option>
@@ -80,29 +89,46 @@ $showRestoreActions = $isRecycleBin;
                 </select>
             </label>
         <?php endif; ?>
-        <label>
+        <label class="lead-filter-from">
             <span><?= e(t('filter.from_date')) ?></span>
             <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
         </label>
-        <label>
+        <label class="lead-filter-to">
             <span><?= e(t('filter.to_date')) ?></span>
             <input type="date" name="date_to" value="<?= e($dateTo) ?>">
         </label>
-        <div class="form-actions lead-filter-actions">
-            <button type="submit" class="btn btn-primary"><?= e(t('button.filter')) ?></button>
-            <?php if (!$isRecycleBin && $result['total'] > 0): ?>
-                <a class="btn btn-light" href="<?= e($exportUrl) ?>"><?= e(t('button.export_csv')) ?></a>
-            <?php elseif (!$isRecycleBin): ?>
-                <span class="btn btn-light is-disabled" aria-disabled="true"><?= e(t('button.export_csv')) ?></span>
-            <?php endif; ?>
-            <?php if ($showDeleteActions): ?>
-                <button type="button" class="btn btn-danger-soft" data-delete-selected-leads disabled><?= e($deleteBulkLabel) ?></button>
-                <span class="lead-selected-count" data-selected-lead-count hidden><?= e(t('lead.selected_count', ['count' => '0'])) ?></span>
-            <?php endif; ?>
-            <?php if ($showRestoreActions): ?>
-                <button type="button" class="btn btn-primary-soft" data-restore-selected-leads disabled><?= e(t('lead.restore_selected')) ?></button>
-                <button type="button" class="btn btn-danger-soft" data-permanent-delete-selected-leads disabled><?= e(t('lead.permanent_delete_selected')) ?></button>
-                <span class="lead-selected-count" data-selected-lead-count hidden><?= e(t('lead.selected_count', ['count' => '0'])) ?></span>
+        <div class="lead-toolbar">
+            <div class="lead-toolbar-default" data-lead-toolbar-default>
+                <button type="submit" class="btn btn-primary"><?= e(t('button.filter')) ?></button>
+                <?php if ($hasExport): ?>
+                    <a class="btn btn-light" href="<?= e($exportUrl) ?>"><?= e(t('button.export_csv')) ?></a>
+                <?php elseif (!$isRecycleBin): ?>
+                    <span class="btn btn-light is-disabled" aria-disabled="true"><?= e(t('button.export_csv')) ?></span>
+                <?php endif; ?>
+            </div>
+            <?php if ($showDeleteActions || $showRestoreActions): ?>
+                <div class="lead-toolbar-selected" data-lead-toolbar-selected hidden>
+                    <span class="lead-selected-pill" data-selected-lead-count><?= e(t('lead.selected_count', ['count' => '0'])) ?></span>
+                    <?php if ($hasExport): ?>
+                        <a class="btn btn-light" href="<?= e($exportUrl) ?>"><?= e(t('button.export_csv')) ?></a>
+                    <?php endif; ?>
+                    <?php if ($showDeleteActions): ?>
+                        <?php if ($isSuperadminPage): ?>
+                            <button type="button" class="btn btn-light btn-lead-bulk-action" data-delete-selected-leads>
+                                <span class="lead-action-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M2.5 4.5A1.5 1.5 0 0 1 4 3h12a1.5 1.5 0 0 1 1.415 1.002l-2 6A1.5 1.5 0 0 1 14.001 11H6.236l-.586 2.344A1.5 1.5 0 0 1 4.18 14.5H3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h.68l2-8H4a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1.5Zm3.736 6 1-4h7.265l1.333 4H6.236Z"/></svg>
+                                </span>
+                                <?= e(t('lead.move_to_bin')) ?>
+                            </button>
+                        <?php else: ?>
+                            <button type="button" class="btn btn-danger-soft btn-lead-bulk-action" data-delete-selected-leads><?= e(t('button.delete_selected')) ?></button>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                    <?php if ($showRestoreActions): ?>
+                        <button type="button" class="btn btn-primary-soft btn-lead-bulk-action" data-restore-selected-leads><?= e(t('lead.restore_selected')) ?></button>
+                        <button type="button" class="btn btn-danger-soft btn-lead-bulk-action" data-permanent-delete-selected-leads><?= e(t('lead.permanent_delete_selected')) ?></button>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
         </div>
     </form>
@@ -114,70 +140,149 @@ $showRestoreActions = $isRecycleBin;
             <p><?= e($emptyMessage) ?></p>
         </div>
     <?php else: ?>
-        <div class="table-wrap">
-            <table class="widget-table lead-table">
+        <div class="table-wrap lead-table-wrap">
+            <table class="<?= e($tableClass) ?>">
+                <?php if (!$isRecycleBin): ?>
+                    <colgroup>
+                        <col class="col-select">
+                        <col class="col-lead">
+                        <col class="col-source">
+                        <?php if ($showClientWidgetColumn): ?>
+                            <col class="col-client-widget">
+                        <?php else: ?>
+                            <col class="col-widget">
+                        <?php endif; ?>
+                        <col class="col-captured">
+                        <col class="col-actions">
+                    </colgroup>
+                <?php endif; ?>
                 <thead>
                     <tr>
                         <?php if ($showSelection): ?>
-                            <th class="col-select">
-                                <label class="lead-select-all-label">
-                                    <input type="checkbox" data-select-all-leads aria-label="<?= e(t('table.select_all_aria')) ?>">
-                                    <span><?= e(t('table.select_all')) ?></span>
-                                </label>
+                            <th class="col-select" scope="col">
+                                <input
+                                    type="checkbox"
+                                    data-select-all-leads
+                                    aria-label="<?= e(t('lead.select_all_visible')) ?>"
+                                    title="<?= e(t('lead.select_all_visible')) ?>"
+                                >
                             </th>
                         <?php endif; ?>
-                        <th><?= e(t('table.visitor_phone')) ?></th>
-                        <?php if ($showClientOwnerColumn): ?><th><?= e(t('table.client_owner')) ?></th><?php endif; ?>
-                        <?php if ($showRecycleMeta): ?><th><?= e(t('table.client')) ?></th><?php endif; ?>
-                        <th><?= e($isRecycleBin ? t('lead.original_widget') : t('table.widget')) ?></th>
+                        <th scope="col"><?= e(t('table.lead')) ?></th>
                         <?php if (!$isRecycleBin): ?>
-                            <th><?= e(t('table.source_domain')) ?></th>
-                            <th><?= e(t('table.source_url')) ?></th>
-                            <th><?= e(t('table.page_title')) ?></th>
+                            <th scope="col"><?= e(t('table.source_page')) ?></th>
+                            <?php if ($showClientWidgetColumn): ?>
+                                <th scope="col"><?= e(t('table.client_widget')) ?></th>
+                            <?php else: ?>
+                                <th scope="col"><?= e(t('table.widget')) ?></th>
+                            <?php endif; ?>
+                            <th scope="col"><?= e(t('table.captured')) ?></th>
+                        <?php else: ?>
+                            <?php if ($showRecycleMeta): ?><th scope="col"><?= e(t('table.client')) ?></th><?php endif; ?>
+                            <th scope="col"><?= e(t('lead.original_widget')) ?></th>
+                            <th scope="col"><?= e(t('lead.deleted_at')) ?></th>
+                            <?php if ($showRecycleMeta): ?>
+                                <th scope="col"><?= e(t('lead.deleted_by')) ?></th>
+                                <th scope="col"><?= e(t('lead.days_remaining')) ?></th>
+                            <?php endif; ?>
                         <?php endif; ?>
-                        <th><?= e($isRecycleBin ? t('lead.deleted_at') : t('table.created')) ?></th>
-                        <?php if ($showRecycleMeta): ?>
-                            <th><?= e(t('lead.deleted_by')) ?></th>
-                            <th><?= e(t('lead.days_remaining')) ?></th>
-                        <?php endif; ?>
-                        <th class="col-actions"><?= e(t('table.actions')) ?></th>
+                        <th class="col-actions" scope="col"><?= e(t('table.actions')) ?></th>
                     </tr>
                 </thead>
                 <tbody data-leads-table-body>
                     <?php foreach ($result['rows'] as $lead): ?>
-                        <?php $maskedPhone = mask_lead_phone((string) ($lead['visitor_phone'] ?: $lead['visitor_full_phone'])); ?>
+                        <?php
+                        $displayPhone = format_lead_display_phone($lead);
+                        $maskedPhone = mask_lead_phone($displayPhone);
+                        $copyPhone = $displayPhone !== '' ? $displayPhone : (string) ($lead['visitor_full_phone'] ?? '');
+                        ?>
                         <tr data-lead-row data-lead-id="<?= (int) $lead['id'] ?>">
                             <?php if ($showSelection): ?>
-                                <td class="col-select">
+                                <td class="col-select" data-label="">
                                     <input type="checkbox" class="ctcw-lead-select" value="<?= (int) $lead['id'] ?>" aria-label="<?= e(t('lead.select_row_aria', ['phone' => $maskedPhone])) ?>">
                                 </td>
                             <?php endif; ?>
-                            <td><strong><?= e($lead['visitor_phone']) ?></strong><small><?= e($lead['visitor_full_phone']) ?></small></td>
-                            <?php if ($showClientOwnerColumn): ?>
-                                <td><strong><?= e($lead['owner_name']) ?></strong><small><?= e($lead['owner_email']) ?></small></td>
-                            <?php endif; ?>
-                            <?php if ($showRecycleMeta): ?>
-                                <td><strong><?= e($lead['owner_name']) ?></strong><small><?= e($lead['owner_email']) ?></small></td>
-                            <?php endif; ?>
-                            <td><?= e($lead['widget_name']) ?></td>
+                            <td class="col-lead" data-label="<?= e(t('table.lead')) ?>">
+                                <?php if ($copyPhone !== ''): ?>
+                                    <button
+                                        type="button"
+                                        class="lead-phone-copy"
+                                        data-copy-lead-phone
+                                        data-phone="<?= e($copyPhone) ?>"
+                                        title="<?= e(t('lead.copy_phone')) ?>"
+                                    ><?= e($displayPhone !== '' ? $displayPhone : $copyPhone) ?></button>
+                                <?php else: ?>
+                                    <span class="lead-phone-empty">—</span>
+                                <?php endif; ?>
+                            </td>
                             <?php if (!$isRecycleBin): ?>
-                                <td><?= e((string) ($lead['source_domain'] ?? '')) ?></td>
-                                <td><small><?= e((string) ($lead['source_url'] ?? '')) ?></small></td>
-                                <td><?= e((string) ($lead['page_title'] ?? '')) ?></td>
-                                <td><?= e(format_datetime($lead['created_at'] ?? null, '')) ?></td>
+                                <td class="col-source" data-label="<?= e(t('table.source_page')) ?>">
+                                    <?php render_lead_source_cell($lead); ?>
+                                </td>
+                                <?php if ($showClientWidgetColumn): ?>
+                                    <td class="col-client-widget" data-label="<?= e(t('table.client_widget')) ?>">
+                                        <span class="lead-client-widget-cell">
+                                            <strong><?= e((string) ($lead['owner_name'] ?? '')) ?></strong>
+                                            <span><?= e((string) ($lead['widget_name'] ?? '')) ?></span>
+                                        </span>
+                                    </td>
+                                <?php else: ?>
+                                    <td class="col-widget" data-label="<?= e(t('table.widget')) ?>">
+                                        <span class="lead-widget-name"><?= e((string) ($lead['widget_name'] ?? '')) ?></span>
+                                    </td>
+                                <?php endif; ?>
+                                <td class="col-captured" data-label="<?= e(t('table.captured')) ?>">
+                                    <?php render_lead_captured_cell($lead['created_at'] ?? null); ?>
+                                </td>
                             <?php else: ?>
-                                <td><?= e(format_datetime($lead['deleted_at'] ?? null, '')) ?></td>
-                                <td><?= e(translate_deleted_by_role((string) ($lead['deleted_by_role'] ?? ''))) ?><?php if (!empty($lead['deleted_by_name'])): ?><small><?= e($lead['deleted_by_name']) ?></small><?php endif; ?></td>
-                                <td><?= e((string) ($lead['days_remaining'] ?? '0')) ?></td>
+                                <?php if ($showRecycleMeta): ?>
+                                    <td data-label="<?= e(t('table.client')) ?>">
+                                        <strong><?= e($lead['owner_name']) ?></strong>
+                                    </td>
+                                <?php endif; ?>
+                                <td data-label="<?= e(t('lead.original_widget')) ?>"><?= e($lead['widget_name']) ?></td>
+                                <td data-label="<?= e(t('lead.deleted_at')) ?>">
+                                    <?php render_lead_captured_cell($lead['deleted_at'] ?? null); ?>
+                                </td>
+                                <?php if ($showRecycleMeta): ?>
+                                    <td data-label="<?= e(t('lead.deleted_by')) ?>">
+                                        <?= e(translate_deleted_by_role((string) ($lead['deleted_by_role'] ?? ''))) ?>
+                                    </td>
+                                    <td data-label="<?= e(t('lead.days_remaining')) ?>"><?= e((string) ($lead['days_remaining'] ?? '0')) ?></td>
+                                <?php endif; ?>
                             <?php endif; ?>
-                            <td class="col-actions">
-                                <?php if ($showDeleteActions): ?>
-                                    <button type="button" class="btn btn-danger-soft btn-compact" data-delete-lead data-lead-id="<?= (int) $lead['id'] ?>" data-lead-phone="<?= e($maskedPhone) ?>"><?= e($deleteSingleLabel) ?></button>
-                                <?php endif; ?>
-                                <?php if ($showRestoreActions): ?>
-                                    <button type="button" class="btn btn-primary-soft btn-compact" data-restore-lead data-lead-id="<?= (int) $lead['id'] ?>"><?= e(t('lead.restore')) ?></button>
-                                    <button type="button" class="btn btn-danger-soft btn-compact" data-permanent-delete-lead data-lead-id="<?= (int) $lead['id'] ?>"><?= e(t('lead.delete_permanently')) ?></button>
-                                <?php endif; ?>
+                            <td class="col-actions" data-label="<?= e(t('table.actions')) ?>">
+                                <div class="lead-row-actions">
+                                    <?php if ($showDeleteActions): ?>
+                                        <?php if ($isSuperadminPage): ?>
+                                            <button
+                                                type="button"
+                                                class="btn btn-light btn-compact btn-lead-action"
+                                                data-delete-lead
+                                                data-lead-id="<?= (int) $lead['id'] ?>"
+                                                data-lead-phone="<?= e($maskedPhone) ?>"
+                                                title="<?= e(t('lead.move_to_recycle_bin')) ?>"
+                                            >
+                                                <span class="lead-action-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M2.5 4.5A1.5 1.5 0 0 1 4 3h12a1.5 1.5 0 0 1 1.415 1.002l-2 6A1.5 1.5 0 0 1 14.001 11H6.236l-.586 2.344A1.5 1.5 0 0 1 4.18 14.5H3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h.68l2-8H4a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1.5Zm3.736 6 1-4h7.265l1.333 4H6.236Z"/></svg>
+                                                </span>
+                                                <?= e(t('lead.move')) ?>
+                                            </button>
+                                        <?php else: ?>
+                                            <button
+                                                type="button"
+                                                class="btn btn-danger-soft btn-compact btn-lead-action"
+                                                data-delete-lead
+                                                data-lead-id="<?= (int) $lead['id'] ?>"
+                                                data-lead-phone="<?= e($maskedPhone) ?>"
+                                            ><?= e(t('button.delete')) ?></button>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    <?php if ($showRestoreActions): ?>
+                                        <button type="button" class="btn btn-primary-soft btn-compact btn-lead-action" data-restore-lead data-lead-id="<?= (int) $lead['id'] ?>"><?= e(t('lead.restore')) ?></button>
+                                        <button type="button" class="btn btn-danger-soft btn-compact btn-lead-action" data-permanent-delete-lead data-lead-id="<?= (int) $lead['id'] ?>"><?= e(t('lead.delete_permanently')) ?></button>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
