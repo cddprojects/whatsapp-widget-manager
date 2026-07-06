@@ -1102,6 +1102,7 @@ code {
 
 .random-number-panel,
 .phone-numbers-card,
+.ctcw-phone-numbers-card,
 .embed-box {
     margin-top: 20px;
     padding: 20px;
@@ -1109,6 +1110,7 @@ code {
     border-radius: 16px;
     background: var(--card);
     box-shadow: none;
+    overflow: visible;
 }
 
 .widget-name-field {
@@ -1117,7 +1119,8 @@ code {
     margin-bottom: 4px;
 }
 
-.phone-number-list {
+.phone-number-list,
+.ctcw-phone-list {
     display: grid;
     gap: 12px;
     margin-top: 16px;
@@ -1241,6 +1244,7 @@ code {
 
 .phone-number-row {
     position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: auto minmax(150px, 180px) minmax(0, 1fr) auto;
     gap: 12px;
@@ -1253,7 +1257,16 @@ code {
 }
 
 .ctcw-phone-row {
+    position: relative;
+    z-index: 1;
     overflow: visible;
+}
+
+.phone-number-row:has(.ctcw-calling-code-menu:not([hidden])),
+.ctcw-phone-row:has(.ctcw-calling-code-menu:not([hidden])),
+.phone-number-row.is-calling-code-menu-open,
+.ctcw-phone-row.is-calling-code-menu-open {
+    z-index: 100;
 }
 
 .ctcw-phone-row.is-disabled input:disabled,
@@ -1989,7 +2002,7 @@ code {
 
 .ctcw-calling-code-picker {
     position: relative;
-    z-index: 20;
+    z-index: 101;
     min-width: 150px;
 }
 
