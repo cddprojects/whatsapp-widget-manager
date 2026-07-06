@@ -87,18 +87,6 @@
             toolbarSelected.hidden = selected.length === 0;
         }
 
-        if (deleteButton) {
-            deleteButton.hidden = selected.length === 0;
-        }
-
-        if (restoreButton) {
-            restoreButton.hidden = selected.length === 0;
-        }
-
-        if (permanentButton) {
-            permanentButton.hidden = selected.length === 0;
-        }
-
         if (selectAll) {
             if (selected.length === 0) {
                 selectAll.checked = false;
