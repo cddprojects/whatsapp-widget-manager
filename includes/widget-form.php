@@ -31,7 +31,7 @@ $settingsSections = [
     </div>
 <?php endif; ?>
 
-<form method="post" class="settings-form" data-widget-form>
+<form method="post" class="settings-form" data-widget-form data-allow-empty-phones="1">
     <?= csrf_field() ?>
 
     <?php if (!empty($showOwnerPicker)): ?>
@@ -114,6 +114,7 @@ $settingsSections = [
         </label>
 
         <?php
+        $allowEmptyPhones = true;
         require __DIR__ . '/phone-number-list.php';
         $destinationNumbers = widget_phone_list($widget);
         $destinationCount = count($destinationNumbers);

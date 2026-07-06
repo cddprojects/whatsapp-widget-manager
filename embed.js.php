@@ -28,6 +28,10 @@ if (!$isSystemPreview && !domain_matches_referrer($widget, $referrer)) {
     exit;
 }
 
+if (!$isSystemPreview && !widget_is_publicly_active($widget)) {
+    exit;
+}
+
 $frameId = 'ctcw-frame-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $widget['id']);
 $widgetSrc = SYSTEM_BASE_URL . '/widget.php?id=' . rawurlencode((string) $widget['id']) . '&key=' . rawurlencode((string) $widget['public_key']);
 $config = [

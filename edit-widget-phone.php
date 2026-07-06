@@ -10,9 +10,9 @@ $errors = [];
 
 if (is_post()) {
     verify_csrf();
-    $data = sanitize_phone_numbers_from_post($_POST, 'manual_numbers', $widget);
+    $data = sanitize_phone_numbers_from_post($_POST, 'manual_numbers', $widget, true);
     if ($data === null) {
-        $errors[] = t('validation.keep_one_number');
+        $errors[] = t('validation.invalid_phone_numbers');
     } else {
         update_widget_phone_fields($widgetId, $data);
         flash('success', t('flash.phone_numbers_updated'));
@@ -37,11 +37,12 @@ require __DIR__ . '/includes/header.php';
         <div class="alert alert-error"><ul><?php foreach ($errors as $error): ?><li><?= e($error) ?></li><?php endforeach; ?></ul></div>
     <?php endif; ?>
 
-    <form method="post" class="settings-form" data-client-manual-form>
+    <form method="post" class="settings-form" data-client-manual-form data-allow-empty-phones="1">
         <?= csrf_field() ?>
         <?php
         $fieldPrefix = 'manual_numbers';
         $listId = 'admin-phone-number-list';
+        $allowEmptyPhones = true;
         require __DIR__ . '/includes/phone-number-list.php';
         ?>
         <div class="form-actions">

@@ -5,10 +5,11 @@ $phoneNumbers = $phoneNumbers ?? [];
 $fieldPrefix = (string) ($fieldPrefix ?? 'widget_numbers');
 $emptyMessage = (string) ($emptyMessage ?? t('empty.no_phone_numbers'));
 $listId = (string) ($listId ?? 'phone-number-list');
+$allowEmptyPhones = !empty($allowEmptyPhones);
 $hasPhoneNumbers = $phoneNumbers !== [];
 ?>
 
-<div class="phone-numbers-card ctcw-phone-numbers-card" data-phone-numbers-card>
+<div class="phone-numbers-card ctcw-phone-numbers-card" data-phone-numbers-card<?= $allowEmptyPhones ? ' data-allow-empty-phones="1"' : '' ?>>
     <div class="panel-heading">
         <div>
             <h3><?= e(t('phone.numbers_title')) ?></h3>
@@ -37,7 +38,7 @@ $hasPhoneNumbers = $phoneNumbers !== [];
         </button>
     </div>
 
-    <p class="ctcw-phone-bulk-error" data-phone-bulk-error hidden><?= e(t('phone.min_one_required')) ?></p>
+    <p class="ctcw-phone-bulk-error" data-phone-bulk-error hidden><?= e($allowEmptyPhones ? t('phone.delete_last_confirm') : t('phone.min_one_required')) ?></p>
 
     <div
         class="phone-number-list ctcw-phone-list"

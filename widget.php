@@ -29,7 +29,7 @@ if (!$domainAllowed) {
     exit;
 }
 
-$showWidget = $domainAllowed && !empty($widget['show_global']);
+$showWidget = $domainAllowed && widget_is_publicly_active($widget);
 $isOnline = is_widget_online($widget);
 $activeNumbers = widget_phone_list($widget);
 $destinationCount = count($activeNumbers);

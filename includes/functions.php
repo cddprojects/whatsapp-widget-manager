@@ -4,6 +4,12 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/i18n.php';
 
+const WIDGET_STATUS_SETUP_REQUIRED = 'setup_required';
+const WIDGET_STATUS_ACTIVE = 'active';
+const WIDGET_STATUS_PAUSED = 'paused';
+const WIDGET_STATUS_DISABLED = 'disabled';
+const WIDGET_CHANNEL_WHATSAPP = 'whatsapp';
+
 function e(?string $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
@@ -743,11 +749,11 @@ function widget_phone_list(array $widget): array
     ]];
 }
 
-function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widget_numbers', ?array $existingWidget = null): ?array
+function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widget_numbers', ?array $existingWidget = null, bool $allowEmpty = false): ?array
 {
     $rows = $post[$fieldKey] ?? [];
     if (!is_array($rows) || $rows === []) {
-        return null;
+        return $allowEmpty ? build_empty_phone_widget_update($existingWidget ?? []) : null;
     }
 
     $numbers = [];
@@ -772,7 +778,7 @@ function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widge
 
     $numbers = remove_duplicate_phone_numbers($numbers);
     if ($numbers === []) {
-        return null;
+        return $allowEmpty ? build_empty_phone_widget_update($existingWidget ?? []) : null;
     }
 
     return build_phone_widget_update($numbers, $existingWidget ?? []);
@@ -936,6 +942,7 @@ function default_widget_data(): array
         'show_desktop' => 1,
         'show_mobile' => 1,
         'show_global' => 1,
+        'widget_status' => WIDGET_STATUS_SETUP_REQUIRED,
         'business_hours_mode' => 'always_open',
         'business_hours_json' => json_encode(default_business_hours()),
         'offline_message' => 'We are currently offline. Please leave us a message later.',
@@ -985,7 +992,10 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
 {
     $defaults = default_widget_data();
     $websiteDomain = normalize_domain((string) ($post['website_domain'] ?? ''));
-    $phoneUpdate = sanitize_phone_numbers_from_post($post, 'widget_numbers', $existingWidget);
+    $phoneUpdate = sanitize_phone_numbers_from_post($post, 'widget_numbers', $existingWidget, true);
+    if ($phoneUpdate === null) {
+        $phoneUpdate = build_empty_phone_widget_update($existingWidget ?? []);
+    }
 
     $businessRows = $post['business_hours'] ?? [];
     $businessHours = default_business_hours();
@@ -1133,12 +1143,6 @@ function validate_widget_data(array $data): array
         $errors[] = t('validation.domain_required');
     }
 
-    $primaryFullNumber = clean_phone_number((string) ($data['whatsapp_country_code'] ?? ''))
-        . clean_phone_number((string) ($data['whatsapp_number'] ?? ''));
-    if ($primaryFullNumber === '' || !validate_phone_number($primaryFullNumber)) {
-        $errors[] = t('validation.whatsapp_number_required');
-    }
-
     if ($data['custom_url'] !== '' && !filter_var($data['custom_url'], FILTER_VALIDATE_URL)) {
         $errors[] = t('validation.custom_url_invalid');
     }
@@ -1150,6 +1154,7 @@ function insert_widget(int $userId, array $data): int
 {
     $data['user_id'] = $userId;
     $data['public_key'] = generate_public_key();
+    unset($data['widget_status']);
 
     $columns = array_keys($data);
     $placeholders = array_map(static fn ($column) => ':' . $column, $columns);
@@ -1157,7 +1162,10 @@ function insert_widget(int $userId, array $data): int
     $stmt = db()->prepare($sql);
     $stmt->execute($data);
 
-    return (int) db()->lastInsertId();
+    $widgetId = (int) db()->lastInsertId();
+    refresh_widget_destination_status($widgetId);
+
+    return $widgetId;
 }
 
 function update_widget(int $widgetId, int $userId, array $data): void
@@ -1187,15 +1195,169 @@ function find_public_widget(int $widgetId, string $publicKey): ?array
     return $widget ?: null;
 }
 
+function build_empty_phone_widget_update(?array $existingWidget = null): array
+{
+    $existingWidget = $existingWidget ?? [];
+
+    return [
+        'whatsapp_country_code' => (string) ($existingWidget['whatsapp_country_code'] ?? '+60'),
+        'whatsapp_number' => '',
+        'use_random_numbers' => 0,
+        'random_numbers_json' => '[]',
+        'destination_selection_method' => 'single',
+        'round_robin_next_index' => (int) ($existingWidget['round_robin_next_index'] ?? 0),
+    ];
+}
+
+function widget_channel_types(): array
+{
+    return [WIDGET_CHANNEL_WHATSAPP];
+}
+
+function widget_has_valid_destinations(array $widget, string $channel = WIDGET_CHANNEL_WHATSAPP): bool
+{
+    if ($channel === WIDGET_CHANNEL_WHATSAPP) {
+        return count(widget_phone_list($widget)) >= 1;
+    }
+
+    return false;
+}
+
+function widget_is_admin_disabled(array $widget): bool
+{
+    return empty($widget['show_global']);
+}
+
+function widget_activation_statuses(): array
+{
+    return [
+        WIDGET_STATUS_SETUP_REQUIRED,
+        WIDGET_STATUS_ACTIVE,
+        WIDGET_STATUS_PAUSED,
+        WIDGET_STATUS_DISABLED,
+    ];
+}
+
+function normalize_widget_activation_status(string $status): string
+{
+    return in_array($status, widget_activation_statuses(), true)
+        ? $status
+        : WIDGET_STATUS_SETUP_REQUIRED;
+}
+
+function persist_widget_activation_status(int $widgetId, string $status): void
+{
+    if (!table_has_column('widgets', 'widget_status')) {
+        return;
+    }
+
+    $status = normalize_widget_activation_status($status);
+    $stmt = db()->prepare(
+        'UPDATE widgets SET widget_status = :status, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
+    );
+    $stmt->execute([
+        'status' => $status,
+        'id' => $widgetId,
+    ]);
+}
+
+function refresh_widget_destination_status(int $widgetId, ?array $widget = null): string
+{
+    $widget = $widget ?? find_widget_by_id($widgetId);
+    if ($widget === null) {
+        return WIDGET_STATUS_SETUP_REQUIRED;
+    }
+
+    if (widget_is_admin_disabled($widget)) {
+        persist_widget_activation_status($widgetId, WIDGET_STATUS_DISABLED);
+        return WIDGET_STATUS_DISABLED;
+    }
+
+    $hasDestinations = widget_has_valid_destinations($widget);
+    $current = normalize_widget_activation_status((string) ($widget['widget_status'] ?? WIDGET_STATUS_SETUP_REQUIRED));
+
+    if (!$hasDestinations) {
+        $nextStatus = in_array($current, [WIDGET_STATUS_ACTIVE, WIDGET_STATUS_PAUSED], true)
+            ? WIDGET_STATUS_PAUSED
+            : WIDGET_STATUS_SETUP_REQUIRED;
+    } else {
+        $nextStatus = WIDGET_STATUS_ACTIVE;
+    }
+
+    if ($nextStatus !== $current) {
+        persist_widget_activation_status($widgetId, $nextStatus);
+    }
+
+    return $nextStatus;
+}
+
+function widget_is_publicly_active(array $widget): bool
+{
+    if (widget_is_admin_disabled($widget)) {
+        return false;
+    }
+
+    $status = normalize_widget_activation_status((string) ($widget['widget_status'] ?? WIDGET_STATUS_SETUP_REQUIRED));
+    if ($status !== WIDGET_STATUS_ACTIVE) {
+        return false;
+    }
+
+    return widget_has_valid_destinations($widget);
+}
+
+function translate_widget_activation_status(string $status): string
+{
+    $status = normalize_widget_activation_status($status);
+    $key = 'widget_status.' . str_replace('-', '_', $status);
+    $translated = t($key);
+
+    return $translated !== $key ? $translated : $status;
+}
+
+function widget_activation_status_badge_class(string $status): string
+{
+    return match (normalize_widget_activation_status($status)) {
+        WIDGET_STATUS_ACTIVE => 'status-pill status-active',
+        WIDGET_STATUS_PAUSED => 'status-pill status-paused',
+        WIDGET_STATUS_DISABLED => 'status-pill status-disabled',
+        default => 'status-pill status-setup',
+    };
+}
+
+function render_widget_activation_status(array $widget, bool $includeHint = false): void
+{
+    $status = normalize_widget_activation_status((string) ($widget['widget_status'] ?? WIDGET_STATUS_SETUP_REQUIRED));
+    if (widget_is_admin_disabled($widget)) {
+        $status = WIDGET_STATUS_DISABLED;
+    } elseif (!widget_has_valid_destinations($widget) && $status === WIDGET_STATUS_ACTIVE) {
+        $status = refresh_widget_destination_status((int) $widget['id'], $widget);
+    }
+
+    echo '<span class="' . e(widget_activation_status_badge_class($status)) . '">'
+        . e(translate_widget_activation_status($status))
+        . '</span>';
+
+    if ($includeHint) {
+        $hintKey = 'widget_status.hint.' . str_replace('-', '_', $status);
+        $hint = t($hintKey);
+        if ($hint !== $hintKey && trim($hint) !== '') {
+            echo '<small class="widget-status-hint">' . e($hint) . '</small>';
+        }
+    }
+}
+
 function widget_status_label(array $widget): string
 {
-    if (empty($widget['show_global'])) {
-        return 'Hidden globally';
+    if (widget_is_admin_disabled($widget)) {
+        return translate_widget_activation_status(WIDGET_STATUS_DISABLED);
     }
-    if (($widget['business_hours_mode'] ?? '') === 'always_closed') {
-        return 'Offline';
+
+    $status = normalize_widget_activation_status((string) ($widget['widget_status'] ?? WIDGET_STATUS_SETUP_REQUIRED));
+    if ($status === WIDGET_STATUS_ACTIVE && ($widget['business_hours_mode'] ?? '') === 'always_closed') {
+        return t('business_hours.always_offline');
     }
-    return 'Active';
+
+    return translate_widget_activation_status($status);
 }
 
 function enabled_label($value, string $enabled = 'Enabled', string $disabled = 'Disabled'): string
@@ -1626,6 +1788,12 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
             return ['success' => false, 'message' => 'Widget not available'];
         }
 
+        if (!widget_is_publicly_active($widget)) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Widget not available'];
+        }
+
         if (!is_widget_online($widget)) {
             $pdo->rollBack();
 
@@ -1730,7 +1898,9 @@ function client_destination_status_label(array $widget): string
 function save_widget_phone_numbers(int $widgetId, array $numbers): bool
 {
     $widget = find_widget_by_id($widgetId);
-    $update = build_phone_widget_update($numbers, $widget ?? []);
+    $update = $numbers === []
+        ? build_empty_phone_widget_update($widget ?? [])
+        : build_phone_widget_update($numbers, $widget ?? []);
     if ($update === null) {
         return false;
     }
@@ -1740,9 +1910,9 @@ function save_widget_phone_numbers(int $widgetId, array $numbers): bool
     return true;
 }
 
-function sanitize_client_phone_manual_input(array $post, ?array $existingWidget = null): ?array
+function sanitize_client_phone_manual_input(array $post, ?array $existingWidget = null, bool $allowEmpty = false): ?array
 {
-    return sanitize_phone_numbers_from_post($post, 'manual_numbers', $existingWidget);
+    return sanitize_phone_numbers_from_post($post, 'manual_numbers', $existingWidget, $allowEmpty);
 }
 
 function update_widget_phone_fields(int $widgetId, array $data): void
@@ -1769,6 +1939,8 @@ function update_widget_phone_fields(int $widgetId, array $data): void
     $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
     $stmt = db()->prepare($sql);
     $stmt->execute($filtered);
+
+    refresh_widget_destination_status($widgetId);
 }
 
 function find_widget_with_owner(int $widgetId): ?array
@@ -1804,11 +1976,14 @@ function format_widget_owner_display(array $widget): string
 
 function update_widget_admin(int $widgetId, array $data): void
 {
+    unset($data['widget_status']);
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
     $data['id'] = $widgetId;
     $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
     $stmt = db()->prepare($sql);
     $stmt->execute($data);
+
+    refresh_widget_destination_status($widgetId);
 }
 
 function reassign_widget_owner(int $widgetId, int $userId): void
@@ -1827,7 +2002,7 @@ function format_whatsapp_display(array $widget): string
 {
     $numbers = widget_phone_list($widget);
     if ($numbers === []) {
-        return t('distribution.none');
+        return t('widget_status.no_destination');
     }
 
     return destination_distribution_label($widget, count($numbers));
@@ -2414,3 +2589,45 @@ function json_response(array $payload, int $status = 200): void
     exit;
 }
 
+function ensure_widget_activation_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (!database_table_exists('widgets')) {
+        return;
+    }
+
+    if (!table_has_column('widgets', 'widget_status')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN widget_status VARCHAR(30) NOT NULL DEFAULT 'setup_required' AFTER show_global"
+        );
+
+        db()->exec("UPDATE widgets SET widget_status = 'disabled' WHERE show_global = 0");
+        db()->exec(
+            "UPDATE widgets
+             SET widget_status = 'active'
+             WHERE show_global = 1
+               AND (
+                 (use_random_numbers = 1 AND random_numbers_json IS NOT NULL AND TRIM(random_numbers_json) NOT IN ('', '[]'))
+                 OR (whatsapp_number IS NOT NULL AND TRIM(whatsapp_number) <> '')
+               )"
+        );
+        db()->exec(
+            "UPDATE widgets
+             SET widget_status = 'setup_required'
+             WHERE show_global = 1
+               AND widget_status NOT IN ('active', 'disabled', 'paused')"
+        );
+    }
+}
+
+try {
+    ensure_widget_activation_schema();
+} catch (Throwable $exception) {
+    // Leave connection errors to the calling page; schema ensure runs when DB is available.
+}

@@ -180,6 +180,7 @@ function dashboard_js_i18n(): array
 {
     return [
         'phone.delete_confirm' => t('phone.delete_confirm'),
+        'phone.delete_last_confirm' => t('phone.delete_last_confirm'),
         'phone.bulk_delete_confirm' => t('phone.bulk_delete_confirm'),
         'phone.bulk_delete_title' => t('phone.bulk_delete_title'),
         'phone.bulk_delete_button' => t('phone.bulk_delete_button'),

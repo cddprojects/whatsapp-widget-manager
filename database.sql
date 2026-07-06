@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS widgets (
     show_desktop TINYINT(1) NOT NULL DEFAULT 1,
     show_mobile TINYINT(1) NOT NULL DEFAULT 1,
     show_global TINYINT(1) NOT NULL DEFAULT 1,
+    widget_status VARCHAR(30) NOT NULL DEFAULT 'setup_required',
     business_hours_mode VARCHAR(30) NOT NULL DEFAULT 'always_open',
     business_hours_json LONGTEXT NULL,
     offline_message VARCHAR(255) NOT NULL DEFAULT 'We are currently offline. Please leave us a message later.',

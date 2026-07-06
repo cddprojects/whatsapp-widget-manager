@@ -133,7 +133,24 @@
         return list ? list.closest('[data-phone-numbers-card]') : null;
     }
 
+    function phoneAllowsEmpty(card) {
+        if (!card) {
+            return false;
+        }
+
+        if (card.hasAttribute('data-allow-empty-phones')) {
+            return true;
+        }
+
+        var form = card.closest('form');
+        return !!(form && form.hasAttribute('data-allow-empty-phones'));
+    }
+
     function canRemovePhoneRows(list, removeCount) {
+        if (phoneAllowsEmpty(getPhoneCard(list))) {
+            return true;
+        }
+
         return countPhoneRows(list) - removeCount >= 1;
     }
 
@@ -162,17 +179,18 @@
         var deleteButton = card.querySelector('[data-delete-selected-phones]');
         var errorEl = card.querySelector('[data-phone-bulk-error]');
         var total = checkboxes.length;
+        var allowEmpty = phoneAllowsEmpty(card);
 
         if (countEl) {
             countEl.textContent = ctcwI18n('phone.selected_count', { count: selected.length });
         }
 
         if (deleteButton) {
-            deleteButton.disabled = selected.length === 0 || selected.length === total;
+            deleteButton.disabled = selected.length === 0 || (!allowEmpty && selected.length === total);
         }
 
         if (errorEl) {
-            errorEl.hidden = !(total > 0 && selected.length === total);
+            errorEl.hidden = allowEmpty || !(total > 0 && selected.length === total);
         }
 
         if (selectAll) {
@@ -213,8 +231,9 @@
         var selectedCheckboxes = Array.from(list.querySelectorAll('.ctcw-phone-select:checked'));
         var count = selectedCheckboxes.length;
         var total = countPhoneRows(list);
+        var allowEmpty = phoneAllowsEmpty(card);
 
-        if (count === 0 || count === total) {
+        if (count === 0 || (!allowEmpty && count === total)) {
             updateBulkDeleteUI(card);
             return;
         }
@@ -223,7 +242,9 @@
         var confirmButton = modal.querySelector('[data-phone-bulk-modal-confirm]');
 
         if (message) {
-            message.textContent = ctcwI18n('phone.bulk_delete_confirm', { count: count });
+            message.textContent = allowEmpty && count === total
+                ? ctcwI18n('phone.delete_last_confirm')
+                : ctcwI18n('phone.bulk_delete_confirm', { count: count });
         }
         if (confirmButton) {
             confirmButton.textContent = ctcwI18n('phone.bulk_delete_button', { count: count });
@@ -468,14 +489,18 @@
                 updateBulkDeleteUI(getPhoneCard(phoneList));
                 return;
             }
-            if (!window.confirm(ctcwI18n('phone.delete_confirm'))) {
+
+            var phoneCard = getPhoneCard(phoneList);
+            var confirmMessage = countPhoneRows(phoneList) === 1 && phoneAllowsEmpty(phoneCard)
+                ? ctcwI18n('phone.delete_last_confirm')
+                : ctcwI18n('phone.delete_confirm');
+            if (!window.confirm(confirmMessage)) {
                 return;
             }
             phoneRow.remove();
             renumberPhoneRows(phoneList);
             showPhoneEmptyState(phoneList);
 
-            var phoneCard = getPhoneCard(phoneList);
             if (countPhoneRows(phoneList) === 0) {
                 setPhoneBulkToolbarVisible(phoneCard, false);
             }
@@ -1025,6 +1050,10 @@
                     }
 
                     syncPhoneListCallingCodes(phoneList);
+
+                    if (form.hasAttribute('data-allow-empty-phones')) {
+                        return;
+                    }
 
                     if (!phoneList.querySelector('[data-phone-number-row]')) {
                         event.preventDefault();

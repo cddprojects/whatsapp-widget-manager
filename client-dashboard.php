@@ -41,6 +41,25 @@ require __DIR__ . '/includes/header.php';
         </div>
     </section>
 <?php else: ?>
+    <?php
+    $clientDestinationStatus = client_destination_status_label($widget);
+    $widgetActivationStatus = normalize_widget_activation_status((string) ($widget['widget_status'] ?? WIDGET_STATUS_SETUP_REQUIRED));
+    if (widget_is_admin_disabled($widget)) {
+        $widgetActivationStatus = WIDGET_STATUS_DISABLED;
+    }
+    $needsSetup = in_array($widgetActivationStatus, [WIDGET_STATUS_SETUP_REQUIRED, WIDGET_STATUS_PAUSED], true)
+        && !widget_has_valid_destinations($widget);
+    ?>
+    <?php if ($needsSetup): ?>
+        <section class="settings-card widget-setup-card">
+            <h2><?= e(t('client_setup.title')) ?></h2>
+            <p><?= e(t('client_setup.description')) ?></p>
+            <div class="form-actions">
+                <a class="btn btn-primary" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=manual"><?= e(t('client_setup.add_number')) ?></a>
+            </div>
+        </section>
+    <?php endif; ?>
+
     <section class="settings-card client-summary-card">
         <?php if (count($widgets) > 1): ?>
             <form method="get" class="widget-selector-form">
@@ -62,7 +81,7 @@ require __DIR__ . '/includes/header.php';
             <div><span class="meta-label"><?= e(t('meta.widget_name')) ?></span><strong><?= e($widget['widget_name']) ?></strong></div>
             <div><span class="meta-label"><?= e(t('meta.domain')) ?></span><strong><?= e($widget['website_domain']) ?></strong></div>
             <div><span class="meta-label"><?= e(t('meta.active_numbers')) ?></span><strong><?= format_whatsapp_display($widget) ?></strong></div>
-            <?php $clientDestinationStatus = client_destination_status_label($widget); ?>
+            <div><span class="meta-label"><?= e(t('meta.widget_status')) ?></span><?php render_widget_activation_status($widget, true); ?></div>
             <?php if ($clientDestinationStatus !== ''): ?>
                 <div><span class="meta-label"><?= e(t('meta.distribution')) ?></span><strong><?= e($clientDestinationStatus) ?></strong></div>
             <?php endif; ?>
@@ -103,7 +122,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
             </form>
         <?php else: ?>
-            <form class="settings-form client-manual-form" method="post" action="update-phone-numbers.php" data-client-manual-form>
+            <form class="settings-form client-manual-form" method="post" action="update-phone-numbers.php" data-client-manual-form data-allow-empty-phones="1">
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
 
@@ -111,6 +130,7 @@ require __DIR__ . '/includes/header.php';
                 $phoneNumbers = $activeNumbers;
                 $fieldPrefix = 'manual_numbers';
                 $listId = 'client-phone-number-list';
+                $allowEmptyPhones = true;
                 require __DIR__ . '/includes/phone-number-list.php';
                 ?>
 

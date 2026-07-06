@@ -166,6 +166,7 @@ return [
     'table.source_url' => '来源 URL',
     'table.page_title' => '页面标题',
     'table.client_owner' => '客户所有者',
+    'table.widget_status' => '小组件状态',
 
     // Status
     'status.active' => '已启用',
@@ -190,6 +191,7 @@ return [
     'meta.widget_name' => '小组件名称',
     'meta.domain' => '域名',
     'meta.active_numbers' => '已启用号码',
+    'meta.widget_status' => '小组件状态',
     'meta.distribution' => '分配方式',
     'meta.never' => '从未',
     'meta.no_client_assigned' => '未分配客户',
@@ -426,6 +428,7 @@ return [
     'phone.min_one_required' => '至少必须保留一个已启用的 WhatsApp 号码。',
     'phone.min_one_form' => '请至少保留一个已启用的 WhatsApp 号码。',
     'phone.delete_confirm' => '从列表中删除此号码？',
+    'phone.delete_last_confirm' => '将不会保留任何 WhatsApp 目的地号码。在您添加新号码之前，小组件将暂停。是否继续？',
     'phone.bulk_delete_title' => '删除所选号码？',
     'phone.bulk_delete_confirm' => '您即将删除 {count} 个电话号码。在保存更改之前，此操作无法撤销。',
     'phone.bulk_delete_button' => '删除 {count} 个号码',
@@ -515,6 +518,22 @@ return [
     'alert.url_structure_notice' => '桌面端和移动端的打开行为是分开的。如果希望小组件永不重定向当前页面，请将两者都设置为「仅在新标签页打开」。',
     'alert.settings_credentials' => '超级管理员凭据通过 .env 和 seed-superadmin.php 管理。请勿在代码库中存储明文密码。',
 
+    // Widget activation status
+    'widget_status.setup_required' => '待设置',
+    'widget_status.active' => '已激活',
+    'widget_status.paused' => '已暂停',
+    'widget_status.disabled' => '已停用',
+    'widget_status.no_destination' => '未添加 WhatsApp 号码',
+    'widget_status.hint.setup_required' => '等待客户添加目的地号码',
+    'widget_status.hint.paused' => '等待客户添加目的地号码',
+    'widget_status.hint.disabled' => '已由超级管理员停用',
+    'widget_status.hint.active' => '',
+
+    // Client setup
+    'client_setup.title' => '您的 WhatsApp 小组件等待设置',
+    'client_setup.description' => '请至少添加一个 WhatsApp 目的地号码以激活您的小组件。',
+    'client_setup.add_number' => '添加 WhatsApp 号码',
+
     // Danger zone
     'danger.widgets_legend' => '此客户的小组件应如何处理？',
     'danger.reassign_title' => '仅删除客户，小组件保留在超级管理员名下',
@@ -531,6 +550,9 @@ return [
     'flash.widget_owner_updated' => '小组件所有者已更新。',
     'flash.widget_updated' => '小组件已更新。',
     'flash.widget_created' => '已为 {name} 创建小组件。',
+    'flash.widget_created_setup_required' => '小组件创建成功。在客户添加至少一个 WhatsApp 号码之前，它将保持未激活状态。',
+    'flash.widget_active_after_number_save' => 'WhatsApp 号码已保存。您的小组件现已激活。',
+    'flash.widget_paused_no_numbers' => '没有剩余的 WhatsApp 目的地号码。在您添加新号码之前，小组件将暂停。',
     'flash.phone_numbers_updated' => '电话号码已更新。',
     'flash.client_deleted_reassign' => '客户删除成功。其小组件已重新分配给超级管理员。',
     'flash.client_deleted_all' => '客户及相关小组件已成功删除。',
@@ -566,6 +588,8 @@ return [
     'validation.whatsapp_number_required' => '请至少添加一个 WhatsApp 号码。',
     'validation.custom_url_invalid' => '自定义 URL 必须是有效的完整 URL。',
     'validation.select_client' => '请选择要分配此小组件的客户。',
+    'validation.whatsapp_number_required' => '请至少添加一个 WhatsApp 号码。',
+    'validation.invalid_phone_numbers' => '请输入至少一个有效的 WhatsApp 号码，或删除所有号码以暂停小组件。',
     'validation.keep_one_number' => '请至少保留一个已启用的 WhatsApp 号码。',
     'validation.invalid_client_reference' => '无效的客户引用。',
     'validation.delete_confirmation' => '确认文字必须完全匹配 DELETE。',
