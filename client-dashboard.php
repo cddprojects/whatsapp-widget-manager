@@ -33,6 +33,25 @@ require __DIR__ . '/includes/header.php';
     <p><?= e(t('desc.my_whatsapp_number')) ?></p>
 </section>
 
+<?php if ($widgets): ?>
+<section class="summary-grid lead-summary-grid">
+    <article class="summary-card">
+        <span class="summary-label"><?= e(t('lead.today_title')) ?></span>
+        <strong><?= (int) count_active_leads((int) $user['id'], true) ?></strong>
+        <small><?= e(t('lead.today_scope_client')) ?></small>
+    </article>
+    <article class="summary-card">
+        <span class="summary-label"><?= e(t('lead.total_active_title')) ?></span>
+        <strong><?= number_format(count_active_leads((int) $user['id'], false)) ?></strong>
+        <small><?= e(t('lead.total_scope_client')) ?></small>
+    </article>
+</section>
+
+<div class="form-actions page-inline-actions">
+    <a class="btn btn-light" href="client-leads.php"><?= e(t('nav.my_leads')) ?></a>
+</div>
+<?php endif; ?>
+
 <?php if (!$widgets): ?>
     <section class="settings-card">
         <div class="empty-state">

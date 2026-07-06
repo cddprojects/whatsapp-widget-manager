@@ -84,6 +84,8 @@ require __DIR__ . '/includes/header.php';
                         <th><?= e(t('table.email')) ?></th>
                         <th><?= e(t('table.status')) ?></th>
                         <th><?= e(t('table.total_widgets')) ?></th>
+                        <th><?= e(t('lead.today_title')) ?></th>
+                        <th><?= e(t('lead.total_active_title')) ?></th>
                         <th><?= e(t('table.last_login')) ?></th>
                         <th><?= e(t('table.created')) ?></th>
                         <th class="col-actions"><?= e(t('table.actions')) ?></th>
@@ -96,9 +98,12 @@ require __DIR__ . '/includes/header.php';
                             <td><?= e($client['email']) ?></td>
                             <td><span class="<?= e(user_status_badge_class((string) $client['status'])) ?>"><?= e(translate_user_status((string) $client['status'])) ?></span></td>
                             <td><?= (int) $client['widget_count'] ?></td>
+                            <td><?= (int) count_active_leads((int) $client['id'], true) ?></td>
+                            <td><?= number_format(count_active_leads((int) $client['id'], false)) ?></td>
                             <td><?= e(format_datetime($client['last_login_at'] ?? null)) ?></td>
                             <td><?= e(date('M j, Y', strtotime((string) $client['created_at']))) ?></td>
                             <td class="col-actions">
+                                <a class="btn btn-small btn-light" href="admin-client-leads.php?client_id=<?= (int) $client['id'] ?>"><?= e(t('button.view_leads')) ?></a>
                                 <a class="btn btn-small btn-primary" href="admin-client-detail.php?id=<?= (int) $client['id'] ?>"><?= e(t('button.manage')) ?></a>
                             </td>
                         </tr>
