@@ -668,6 +668,39 @@ function translate_deleted_by_role(?string $role): string
     };
 }
 
+function format_recycle_bin_deleted_by_label(array $lead): string
+{
+    $role = (string) ($lead['deleted_by_role'] ?? '');
+
+    if ($role === ROLE_SUPERADMIN) {
+        return t('lead.deleted_by_superadmin_label');
+    }
+
+    if ($role === ROLE_CLIENT) {
+        $clientName = trim((string) ($lead['owner_name'] ?? ''));
+        if ($clientName !== '') {
+            return t('lead.deleted_by_client_named', ['name' => $clientName]);
+        }
+
+        return t('lead.deleted_by_client_user');
+    }
+
+    return t('lead.deleted_by_unknown');
+}
+
+function format_recycle_bin_expires_label(int $days): string
+{
+    if ($days <= 0) {
+        return t('lead.expires_today');
+    }
+
+    if ($days === 1) {
+        return t('lead.expires_in_one');
+    }
+
+    return t('lead.expires_in_other', ['count' => (string) $days]);
+}
+
 function format_retention_days_label(int $days): string
 {
     return $days === 1
