@@ -279,12 +279,72 @@
             });
     }
 
+    function resolveDestination() {
+        if (!config.destinationResolveUrl || !config.publicKey) {
+            return Promise.reject(new Error('Destination resolver unavailable'));
+        }
+
+        var leadPage = getLeadPageContext();
+
+        return fetch(config.destinationResolveUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                widget_id: config.widgetId,
+                public_key: config.publicKey,
+                source_url: leadPage.url
+            })
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data || !data.success || !data.full_number) {
+                    throw new Error(data && data.message ? data.message : 'Unable to resolve destination');
+                }
+
+                return cleanDigits(data.full_number);
+            });
+    }
+
+    function buildUrlWithPhone(phone) {
+        var message = buildMessage();
+        var encodedMessage = encodeURIComponent(message);
+        var structure = isMobile() ? config.mobileUrlStructure : config.desktopUrlStructure;
+
+        if (structure === 'web_whatsapp') {
+            return 'https://web.whatsapp.com/send?phone=' + phone + '&text=' + encodedMessage;
+        }
+
+        if (structure === 'whatsapp_app') {
+            return 'whatsapp://send?phone=' + phone + '&text=' + encodedMessage;
+        }
+
+        if (structure === 'custom' && config.customUrl) {
+            var hasMessagePlaceholder = String(config.customUrl).indexOf('{message}') !== -1;
+            var custom = String(config.customUrl)
+                .replaceAll('{phone}', phone)
+                .replaceAll('{message}', encodedMessage);
+            return hasMessagePlaceholder ? custom : appendTextParam(custom, encodedMessage);
+        }
+
+        return 'https://wa.me/' + phone + '?text=' + encodedMessage;
+    }
+
+    function redirectWithResolvedDestination() {
+        return resolveDestination()
+            .then(function (phone) {
+                redirectToWhatsapp(buildUrlWithPhone(phone));
+            });
+    }
+
     function handlePhoneCaptureSubmit(submitButton) {
         if (!config.online) {
             return;
         }
 
-        var url = buildUrl();
         var phone = phoneInput ? phoneInput.value.trim() : '';
         var forceMode = isForcePhoneCapture();
         var invalidMessage = forceMode
@@ -304,7 +364,9 @@
 
         if (phone === '' || !isValidPhone(phone)) {
             closeGreetingDialog();
-            redirectToWhatsapp(url);
+            redirectWithResolvedDestination().catch(function () {
+                showPhoneError('We could not connect you to WhatsApp. Please try again.');
+            });
             return;
         }
 
@@ -316,7 +378,9 @@
                 return;
             }
             closeGreetingDialog();
-            redirectToWhatsapp(url);
+            redirectWithResolvedDestination().catch(function () {
+                showPhoneError('We could not connect you to WhatsApp. Please try again.');
+            });
             return;
         }
 
@@ -329,12 +393,13 @@
             closeGreetingDialog();
         }
 
-        saveLead(phone, url)
+        saveLead(phone, '')
             .then(function () {
                 if (forceMode && greetingSuccess) {
                     greetingSuccess.hidden = false;
                 }
-                redirectToWhatsapp(url);
+
+                return redirectWithResolvedDestination();
             })
             .catch(function () {
                 if (forceMode) {
@@ -344,22 +409,11 @@
                     scheduleSizeReports();
                     return;
                 }
-                redirectToWhatsapp(url);
-            });
-    }
 
-    function chooseNumber() {
-        if (config.useRandomNumbers && Array.isArray(config.randomNumbers) && config.randomNumbers.length) {
-            var validNumbers = config.randomNumbers.filter(function (item) {
-                return cleanDigits(item.number).length >= 7;
+                redirectWithResolvedDestination().catch(function () {
+                    showPhoneError('We could not connect you to WhatsApp. Please try again.');
+                });
             });
-            if (validNumbers.length) {
-                var selected = validNumbers[Math.floor(Math.random() * validNumbers.length)];
-                return cleanDigits(selected.country_code) + cleanDigits(selected.number);
-            }
-        }
-
-        return cleanDigits(config.countryCode) + cleanDigits(config.number);
     }
 
     function pageData() {
@@ -385,31 +439,6 @@
     function appendTextParam(url, encodedMessage) {
         var joiner = url.indexOf('?') === -1 ? '?' : '&';
         return url + joiner + 'text=' + encodedMessage;
-    }
-
-    function buildUrl() {
-        var phone = chooseNumber();
-        var message = buildMessage();
-        var encodedMessage = encodeURIComponent(message);
-        var structure = isMobile() ? config.mobileUrlStructure : config.desktopUrlStructure;
-
-        if (structure === 'web_whatsapp') {
-            return 'https://web.whatsapp.com/send?phone=' + phone + '&text=' + encodedMessage;
-        }
-
-        if (structure === 'whatsapp_app') {
-            return 'whatsapp://send?phone=' + phone + '&text=' + encodedMessage;
-        }
-
-        if (structure === 'custom' && config.customUrl) {
-            var hasMessagePlaceholder = String(config.customUrl).indexOf('{message}') !== -1;
-            var custom = String(config.customUrl)
-                .replaceAll('{phone}', phone)
-                .replaceAll('{message}', encodedMessage);
-            return hasMessagePlaceholder ? custom : appendTextParam(custom, encodedMessage);
-        }
-
-        return 'https://wa.me/' + phone + '?text=' + encodedMessage;
     }
 
     function openUrl(url) {
@@ -494,7 +523,10 @@
             return;
         }
 
-        openUrl(buildUrl());
+        redirectWithResolvedDestination().catch(function () {
+            currentState = isIconOnlyStyle() ? 'icon' : 'button';
+            sendActualWidgetSize();
+        });
     }
 
     if (config.greetingEnabled && greeting) {

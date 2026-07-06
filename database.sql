@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS widgets (
     whatsapp_number VARCHAR(32) NOT NULL,
     use_random_numbers TINYINT(1) NOT NULL DEFAULT 0,
     random_numbers_json LONGTEXT NULL,
+    destination_selection_method VARCHAR(30) NOT NULL DEFAULT 'random',
+    round_robin_next_index INT UNSIGNED NOT NULL DEFAULT 0,
     prefilled_message TEXT NULL,
     call_to_action VARCHAR(120) NOT NULL DEFAULT 'WhatsApp us',
     desktop_style VARCHAR(40) NOT NULL DEFAULT 'style-1',

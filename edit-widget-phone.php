@@ -10,7 +10,7 @@ $errors = [];
 
 if (is_post()) {
     verify_csrf();
-    $data = sanitize_phone_numbers_from_post($_POST, 'manual_numbers');
+    $data = sanitize_phone_numbers_from_post($_POST, 'manual_numbers', $widget);
     if ($data === null) {
         $errors[] = t('validation.keep_one_number');
     } else {

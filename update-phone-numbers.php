@@ -17,7 +17,7 @@ if (!$widget) {
     exit(t('error.access_denied'));
 }
 
-$data = sanitize_client_phone_manual_input($_POST);
+$data = sanitize_client_phone_manual_input($_POST, $widget);
 if ($data === null) {
     flash('error', t('validation.keep_one_number'));
     redirect('client-dashboard.php?widget_id=' . $widgetId . '&tab=manual');

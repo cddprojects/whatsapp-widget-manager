@@ -62,6 +62,10 @@ require __DIR__ . '/includes/header.php';
             <div><span class="meta-label"><?= e(t('meta.widget_name')) ?></span><strong><?= e($widget['widget_name']) ?></strong></div>
             <div><span class="meta-label"><?= e(t('meta.domain')) ?></span><strong><?= e($widget['website_domain']) ?></strong></div>
             <div><span class="meta-label"><?= e(t('meta.active_numbers')) ?></span><strong><?= format_whatsapp_display($widget) ?></strong></div>
+            <?php $clientDestinationStatus = client_destination_status_label($widget); ?>
+            <?php if ($clientDestinationStatus !== ''): ?>
+                <div><span class="meta-label"><?= e(t('meta.distribution')) ?></span><strong><?= e($clientDestinationStatus) ?></strong></div>
+            <?php endif; ?>
         </div>
     </section>
 

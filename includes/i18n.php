@@ -201,6 +201,8 @@ function dashboard_js_i18n(): array
         'preview.phone_required' => t('preview.phone_required'),
         'preview.default_cta' => t('preview.default_cta'),
         'preview.default_offline' => t('preview.default_offline'),
+        'distribution.js_summary_round_robin' => t('distribution.js_summary_round_robin'),
+        'distribution.js_summary_random' => t('distribution.js_summary_random'),
     ];
 }
 

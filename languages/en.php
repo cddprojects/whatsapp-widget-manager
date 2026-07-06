@@ -190,6 +190,7 @@ return [
     'meta.widget_name' => 'Widget name',
     'meta.domain' => 'Domain',
     'meta.active_numbers' => 'Active numbers',
+    'meta.distribution' => 'Distribution',
     'meta.never' => 'Never',
     'meta.no_client_assigned' => 'No client assigned',
 
@@ -417,7 +418,7 @@ return [
 
     // Phone numbers
     'phone.numbers_title' => 'Phone numbers',
-    'phone.numbers_description' => 'Add one or more WhatsApp numbers. If more than one number is added, the widget will rotate numbers randomly on each click.',
+    'phone.numbers_description' => 'Add one or more WhatsApp numbers. When more than one number is added, choose how visitors are routed using Number distribution.',
     'phone.select_all' => 'Select all',
     'phone.select_all_aria' => 'Select all phone numbers',
     'phone.selected_count' => '{count} selected',
@@ -464,10 +465,29 @@ return [
     'widget_destinations.none' => 'No destinations',
     'widget_destinations.setup_required' => 'Setup required',
     'widget_destinations.one' => '1 number',
+    'widget_destinations.round_robin' => '{count} numbers · Round robin',
+    'widget_destinations.random' => '{count} numbers · Random',
+    'widget_destinations.round_robin_tooltip' => '{count} active WhatsApp destination numbers. Visitors are sent to the next number in sequence.',
+    'widget_destinations.random_tooltip' => '{count} active WhatsApp destination numbers. Visitors are sent to one at random.',
     'widget_destinations.rotating' => '{count} numbers · Rotating',
     'widget_destinations.multiple' => '{count} numbers',
     'widget_destinations.rotating_tooltip' => '{count} active WhatsApp destination numbers. Visitors are sent to one at random.',
     'widget_destinations.multiple_tooltip' => '{count} active WhatsApp destination numbers.',
+
+    'distribution.label' => 'Number distribution',
+    'distribution.option_round_robin' => 'Round robin',
+    'distribution.option_random' => 'Random',
+    'distribution.help_round_robin' => 'Send each new widget interaction to the next active number in sequence for a more even distribution across all visitors.',
+    'distribution.help_random' => 'Select one active number at random for each widget interaction.',
+    'distribution.one_number' => '1 active number',
+    'distribution.none' => 'No active numbers',
+    'distribution.summary_round_robin' => '{count} active numbers · Round robin distribution',
+    'distribution.summary_random' => '{count} active numbers · Random distribution',
+    'distribution.summary_multiple' => '{count} active numbers',
+    'distribution.client_round_robin' => '{count} active numbers · Round robin distribution',
+    'distribution.client_random' => '{count} active numbers · Random distribution',
+    'distribution.js_summary_round_robin' => '{count} active numbers · Round robin distribution',
+    'distribution.js_summary_random' => '{count} active numbers · Random distribution',
 
     // Password
     'password.weak' => 'Weak',
