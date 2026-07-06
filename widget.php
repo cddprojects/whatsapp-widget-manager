@@ -31,20 +31,18 @@ if (!$domainAllowed) {
 
 $showWidget = $domainAllowed && !empty($widget['show_global']);
 $isOnline = is_widget_online($widget);
-$randomNumbers = json_decode((string) ($widget['random_numbers_json'] ?? '[]'), true);
-if (!is_array($randomNumbers)) {
-    $randomNumbers = [];
-}
+$activeNumbers = widget_phone_list($widget);
+$destinationCount = count($activeNumbers);
+$destinationMethod = effective_destination_selection_method($widget, $destinationCount);
 
 $widgetConfig = [
     'widgetId' => (int) $widget['id'],
     'initialMode' => in_array((string) ($_GET['mode'] ?? ''), ['desktop', 'mobile'], true) ? (string) $_GET['mode'] : '',
     'widgetName' => (string) $widget['widget_name'],
     'site' => (string) $widget['website_domain'],
-    'countryCode' => (string) $widget['whatsapp_country_code'],
-    'number' => (string) $widget['whatsapp_number'],
-    'useRandomNumbers' => !empty($widget['use_random_numbers']),
-    'randomNumbers' => $randomNumbers,
+    'destinationCount' => $destinationCount,
+    'destinationSelectionMethod' => $destinationMethod,
+    'destinationResolveUrl' => SYSTEM_BASE_URL . '/resolve-widget-destination.php',
     'prefilledMessage' => (string) $widget['prefilled_message'],
     'callToAction' => (string) $widget['call_to_action'],
     'desktopOpenLinkType' => (string) $widget['desktop_open_link_type'],

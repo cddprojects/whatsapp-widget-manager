@@ -190,6 +190,7 @@ return [
     'meta.widget_name' => '小组件名称',
     'meta.domain' => '域名',
     'meta.active_numbers' => '已启用号码',
+    'meta.distribution' => '分配方式',
     'meta.never' => '从未',
     'meta.no_client_assigned' => '未分配客户',
 
@@ -417,7 +418,7 @@ return [
 
     // Phone numbers
     'phone.numbers_title' => '电话号码',
-    'phone.numbers_description' => '添加一个或多个 WhatsApp 号码。如果添加了多个号码，小组件将在每次点击时随机轮换号码。',
+    'phone.numbers_description' => '添加一个或多个 WhatsApp 号码。当添加了多个号码时，请使用“号码分配”设置访客的路由方式。',
     'phone.select_all' => '全选',
     'phone.select_all_aria' => '全选电话号码',
     'phone.selected_count' => '已选 {count} 项',
@@ -464,10 +465,29 @@ return [
     'widget_destinations.none' => '无目的地',
     'widget_destinations.setup_required' => '需要设置',
     'widget_destinations.one' => '1 个号码',
+    'widget_destinations.round_robin' => '{count} 个号码 · 轮询',
+    'widget_destinations.random' => '{count} 个号码 · 随机',
+    'widget_destinations.round_robin_tooltip' => '{count} 个有效的 WhatsApp 目的地号码。访客将按顺序分配到下一个号码。',
+    'widget_destinations.random_tooltip' => '{count} 个有效的 WhatsApp 目的地号码。访客将随机分配其中一个。',
     'widget_destinations.rotating' => '{count} 个号码 · 轮换',
     'widget_destinations.multiple' => '{count} 个号码',
     'widget_destinations.rotating_tooltip' => '{count} 个有效的 WhatsApp 目的地号码。访客将随机分配其中一个。',
     'widget_destinations.multiple_tooltip' => '{count} 个有效的 WhatsApp 目的地号码。',
+
+    'distribution.label' => '号码分配',
+    'distribution.option_round_robin' => '轮询',
+    'distribution.option_random' => '随机',
+    'distribution.help_round_robin' => '每次新的访客互动按顺序发送到下一个有效号码，以便在所有访客之间更均匀地分配。',
+    'distribution.help_random' => '每次访客互动随机选择一个有效号码。',
+    'distribution.one_number' => '1 个有效号码',
+    'distribution.none' => '无有效号码',
+    'distribution.summary_round_robin' => '{count} 个有效号码 · 轮询分配',
+    'distribution.summary_random' => '{count} 个有效号码 · 随机分配',
+    'distribution.summary_multiple' => '{count} 个有效号码',
+    'distribution.client_round_robin' => '{count} 个有效号码 · 轮询分配',
+    'distribution.client_random' => '{count} 个有效号码 · 随机分配',
+    'distribution.js_summary_round_robin' => '{count} 个有效号码 · 轮询分配',
+    'distribution.js_summary_random' => '{count} 个有效号码 · 随机分配',
 
     // Password
     'password.weak' => '弱',

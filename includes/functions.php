@@ -743,7 +743,7 @@ function widget_phone_list(array $widget): array
     ]];
 }
 
-function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widget_numbers'): ?array
+function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widget_numbers', ?array $existingWidget = null): ?array
 {
     $rows = $post[$fieldKey] ?? [];
     if (!is_array($rows) || $rows === []) {
@@ -775,7 +775,7 @@ function sanitize_phone_numbers_from_post(array $post, string $fieldKey = 'widge
         return null;
     }
 
-    return build_phone_widget_update($numbers);
+    return build_phone_widget_update($numbers, $existingWidget ?? []);
 }
 
 function get_widget_active_numbers(array $widget): array
@@ -911,6 +911,8 @@ function default_widget_data(): array
         'whatsapp_number' => '',
         'use_random_numbers' => 0,
         'random_numbers_json' => '[]',
+        'destination_selection_method' => 'round_robin',
+        'round_robin_next_index' => 0,
         'prefilled_message' => "Hello {site}\nLike to know more information about {title}, {url}",
         'call_to_action' => 'WhatsApp us',
         'desktop_style' => 'style-1',
@@ -979,11 +981,11 @@ function post_checkbox(string $name): int
     return isset($_POST[$name]) ? 1 : 0;
 }
 
-function sanitize_widget_input(array $post): array
+function sanitize_widget_input(array $post, ?array $existingWidget = null): array
 {
     $defaults = default_widget_data();
     $websiteDomain = normalize_domain((string) ($post['website_domain'] ?? ''));
-    $phoneUpdate = sanitize_phone_numbers_from_post($post, 'widget_numbers');
+    $phoneUpdate = sanitize_phone_numbers_from_post($post, 'widget_numbers', $existingWidget);
 
     $businessRows = $post['business_hours'] ?? [];
     $businessHours = default_business_hours();
@@ -1099,6 +1101,20 @@ function sanitize_widget_input(array $post): array
         $data['mobile_vertical_position_value'] = $data['desktop_vertical_position_value'];
         $data['mobile_horizontal_position_type'] = $data['desktop_horizontal_position_type'];
         $data['mobile_horizontal_position_value'] = $data['desktop_horizontal_position_value'];
+    }
+
+    $phoneNumbers = widget_phone_list($data);
+    $phoneCount = count($phoneNumbers);
+    $requestedMethod = enum_value(
+        (string) ($post['destination_selection_method'] ?? ''),
+        ['random', 'round_robin'],
+        effective_destination_selection_method($data, $phoneCount)
+    );
+    $destinationSync = sync_destination_selection_for_phone_count($data, $phoneCount, $phoneCount > 1 ? $requestedMethod : null);
+    $data['destination_selection_method'] = $destinationSync['destination_selection_method'];
+    $data['round_robin_next_index'] = $destinationSync['round_robin_next_index'];
+    if ($phoneCount > 1) {
+        $data['use_random_numbers'] = 1;
     }
 
     return $data;
@@ -1424,19 +1440,28 @@ function parse_phone_upload(string $filePath): array
     return ['numbers' => $numbers, 'stats' => $stats];
 }
 
-function build_phone_widget_update(array $numbers): ?array
+function build_phone_widget_update(array $numbers, ?array $existingWidget = null, ?string $requestedMethod = null): ?array
 {
     if ($numbers === []) {
         return null;
     }
 
+    $destinationSync = sync_destination_selection_for_phone_count(
+        $existingWidget ?? [],
+        count($numbers),
+        $requestedMethod
+    );
+
     if (count($numbers) === 1) {
         $number = $numbers[0];
+
         return [
             'whatsapp_country_code' => $number['country_code'],
             'whatsapp_number' => $number['number'],
             'use_random_numbers' => 0,
             'random_numbers_json' => '[]',
+            'destination_selection_method' => 'single',
+            'round_robin_next_index' => 0,
         ];
     }
 
@@ -1449,12 +1474,263 @@ function build_phone_widget_update(array $numbers): ?array
         'whatsapp_number' => $numbers[0]['number'],
         'use_random_numbers' => 1,
         'random_numbers_json' => json_encode(array_values($payload)),
+        'destination_selection_method' => $destinationSync['destination_selection_method'],
+        'round_robin_next_index' => $destinationSync['round_robin_next_index'],
     ];
+}
+
+function destination_selection_method_options(): array
+{
+    return ['single', 'random', 'round_robin'];
+}
+
+function effective_destination_selection_method(array $widget, ?int $destinationCount = null): string
+{
+    $count = $destinationCount ?? count(widget_phone_list($widget));
+    if ($count <= 0) {
+        return 'single';
+    }
+    if ($count === 1) {
+        return 'single';
+    }
+
+    $method = (string) ($widget['destination_selection_method'] ?? '');
+    if (in_array($method, ['random', 'round_robin'], true)) {
+        return $method;
+    }
+
+    if (!empty($widget['use_random_numbers'])) {
+        return 'random';
+    }
+
+    return 'round_robin';
+}
+
+function sync_destination_selection_for_phone_count(array $widget, int $destinationCount, ?string $requestedMethod = null): array
+{
+    if ($destinationCount <= 1) {
+        return [
+            'destination_selection_method' => 'single',
+            'round_robin_next_index' => 0,
+        ];
+    }
+
+    $method = null;
+    if ($requestedMethod !== null && in_array($requestedMethod, ['random', 'round_robin'], true)) {
+        $method = $requestedMethod;
+    } else {
+        $existingMethod = (string) ($widget['destination_selection_method'] ?? '');
+        if (in_array($existingMethod, ['random', 'round_robin'], true)) {
+            $method = $existingMethod;
+        } elseif (!empty($widget['use_random_numbers'])) {
+            $method = 'random';
+        } else {
+            $method = 'round_robin';
+        }
+    }
+
+    $nextIndex = (int) ($widget['round_robin_next_index'] ?? 0);
+    if ($destinationCount > 0) {
+        $nextIndex = $nextIndex % $destinationCount;
+    } else {
+        $nextIndex = 0;
+    }
+
+    return [
+        'destination_selection_method' => $method,
+        'round_robin_next_index' => $nextIndex,
+    ];
+}
+
+function find_widget_by_id(int $widgetId): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM widgets WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $widgetId]);
+    $widget = $stmt->fetch();
+
+    return $widget ?: null;
+}
+
+function normalize_widget_destination_state(int $widgetId, ?string $requestedMethod = null): void
+{
+    $widget = find_widget_by_id($widgetId);
+    if (!$widget) {
+        return;
+    }
+
+    $numbers = widget_phone_list($widget);
+    $sync = sync_destination_selection_for_phone_count($widget, count($numbers), $requestedMethod);
+    $phoneUpdate = build_phone_widget_update($numbers, $widget, $requestedMethod);
+    if ($phoneUpdate === null) {
+        return;
+    }
+
+    $update = array_merge($phoneUpdate, $sync);
+    if (count($numbers) > 1) {
+        $update['use_random_numbers'] = 1;
+    }
+
+    $allowed = [
+        'whatsapp_country_code' => true,
+        'whatsapp_number' => true,
+        'use_random_numbers' => true,
+        'random_numbers_json' => true,
+        'destination_selection_method' => true,
+        'round_robin_next_index' => true,
+    ];
+    $filtered = array_intersect_key($update, $allowed);
+    if ($filtered === []) {
+        return;
+    }
+
+    $assignments = [];
+    foreach (array_keys($filtered) as $column) {
+        $assignments[] = $column . ' = :' . $column;
+    }
+
+    $filtered['id'] = $widgetId;
+    $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($filtered);
+}
+
+function resolve_widget_destination(int $widgetId, string $publicKey, ?string $referrer = null): array
+{
+    $pdo = db();
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare('SELECT * FROM widgets WHERE id = :id AND public_key = :public_key LIMIT 1 FOR UPDATE');
+        $stmt->execute([
+            'id' => $widgetId,
+            'public_key' => $publicKey,
+        ]);
+        $widget = $stmt->fetch();
+
+        if (!$widget) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Widget not found'];
+        }
+
+        if (!domain_matches_referrer($widget, $referrer !== '' ? $referrer : null)) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Domain not allowed'];
+        }
+
+        if (empty($widget['show_global'])) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Widget not available'];
+        }
+
+        if (!is_widget_online($widget)) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Widget offline'];
+        }
+
+        $numbers = widget_phone_list($widget);
+        if ($numbers === []) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'No active destination'];
+        }
+
+        $method = effective_destination_selection_method($widget, count($numbers));
+
+        if ($method === 'single' || count($numbers) === 1) {
+            $selected = $numbers[0];
+        } elseif ($method === 'round_robin') {
+            $count = count($numbers);
+            $currentIndex = (int) ($widget['round_robin_next_index'] ?? 0);
+            $safeIndex = $count > 0 ? ($currentIndex % $count) : 0;
+            $selected = $numbers[$safeIndex];
+            $nextIndex = ($safeIndex + 1) % $count;
+
+            $updateStmt = $pdo->prepare(
+                'UPDATE widgets SET round_robin_next_index = :round_robin_next_index, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
+            );
+            $updateStmt->execute([
+                'round_robin_next_index' => $nextIndex,
+                'id' => $widgetId,
+            ]);
+        } else {
+            $selected = $numbers[array_rand($numbers)];
+        }
+
+        $fullNumber = clean_phone_number((string) ($selected['full_number'] ?? ''));
+        if ($fullNumber === '') {
+            $fullNumber = clean_phone_number((string) ($selected['country_code'] ?? ''))
+                . clean_phone_number((string) ($selected['number'] ?? ''));
+        }
+
+        if ($fullNumber === '' || !validate_phone_number($fullNumber)) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'No active destination'];
+        }
+
+        $pdo->commit();
+
+        return [
+            'success' => true,
+            'country_code' => (string) ($selected['country_code'] ?? ''),
+            'number' => (string) ($selected['number'] ?? ''),
+            'full_number' => $fullNumber,
+            'selection_method' => $method,
+        ];
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        return ['success' => false, 'message' => 'Unable to resolve destination'];
+    }
+}
+
+function destination_distribution_label(array $widget, ?int $destinationCount = null): string
+{
+    $count = $destinationCount ?? count(widget_phone_list($widget));
+    if ($count === 0) {
+        return t('distribution.none');
+    }
+    if ($count === 1) {
+        return t('distribution.one_number');
+    }
+
+    $method = effective_destination_selection_method($widget, $count);
+    if ($method === 'round_robin') {
+        return t('distribution.summary_round_robin', ['count' => (string) $count]);
+    }
+    if ($method === 'random') {
+        return t('distribution.summary_random', ['count' => (string) $count]);
+    }
+
+    return t('distribution.summary_multiple', ['count' => (string) $count]);
+}
+
+function client_destination_status_label(array $widget): string
+{
+    $count = count(widget_phone_list($widget));
+    if ($count <= 1) {
+        return '';
+    }
+
+    $method = effective_destination_selection_method($widget, $count);
+    if ($method === 'round_robin') {
+        return t('distribution.client_round_robin', ['count' => (string) $count]);
+    }
+
+    return t('distribution.client_random', ['count' => (string) $count]);
 }
 
 function save_widget_phone_numbers(int $widgetId, array $numbers): bool
 {
-    $update = build_phone_widget_update($numbers);
+    $widget = find_widget_by_id($widgetId);
+    $update = build_phone_widget_update($numbers, $widget ?? []);
     if ($update === null) {
         return false;
     }
@@ -1464,9 +1740,9 @@ function save_widget_phone_numbers(int $widgetId, array $numbers): bool
     return true;
 }
 
-function sanitize_client_phone_manual_input(array $post): ?array
+function sanitize_client_phone_manual_input(array $post, ?array $existingWidget = null): ?array
 {
-    return sanitize_phone_numbers_from_post($post, 'manual_numbers');
+    return sanitize_phone_numbers_from_post($post, 'manual_numbers', $existingWidget);
 }
 
 function update_widget_phone_fields(int $widgetId, array $data): void
@@ -1476,6 +1752,8 @@ function update_widget_phone_fields(int $widgetId, array $data): void
         'whatsapp_number' => true,
         'use_random_numbers' => true,
         'random_numbers_json' => true,
+        'destination_selection_method' => true,
+        'round_robin_next_index' => true,
     ];
     $filtered = array_intersect_key($data, $allowed);
     if ($filtered === []) {
@@ -1549,37 +1827,23 @@ function format_whatsapp_display(array $widget): string
 {
     $numbers = widget_phone_list($widget);
     if ($numbers === []) {
-        return 'No number set';
+        return t('distribution.none');
     }
 
-    if (count($numbers) > 1) {
-        return count($numbers) . ' rotating numbers';
-    }
-
-    $number = $numbers[0];
-
-    return e((string) $number['country_code']) . ' ' . e((string) $number['number']);
+    return destination_distribution_label($widget, count($numbers));
 }
 
 function widget_destination_summary(array $widget): array
 {
     $numbers = widget_phone_list($widget);
     $destinationCount = count($numbers);
-    $isRotating = !empty($widget['use_random_numbers']) && $destinationCount > 1;
+    $method = effective_destination_selection_method($widget, $destinationCount);
 
     if ($destinationCount === 0) {
         return [
             'summary' => t('widget_destinations.none'),
             'state' => 'setup_required',
             'tooltip' => '',
-        ];
-    }
-
-    if ($isRotating) {
-        return [
-            'summary' => t('widget_destinations.rotating', ['count' => (string) $destinationCount]),
-            'state' => 'active',
-            'tooltip' => t('widget_destinations.rotating_tooltip', ['count' => (string) $destinationCount]),
         ];
     }
 
@@ -1594,10 +1858,18 @@ function widget_destination_summary(array $widget): array
         ];
     }
 
+    if ($method === 'round_robin') {
+        return [
+            'summary' => t('widget_destinations.round_robin', ['count' => (string) $destinationCount]),
+            'state' => 'active',
+            'tooltip' => t('widget_destinations.round_robin_tooltip', ['count' => (string) $destinationCount]),
+        ];
+    }
+
     return [
-        'summary' => t('widget_destinations.multiple', ['count' => (string) $destinationCount]),
+        'summary' => t('widget_destinations.random', ['count' => (string) $destinationCount]),
         'state' => 'active',
-        'tooltip' => t('widget_destinations.multiple_tooltip', ['count' => (string) $destinationCount]),
+        'tooltip' => t('widget_destinations.random_tooltip', ['count' => (string) $destinationCount]),
     ];
 }
 

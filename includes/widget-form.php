@@ -115,7 +115,23 @@ $settingsSections = [
 
         <?php
         require __DIR__ . '/phone-number-list.php';
+        $destinationNumbers = widget_phone_list($widget);
+        $destinationCount = count($destinationNumbers);
+        $destinationMethod = effective_destination_selection_method($widget, $destinationCount);
         ?>
+        <div class="ctcw-destination-distribution" data-destination-distribution-panel<?= $destinationCount < 2 ? ' hidden' : '' ?>>
+            <label>
+                <span><?= e(t('distribution.label')) ?></span>
+                <select name="destination_selection_method" data-destination-selection-method>
+                    <option value="round_robin"<?= selected($destinationMethod, 'round_robin') ?>><?= e(t('distribution.option_round_robin')) ?></option>
+                    <option value="random"<?= selected($destinationMethod, 'random') ?>><?= e(t('distribution.option_random')) ?></option>
+                </select>
+            </label>
+            <p class="helper-text" data-destination-method-help="round_robin"<?= $destinationMethod === 'round_robin' ? '' : ' hidden' ?>><?= e(t('distribution.help_round_robin')) ?></p>
+            <p class="helper-text" data-destination-method-help="random"<?= $destinationMethod === 'random' ? '' : ' hidden' ?>><?= e(t('distribution.help_random')) ?></p>
+            <p class="ctcw-destination-summary" data-destination-summary-text><?= e(destination_distribution_label($widget, $destinationCount)) ?></p>
+        </div>
+        <p class="ctcw-destination-single-summary" data-destination-single-summary<?= $destinationCount === 1 ? '' : ' hidden' ?>><?= e(t('distribution.one_number')) ?></p>
     </section>
 
     <section class="settings-card" data-settings-panel="prefilled-message">

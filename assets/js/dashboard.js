@@ -269,6 +269,7 @@
 
         updateBulkDeleteUI(card);
         closePhoneBulkModal(card);
+        updateDestinationDistributionUi(document);
     }
 
     function initPhoneBulkDelete(card) {
@@ -396,6 +397,7 @@
         var card = getPhoneCard(list);
         setPhoneBulkToolbarVisible(card, true);
         updateBulkDeleteUI(card);
+        updateDestinationDistributionUi(document);
     }
 
     function showSettingsPanel(sectionId, updateHash) {
@@ -478,6 +480,7 @@
                 setPhoneBulkToolbarVisible(phoneCard, false);
             }
             updateBulkDeleteUI(phoneCard);
+            updateDestinationDistributionUi(document);
             return;
         }
 
@@ -918,6 +921,92 @@
         });
     }
 
+    function countValidPhoneRows(list) {
+        if (!list) {
+            return 0;
+        }
+
+        var count = 0;
+        list.querySelectorAll('[data-phone-number-row]').forEach(function (row) {
+            var phoneInput = row.querySelector('[data-row-phone]');
+            var digits = String(phoneInput && phoneInput.value ? phoneInput.value : '').replace(/\D/g, '');
+            if (digits.length >= 7) {
+                count += 1;
+            }
+        });
+
+        return count;
+    }
+
+    function updateDestinationDistributionUi(scope) {
+        var root = scope && scope.querySelector ? scope : document;
+        var panel = root.querySelector('[data-destination-distribution-panel]');
+        var singleSummary = root.querySelector('[data-destination-single-summary]');
+        var summaryText = root.querySelector('[data-destination-summary-text]');
+        var methodSelect = root.querySelector('[data-destination-selection-method]');
+        var card = root.querySelector('[data-phone-numbers-card]');
+        var list = card ? card.querySelector('[data-phone-number-list]') : root.querySelector('[data-phone-number-list]');
+        var count = countValidPhoneRows(list);
+
+        if (panel) {
+            panel.hidden = count < 2;
+        }
+
+        if (singleSummary) {
+            singleSummary.hidden = count !== 1;
+        }
+
+        if (methodSelect) {
+            methodSelect.disabled = count < 2;
+        }
+
+        root.querySelectorAll('[data-destination-method-help]').forEach(function (help) {
+            var method = help.getAttribute('data-destination-method-help');
+            help.hidden = !methodSelect || methodSelect.value !== method || count < 2;
+        });
+
+        if (summaryText && methodSelect && count >= 2) {
+            if (methodSelect.value === 'random') {
+                summaryText.textContent = ctcwI18n('distribution.js_summary_random', { count: String(count) });
+            } else {
+                summaryText.textContent = ctcwI18n('distribution.js_summary_round_robin', { count: String(count) });
+            }
+        }
+    }
+
+    function initDestinationDistributionUi() {
+        var form = document.querySelector('[data-widget-form]');
+        if (!form) {
+            return;
+        }
+
+        updateDestinationDistributionUi(form);
+
+        form.addEventListener('input', function (event) {
+            if (event.target.closest('[data-phone-number-list]') || event.target.matches('[data-destination-selection-method]')) {
+                updateDestinationDistributionUi(form);
+            }
+        });
+
+        form.addEventListener('change', function (event) {
+            if (event.target.matches('[data-destination-selection-method]')) {
+                updateDestinationDistributionUi(form);
+            }
+        });
+
+        document.querySelectorAll('[data-phone-numbers-card]').forEach(function (card) {
+            var list = card.querySelector('[data-phone-number-list]');
+            if (!list) {
+                return;
+            }
+
+            var observer = new MutationObserver(function () {
+                updateDestinationDistributionUi(form);
+            });
+            observer.observe(list, { childList: true, subtree: true });
+        });
+    }
+
     function runFeatureInits() {
         bootFeature('Language switcher', initLanguageSwitcher);
         bootFeature('Phone number manager', function () {
@@ -948,6 +1037,7 @@
                 initPhoneBulkDelete(card);
             });
         });
+        bootFeature('Destination distribution UI', initDestinationDistributionUi);
         bootFeature('Admin live preview', initAdminLivePreview);
         bootFeature('Client create form', initClientCreateForm);
     }

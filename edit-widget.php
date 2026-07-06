@@ -27,7 +27,7 @@ if (is_post()) {
         redirect('edit-widget.php?id=' . $widgetId);
     }
 
-    $updated = sanitize_widget_input($_POST);
+    $updated = sanitize_widget_input($_POST, $widget);
     $errors = validate_widget_data($updated);
 
     if (!$errors) {
