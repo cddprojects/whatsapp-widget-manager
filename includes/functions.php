@@ -2117,6 +2117,31 @@ function database_table_exists(string $table): bool
     return $cache[$table];
 }
 
+function table_has_column(string $table, string $column): bool
+{
+    static $cache = [];
+
+    $key = $table . '.' . $column;
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
+    $stmt = db()->prepare(
+        'SELECT COUNT(*)
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = :table
+           AND COLUMN_NAME = :column'
+    );
+    $stmt->execute([
+        'table' => $table,
+        'column' => $column,
+    ]);
+    $cache[$key] = ((int) $stmt->fetchColumn()) > 0;
+
+    return $cache[$key];
+}
+
 function client_widget_count(int $clientId): int
 {
     $stmt = db()->prepare('SELECT COUNT(*) FROM widgets WHERE user_id = :user_id');
