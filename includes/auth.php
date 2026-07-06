@@ -175,14 +175,6 @@ function record_failed_login(): void
     }
 }
 
-function find_widget_by_id(int $widgetId): ?array
-{
-    $stmt = db()->prepare('SELECT * FROM widgets WHERE id = :id LIMIT 1');
-    $stmt->execute(['id' => $widgetId]);
-    $widget = $stmt->fetch();
-    return $widget ?: null;
-}
-
 function find_accessible_widget(int $widgetId): ?array
 {
     $widget = find_widget_by_id($widgetId);
