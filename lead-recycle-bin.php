@@ -9,7 +9,6 @@ $dateFrom = trim((string) ($_GET['date_from'] ?? ''));
 $dateTo = trim((string) ($_GET['date_to'] ?? ''));
 $widgetFilterId = (int) ($_GET['widget_id'] ?? 0);
 $clientFilterId = (int) ($_GET['client_id'] ?? 0);
-$deletedByRoleFilter = trim((string) ($_GET['deleted_by_role'] ?? ''));
 $page = max(1, (int) ($_GET['page'] ?? 1));
 
 $result = search_client_leads([
@@ -18,7 +17,6 @@ $result = search_client_leads([
     'q' => $query,
     'date_from' => $dateFrom,
     'date_to' => $dateTo,
-    'deleted_by_role' => $deletedByRoleFilter,
     'recycle_bin' => true,
     'page' => $page,
     'per_page' => 25,
@@ -55,11 +53,11 @@ require __DIR__ . '/includes/leads-page.php';
 <?php if ($result['pages'] > 1): ?>
     <div class="pagination-bar">
         <?php if ($page > 1): ?>
-            <a class="btn btn-light" href="?<?= e(http_build_query(['client_id' => $clientFilterId, 'widget_id' => $widgetFilterId, 'deleted_by_role' => $deletedByRoleFilter, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page - 1])) ?>"><?= e(t('pagination.previous')) ?></a>
+            <a class="btn btn-light" href="?<?= e(http_build_query(['client_id' => $clientFilterId, 'widget_id' => $widgetFilterId, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page - 1])) ?>"><?= e(t('pagination.previous')) ?></a>
         <?php endif; ?>
         <span><?= e(t('pagination.page_of', ['page' => (string) $page, 'pages' => (string) $result['pages']])) ?></span>
         <?php if ($page < $result['pages']): ?>
-            <a class="btn btn-light" href="?<?= e(http_build_query(['client_id' => $clientFilterId, 'widget_id' => $widgetFilterId, 'deleted_by_role' => $deletedByRoleFilter, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page + 1])) ?>"><?= e(t('pagination.next')) ?></a>
+            <a class="btn btn-light" href="?<?= e(http_build_query(['client_id' => $clientFilterId, 'widget_id' => $widgetFilterId, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page + 1])) ?>"><?= e(t('pagination.next')) ?></a>
         <?php endif; ?>
     </div>
 <?php endif; ?>

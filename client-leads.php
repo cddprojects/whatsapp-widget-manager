@@ -53,7 +53,6 @@ require __DIR__ . '/includes/header.php';
 <?php
 $leadPageMode = 'client';
 $clientFilterId = $clientId;
-$deletedByRoleFilter = '';
 $widgetOptions = widgets_for_client_filter($clientId);
 $clientOptions = [];
 $formAction = 'client-leads.php';

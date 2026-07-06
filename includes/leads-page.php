@@ -8,7 +8,6 @@ declare(strict_types=1);
 /** @var string $dateTo */
 /** @var int $widgetFilterId */
 /** @var int $clientFilterId */
-/** @var string $deletedByRoleFilter */
 /** @var array $widgetOptions */
 /** @var array $clientOptions */
 /** @var string $exportUrl */
@@ -30,8 +29,14 @@ $showRestoreActions = $isRecycleBin;
 $showClientWidgetColumn = $isSuperadminPage && $showClientColumn && $clientFilterId <= 0;
 $hasWidgetFilter = $widgetOptions !== [];
 $hasClientFilter = $showClientColumn && $clientOptions !== [];
-$recyclePrimaryRowClass = 'recycle-bin-filter-row recycle-bin-filter-row-primary'
-    . ($hasClientFilter ? '' : ' recycle-bin-filter-row-primary--no-client');
+$recyclePrimaryRowClass = 'recycle-bin-filter-row recycle-bin-filter-row-primary';
+if (!$hasClientFilter && !$hasWidgetFilter) {
+    $recyclePrimaryRowClass .= ' recycle-bin-filter-row-primary--search-only';
+} elseif (!$hasClientFilter) {
+    $recyclePrimaryRowClass .= ' recycle-bin-filter-row-primary--no-client';
+} elseif (!$hasWidgetFilter) {
+    $recyclePrimaryRowClass .= ' recycle-bin-filter-row-primary--no-widget';
+}
 $hasExport = !$isRecycleBin && $result['total'] > 0;
 $tableClass = 'widget-table lead-table' . ($isRecycleBin ? ' lead-table-layout--recycle' : ' lead-table-layout--active');
 $leadPageCardClass = 'settings-card lead-page-card' . ($isRecycleBin ? ' lead-recycle-bin-card' : '');
@@ -123,14 +128,6 @@ $toolbarSelectedButtons = static function () use (
                         </select>
                     </label>
                 <?php endif; ?>
-                <label class="lead-filter-deleted-by">
-                    <span><?= e(t('lead.deleted_by')) ?></span>
-                    <select name="deleted_by_role">
-                        <option value=""><?= e(t('filter.all')) ?></option>
-                        <option value="client"<?= $deletedByRoleFilter === 'client' ? ' selected' : '' ?>><?= e(t('lead.deleted_by_client')) ?></option>
-                        <option value="superadmin"<?= $deletedByRoleFilter === 'superadmin' ? ' selected' : '' ?>><?= e(t('lead.deleted_by_superadmin')) ?></option>
-                    </select>
-                </label>
             </div>
             <div class="recycle-bin-filter-row recycle-bin-filter-row-secondary">
                 <label class="lead-filter-from">
@@ -227,7 +224,6 @@ $toolbarSelectedButtons = static function () use (
                         <col class="col-widget">
                         <col class="col-captured">
                         <?php if ($showRecycleMeta): ?>
-                            <col class="col-deleted-by">
                             <col class="col-expires-in">
                         <?php endif; ?>
                     <?php endif; ?>
@@ -259,7 +255,6 @@ $toolbarSelectedButtons = static function () use (
                             <th scope="col"><?= e(t('lead.original_widget')) ?></th>
                             <th scope="col"><?= e(t('lead.deleted_at')) ?></th>
                             <?php if ($showRecycleMeta): ?>
-                                <th scope="col"><?= e(t('lead.deleted_by')) ?></th>
                                 <th scope="col"><?= e(t('lead.expires_in')) ?></th>
                             <?php endif; ?>
                         <?php endif; ?>
@@ -325,9 +320,6 @@ $toolbarSelectedButtons = static function () use (
                                     <?php render_lead_captured_cell($lead['deleted_at'] ?? null); ?>
                                 </td>
                                 <?php if ($showRecycleMeta): ?>
-                                    <td class="col-deleted-by" data-label="<?= e(t('lead.deleted_by')) ?>">
-                                        <span class="lead-deleted-by"><?= e(format_recycle_bin_deleted_by_label($lead)) ?></span>
-                                    </td>
                                     <td class="col-expires-in" data-label="<?= e(t('lead.expires_in')) ?>">
                                         <span class="lead-expires-in"><?= e(format_recycle_bin_expires_label($daysRemaining)) ?></span>
                                     </td>
