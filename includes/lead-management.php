@@ -674,3 +674,145 @@ function format_retention_days_label(int $days): string
         ? t('lead.retention_day_one', ['count' => '1'])
         : t('lead.retention_day_other', ['count' => (string) $days]);
 }
+
+function format_lead_display_phone(array $lead): string
+{
+    $phone = trim((string) ($lead['visitor_phone'] ?? ''));
+    if ($phone !== '') {
+        return $phone;
+    }
+
+    $full = trim((string) ($lead['visitor_full_phone'] ?? ''));
+    if ($full === '') {
+        return '';
+    }
+
+    return str_starts_with($full, '+') ? $full : '+' . $full;
+}
+
+function lead_source_link_url(array $lead): string
+{
+    $url = trim((string) ($lead['source_url'] ?? ''));
+    if ($url !== '' && preg_match('#^https?://#i', $url)) {
+        return $url;
+    }
+
+    $domain = trim((string) ($lead['source_domain'] ?? ''));
+    if ($domain === '') {
+        return '';
+    }
+
+    if (preg_match('#^https?://#i', $domain)) {
+        return $domain;
+    }
+
+    return 'https://' . ltrim($domain, '/');
+}
+
+function format_lead_source_compact_path(array $lead): string
+{
+    $url = trim((string) ($lead['source_url'] ?? ''));
+    $domain = trim((string) ($lead['source_domain'] ?? ''));
+
+    if ($url !== '') {
+        $parts = parse_url($url);
+        if (!empty($parts['host'])) {
+            $host = preg_replace('/^www\./i', '', (string) $parts['host']);
+            $path = (string) ($parts['path'] ?? '');
+            $path = $path === '' ? '/' : $path;
+            $query = !empty($parts['query']) ? '?' . $parts['query'] : '';
+
+            return $host . $path . $query;
+        }
+
+        $compact = preg_replace('#^https?://#i', '', $url);
+        $compact = preg_replace('#^www\.#i', '', $compact);
+
+        return rtrim($compact, '/') . (str_contains($compact, '/') ? '' : '/');
+    }
+
+    if ($domain !== '') {
+        $compact = preg_replace('#^https?://#i', '', $domain);
+        $compact = preg_replace('#^www\.#i', '', $compact);
+
+        return rtrim($compact, '/') . '/';
+    }
+
+    return '';
+}
+
+function format_lead_source_title(array $lead): string
+{
+    $title = trim((string) ($lead['page_title'] ?? ''));
+    if ($title !== '') {
+        return $title;
+    }
+
+    $compactPath = format_lead_source_compact_path($lead);
+    if ($compactPath !== '') {
+        return $compactPath;
+    }
+
+    return t('lead.source_unknown');
+}
+
+function render_lead_source_cell(array $lead): void
+{
+    $fullUrl = lead_source_link_url($lead);
+    $title = format_lead_source_title($lead);
+    $compactPath = format_lead_source_compact_path($lead);
+
+    if ($fullUrl === '' && $compactPath === '' && $title === t('lead.source_unknown')) {
+        echo '<span class="lead-source-empty">—</span>';
+        return;
+    }
+
+    $tooltip = $fullUrl !== '' ? t('lead.open_source_page') . ': ' . $fullUrl : $compactPath;
+
+    if ($fullUrl !== '') {
+        ?>
+        <a
+            class="lead-source-cell"
+            href="<?= e($fullUrl) ?>"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="<?= e($tooltip) ?>"
+        >
+            <span class="lead-source-title"><?= e($title) ?></span>
+            <?php if ($compactPath !== ''): ?>
+                <span class="lead-source-url"><?= e($compactPath) ?></span>
+            <?php endif; ?>
+        </a>
+        <?php
+        return;
+    }
+
+    ?>
+    <span class="lead-source-cell is-static" title="<?= e($tooltip) ?>">
+        <span class="lead-source-title"><?= e($title) ?></span>
+        <?php if ($compactPath !== '' && $compactPath !== $title): ?>
+            <span class="lead-source-url"><?= e($compactPath) ?></span>
+        <?php endif; ?>
+    </span>
+    <?php
+}
+
+function render_lead_captured_cell(?string $value): void
+{
+    if ($value === null || trim($value) === '') {
+        echo '—';
+        return;
+    }
+
+    $timestamp = strtotime($value);
+    if ($timestamp === false) {
+        echo e((string) $value);
+        return;
+    }
+    ?>
+    <span class="lead-captured-cell">
+        <span class="lead-captured-date"><?= e(date('M j, Y', $timestamp)) ?></span>
+        <span class="lead-captured-time"><?= e(date('g:i A', $timestamp)) ?></span>
+    </span>
+    <?php
+}

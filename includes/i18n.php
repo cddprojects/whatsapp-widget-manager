@@ -236,6 +236,8 @@ function dashboard_js_i18n(): array
         'lead.permanent_delete_selected' => t('lead.permanent_delete_selected'),
         'lead.permanently_deleted_one' => t('lead.permanently_deleted_one'),
         'lead.permanent_delete_failed' => t('lead.permanent_delete_failed'),
+        'lead.phone_copied' => t('lead.phone_copied'),
+        'lead.copy_phone' => t('lead.copy_phone'),
     ];
 }
 
