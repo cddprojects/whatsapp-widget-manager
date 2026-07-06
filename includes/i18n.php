@@ -203,6 +203,22 @@ function dashboard_js_i18n(): array
         'preview.default_offline' => t('preview.default_offline'),
         'distribution.js_summary_round_robin' => t('distribution.js_summary_round_robin'),
         'distribution.js_summary_random' => t('distribution.js_summary_random'),
+        'lead.delete_title' => t('lead.delete_title'),
+        'lead.delete_title_with_phone' => t('lead.delete_title_with_phone'),
+        'lead.delete_body' => t('lead.delete_body'),
+        'lead.bulk_delete_title' => t('lead.bulk_delete_title'),
+        'lead.bulk_delete_body_one' => t('lead.bulk_delete_body_one'),
+        'lead.bulk_delete_body_other' => t('lead.bulk_delete_body_other'),
+        'lead.bulk_delete_button_one' => t('lead.bulk_delete_button_one'),
+        'lead.bulk_delete_button_other' => t('lead.bulk_delete_button_other'),
+        'lead.deleted_one' => t('lead.deleted_one'),
+        'lead.deleted_other' => t('lead.deleted_other'),
+        'lead.delete_failed' => t('lead.delete_failed'),
+        'lead.selected_count' => t('lead.selected_count'),
+        'empty.no_leads_found' => t('empty.no_leads_found'),
+        'empty.no_leads_subtitle' => t('empty.no_leads_subtitle'),
+        'results.leads_found_one' => t('results.leads_found_one'),
+        'results.leads_found_other' => t('results.leads_found_other'),
     ];
 }
 

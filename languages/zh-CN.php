@@ -166,6 +166,8 @@ return [
     'table.source_url' => '来源 URL',
     'table.page_title' => '页面标题',
     'table.client_owner' => '客户所有者',
+    'table.select_all' => '全选',
+    'table.select_all_aria' => '选择当前可见的全部线索',
 
     // Status
     'status.active' => '已启用',
@@ -226,6 +228,8 @@ return [
     'empty.no_clients_matched' => '没有符合搜索条件的客户。',
     'empty.no_widgets_found' => '未找到小组件。',
     'empty.no_leads' => '尚未收集到线索。',
+    'empty.no_leads_found' => '未找到线索',
+    'empty.no_leads_subtitle' => '此小组件收集的电话提交将显示在此处。',
     'empty.client_no_widgets' => '此客户尚无小组件。',
     'empty.no_phone_numbers' => '尚未添加号码。点击「添加号码」开始。',
 
@@ -443,6 +447,27 @@ return [
     'action.phone_number' => '电话号码',
     'action.leads' => '线索',
     'action.embed_code' => '嵌入代码',
+
+    // Lead deletion
+    'lead.delete_title' => '删除线索？',
+    'lead.delete_title_with_phone' => '删除线索 {phone}？',
+    'lead.delete_body' => '这将永久删除此捕获线索及其来源详情。此操作无法撤销。',
+    'lead.delete_button' => '删除线索',
+    'lead.bulk_delete_title' => '删除所选线索？',
+    'lead.bulk_delete_body_one' => '这将永久删除 1 条捕获线索。此操作无法撤销。',
+    'lead.bulk_delete_body_other' => '这将永久删除 {count} 条捕获线索。此操作无法撤销。',
+    'lead.bulk_delete_button_one' => '删除 1 条线索',
+    'lead.bulk_delete_button_other' => '删除 {count} 条线索',
+    'lead.deleted_one' => '线索已删除。',
+    'lead.deleted_bulk_one' => '已删除 1 条线索。',
+    'lead.deleted_other' => '已删除 {count} 条线索。',
+    'lead.delete_failed' => '无法删除此线索。请重试。',
+    'lead.delete_partial' => '已删除 {deleted} 条线索。{skipped} 条无法删除。',
+    'lead.delete_not_found' => '未找到线索。',
+    'lead.delete_none_selected' => '未选择有效的线索。',
+    'lead.delete_too_many' => '单次请求选择的线索过多。',
+    'lead.selected_count' => '已选择 {count} 条',
+    'lead.select_row_aria' => '选择线索 {phone}',
 
     // Embed
     'embed.domain_locked_warning' => '此 iframe 小组件已锁定到您注册的域名。复制到其他网站将无法使用。',

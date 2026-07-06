@@ -1203,6 +1203,115 @@ code {
     border-color: #bfdbfe;
 }
 
+.lead-filter-actions {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.lead-selected-count {
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.lead-table .col-select {
+    width: 48px;
+    white-space: nowrap;
+}
+
+.lead-select-all-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 500;
+}
+
+.lead-select-all-label input,
+.lead-table .col-select input {
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0;
+}
+
+.lead-table [data-lead-row].is-selected {
+    background: #fffafa;
+}
+
+.btn-compact {
+    min-height: 34px;
+    padding: 6px 12px;
+    font-size: 0.88rem;
+}
+
+.btn.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.ctcw-lead-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.ctcw-lead-modal[hidden] {
+    display: none !important;
+}
+
+.ctcw-lead-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.ctcw-lead-modal-dialog {
+    position: relative;
+    width: min(100%, 460px);
+    padding: 24px;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid var(--line);
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+}
+
+.ctcw-lead-modal-dialog h3 {
+    margin: 0 0 10px;
+}
+
+.ctcw-lead-modal-dialog p {
+    margin: 0 0 18px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.ctcw-lead-toast {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1300;
+    max-width: min(420px, calc(100vw - 48px));
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: #ecfdf5;
+    border: 1px solid #86efac;
+    color: #166534;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.ctcw-lead-toast.is-error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.ctcw-lead-toast[hidden] {
+    display: none !important;
+}
+
 .ctcw-phone-bulk-modal {
     position: fixed;
     inset: 0;
