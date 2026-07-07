@@ -53,10 +53,15 @@ $config = [
     var iframe = document.getElementById(config.frameId);
     var lastSize = null;
     var lastState = 'icon';
-    var defaultSize = { width: 110, height: 110 };
+    var defaultSize = { width: 72, height: 72 };
+    var mobileDefaultSize = { width: 68, height: 68 };
 
     function isMobile() {
         return window.innerWidth <= 767;
+    }
+
+    function viewportMargins() {
+        return isMobile() ? 24 : 16;
     }
 
     function activeConfig() {
@@ -72,6 +77,19 @@ $config = [
     }
 
     function minimumForState(state) {
+        if (isMobile()) {
+            if (state === 'greeting-phone') {
+                return { width: 320, height: 300 };
+            }
+            if (state === 'greeting') {
+                return { width: 300, height: 240 };
+            }
+            if (state === 'button' || state === 'hover') {
+                return { width: 88, height: 72 };
+            }
+            return { width: 68, height: 68 };
+        }
+
         if (state === 'greeting-phone') {
             return { width: 390, height: 340 };
         }
@@ -86,9 +104,10 @@ $config = [
 
     function clampSize(width, height, state) {
         var minimum = minimumForState(state || lastState || 'icon');
+        var margin = viewportMargins();
         return {
-            width: Math.min(window.innerWidth - 16, Math.max(minimum.width, parseInt(width, 10) || minimum.width)),
-            height: Math.min(window.innerHeight - 16, Math.max(minimum.height, parseInt(height, 10) || minimum.height))
+            width: Math.min(window.innerWidth - margin, Math.max(minimum.width, parseInt(width, 10) || minimum.width)),
+            height: Math.min(window.innerHeight - margin, Math.max(minimum.height, parseInt(height, 10) || minimum.height))
         };
     }
 
@@ -101,6 +120,22 @@ $config = [
         iframe.style.bottom = 'auto';
         iframe.style.left = 'auto';
         iframe.style.right = 'auto';
+
+        if (isMobile()) {
+            if (position.verticalSide === 'bottom') {
+                iframe.style.bottom = 'max(12px, env(safe-area-inset-bottom))';
+            } else {
+                iframe.style.top = 'max(12px, env(safe-area-inset-top))';
+            }
+
+            if (position.horizontalSide === 'right') {
+                iframe.style.right = 'max(12px, env(safe-area-inset-right))';
+            } else {
+                iframe.style.left = 'max(12px, env(safe-area-inset-left))';
+            }
+            return;
+        }
+
         iframe.style[position.verticalSide] = position.verticalValue;
         iframe.style[position.horizontalSide] = position.horizontalValue;
     }
@@ -127,11 +162,12 @@ $config = [
         iframe.style.overflow = 'hidden';
         iframe.style.pointerEvents = 'auto';
         iframe.style.boxShadow = 'none';
-        iframe.style.maxWidth = 'calc(100vw - 16px)';
-        iframe.style.maxHeight = 'calc(100vh - 16px)';
+        iframe.style.maxWidth = 'calc(100vw - ' + viewportMargins() + 'px)';
+        iframe.style.maxHeight = isMobile() ? 'calc(100dvh - ' + viewportMargins() + 'px)' : 'calc(100vh - ' + viewportMargins() + 'px)';
         iframe.style.transition = 'none';
         applyPosition();
-        applySize(defaultSize.width, defaultSize.height, 'icon');
+        var initial = isMobile() ? mobileDefaultSize : defaultSize;
+        applySize(initial.width, initial.height, 'icon');
     }
 
     function sendViewport() {
