@@ -94,7 +94,7 @@ $config = [
             return { width: 390, height: 240 };
         }
         if (state === 'greeting') {
-            return { width: 380, height: 300 };
+            return { width: 380, height: 240 };
         }
         if (state === 'button' || state === 'hover') {
             return { width: 260, height: 110 };
