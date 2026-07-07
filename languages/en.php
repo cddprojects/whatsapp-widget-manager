@@ -304,6 +304,7 @@ return [
     'label.greeting_message' => 'Greeting message',
     'label.phone_input_placeholder' => 'Phone input placeholder',
     'label.submit_button_text' => 'Submit button text',
+    'label.phone_submit_button_id' => 'Phone submit button ID (optional)',
     'label.success_message' => 'Success message',
     'label.custom_css' => 'Custom CSS',
     'label.custom_script_head' => 'Custom script (head)',
@@ -319,6 +320,7 @@ return [
     'helper.domain_formats' => 'Accepted formats: example.com, www.example.com, https://example.com.',
     'helper.upload_replace_existing' => 'If unchecked, uploaded numbers will be added to your current active numbers.',
     'helper.greeting_force_phone' => 'When enabled, visitors must enter their phone number before they can open WhatsApp.',
+    'helper.phone_submit_button_id' => 'Used as the HTML ID for the phone submit button. Use letters, numbers, hyphens, and underscores only.',
     'helper.business_hours_always_online' => 'The widget is always available and WhatsApp clicks remain enabled.',
     'helper.business_hours_always_offline' => 'The widget is shown as offline and WhatsApp clicks are disabled at all times.',
     'helper.business_hours_custom' => 'Set the days and times when the widget is available. Outside these hours, visitors will see the offline message.',
@@ -496,6 +498,9 @@ return [
 
     // Widget
     'widget.delete_confirm' => 'Delete this widget?',
+    'widget.phone_validation.empty' => 'Enter your phone number.',
+    'widget.phone_validation.invalid' => 'Enter a valid phone number.',
+    'widget.phone_validation.min_digits' => 'Enter at least 8 digits.',
 
     'widget_destinations.none' => 'No destinations',
     'widget_destinations.setup_required' => 'Setup required',
@@ -711,6 +716,7 @@ return [
     'validation.whatsapp_number_required' => 'Please add at least one WhatsApp number.',
     'validation.invalid_phone_numbers' => 'Please enter at least one valid WhatsApp number, or remove all numbers to pause the widget.',
     'validation.custom_url_invalid' => 'Custom URL must be a valid full URL.',
+    'validation.phone_submit_button_id_invalid' => 'Use 1–80 characters, starting with a letter. Letters, numbers, hyphens, and underscores only.',
     'validation.select_client' => 'Please select a client to assign this widget to.',
     'validation.keep_one_number' => 'Please keep at least one active WhatsApp number.',
     'validation.invalid_client_reference' => 'Invalid client reference.',

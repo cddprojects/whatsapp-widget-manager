@@ -176,6 +176,65 @@
         refreshGreetingDialogSettings();
     }
 
+    function isValidPhoneSubmitButtonId(value) {
+        return value === '' || /^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(value);
+    }
+
+    function validatePhoneSubmitButtonIdInput() {
+        var input = document.querySelector('[data-phone-submit-button-id-input]');
+        var error = document.querySelector('[data-phone-submit-button-id-error]');
+        if (!input || !error) {
+            return true;
+        }
+
+        var captureToggle = document.querySelector('[data-role="phone-capture-toggle"]');
+        if (!captureToggle || !captureToggle.checked) {
+            error.hidden = true;
+            error.textContent = '';
+            return true;
+        }
+
+        var value = String(input.value || '').trim();
+        if (isValidPhoneSubmitButtonId(value)) {
+            error.hidden = true;
+            error.textContent = '';
+            return true;
+        }
+
+        error.textContent = ctcwI18n('validation.phone_submit_button_id_invalid');
+        error.hidden = false;
+        input.focus();
+        return false;
+    }
+
+    function initPhoneSubmitButtonIdValidation() {
+        var input = document.querySelector('[data-phone-submit-button-id-input]');
+        var form = document.querySelector('[data-widget-form]');
+        if (!input) {
+            return;
+        }
+
+        input.addEventListener('input', function () {
+            var value = String(input.value || '').trim();
+            if (isValidPhoneSubmitButtonId(value)) {
+                error.hidden = true;
+                error.textContent = '';
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            validatePhoneSubmitButtonIdInput();
+        });
+
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                if (!validatePhoneSubmitButtonIdInput()) {
+                    event.preventDefault();
+                }
+            });
+        }
+    }
+
     function countPhoneRows(list) {
         return list.querySelectorAll('[data-phone-number-row]').length;
     }
@@ -1126,6 +1185,7 @@
             });
         });
         bootFeature('Destination distribution UI', initDestinationDistributionUi);
+        bootFeature('Phone submit button ID validation', initPhoneSubmitButtonIdValidation);
         bootFeature('Admin live preview', initAdminLivePreview);
         bootFeature('Client create form', initClientCreateForm);
     }

@@ -200,6 +200,9 @@
         }
         greeting.classList.remove('is-visible');
         showPhoneError('');
+        if (phoneInput) {
+            phoneInput.removeAttribute('aria-invalid');
+        }
         if (greetingSuccess) {
             greetingSuccess.hidden = true;
         }
@@ -224,14 +227,90 @@
         scheduleSizeReports();
     }
 
-    function cleanPhone(phone) {
-        return String(phone || '').replace(/[^\d+]/g, '');
+    function validateCapturedPhoneNumber(rawValue) {
+        var value = String(rawValue || '').trim();
+        var messages = config.phoneValidation || {};
+
+        if (!value) {
+            return {
+                valid: false,
+                message: messages.empty || 'Enter your phone number.'
+            };
+        }
+
+        if (!/^\+?[0-9\s().-]+$/.test(value)) {
+            return {
+                valid: false,
+                message: messages.invalid || 'Enter a valid phone number.'
+            };
+        }
+
+        var digits = value.replace(/\D/g, '');
+
+        if (digits.length < 8) {
+            return {
+                valid: false,
+                message: messages.minDigits || 'Enter at least 8 digits.'
+            };
+        }
+
+        if (digits.length > 15) {
+            return {
+                valid: false,
+                message: messages.invalid || 'Enter a valid phone number.'
+            };
+        }
+
+        return {
+            valid: true,
+            normalizedDigits: digits
+        };
     }
 
-    function isValidPhone(phone) {
-        var cleaned = cleanPhone(phone);
-        var digits = cleaned.replace(/\D/g, '');
-        return digits.length >= 8 && digits.length <= 15;
+    function setPhoneInputInvalid(message) {
+        showPhoneError(message);
+        if (phoneInput) {
+            phoneInput.setAttribute('aria-invalid', 'true');
+            phoneInput.focus();
+        }
+        sendActualWidgetSize();
+        scheduleSizeReports();
+    }
+
+    function clearPhoneInputInvalid() {
+        showPhoneError('');
+        if (phoneInput) {
+            phoneInput.removeAttribute('aria-invalid');
+        }
+    }
+
+    function getTrustedParentOrigin() {
+        try {
+            if (!document.referrer) {
+                return null;
+            }
+            return new URL(document.referrer).origin;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function notifyPhoneSubmitSuccess() {
+        var submitButtonId = config.phoneSubmitButtonId
+            || (greetingSubmit && greetingSubmit.getAttribute('data-ctcw-submit-id'))
+            || ('ctcw-phone-submit-' + String(config.widgetId || window.CTCW_WIDGET_ID || ''));
+        var trustedOrigin = getTrustedParentOrigin();
+        var payload = {
+            type: 'ctcw:phone-submit-success',
+            widgetId: config.widgetId || window.CTCW_WIDGET_ID || '',
+            submitButtonId: submitButtonId
+        };
+
+        try {
+            window.parent.postMessage(payload, trustedOrigin || '*');
+        } catch (error) {
+            window.parent.postMessage(payload, '*');
+        }
     }
 
     function showPhoneError(message) {
@@ -382,39 +461,38 @@
 
         var phone = phoneInput ? phoneInput.value.trim() : '';
         var forceMode = isForcePhoneCapture();
-        var invalidMessage = forceMode
-            ? 'Please enter a valid phone number before continuing.'
-            : 'Please enter a valid phone number.';
+        var saveFailedMessage = (config.phoneValidation && config.phoneValidation.saveFailed)
+            || 'We could not save your phone number. Please try again.';
+        var redirectFailedMessage = (config.phoneValidation && config.phoneValidation.redirectFailed)
+            || 'We could not connect you to WhatsApp. Please try again.';
 
-        if (phone === '' || !isValidPhone(phone)) {
-            if (forceMode || config.greetingPhoneRequired || phone !== '') {
-                showPhoneError(invalidMessage);
-                sendActualWidgetSize();
-                scheduleSizeReports();
-                return;
-            }
-        }
-
-        showPhoneError('');
-
-        if (phone === '' || !isValidPhone(phone)) {
+        if (phone === '' && !forceMode && !config.greetingPhoneRequired) {
+            clearPhoneInputInvalid();
             closeGreetingDialog();
             redirectWithResolvedDestination().catch(function () {
-                showPhoneError('We could not connect you to WhatsApp. Please try again.');
+                setPhoneInputInvalid(redirectFailedMessage);
             });
             return;
         }
 
+        var validation = validateCapturedPhoneNumber(phone);
+        if (!validation.valid) {
+            if (forceMode || config.greetingPhoneRequired || phone !== '') {
+                setPhoneInputInvalid(validation.message);
+                return;
+            }
+        }
+
+        clearPhoneInputInvalid();
+
         if (!config.saveLeadUrl) {
             if (forceMode) {
-                showPhoneError('We could not save your phone number. Please try again.');
-                sendActualWidgetSize();
-                scheduleSizeReports();
+                setPhoneInputInvalid(saveFailedMessage);
                 return;
             }
             closeGreetingDialog();
             redirectWithResolvedDestination().catch(function () {
-                showPhoneError('We could not connect you to WhatsApp. Please try again.');
+                setPhoneInputInvalid(redirectFailedMessage);
             });
             return;
         }
@@ -430,23 +508,23 @@
 
         saveLead(phone, '')
             .then(function () {
+                notifyPhoneSubmitSuccess();
                 if (forceMode && greetingSuccess) {
                     greetingSuccess.hidden = false;
                 }
 
                 return redirectWithResolvedDestination();
             })
-            .catch(function () {
+            .catch(function (error) {
+                var message = (error && error.message) ? error.message : saveFailedMessage;
                 if (forceMode) {
                     resetSubmitButton(submitButton);
-                    showPhoneError('We could not save your phone number. Please try again.');
-                    sendActualWidgetSize();
-                    scheduleSizeReports();
+                    setPhoneInputInvalid(message);
                     return;
                 }
 
                 redirectWithResolvedDestination().catch(function () {
-                    showPhoneError('We could not connect you to WhatsApp. Please try again.');
+                    setPhoneInputInvalid(redirectFailedMessage);
                 });
             });
     }
@@ -514,6 +592,9 @@
             greetingSuccess.hidden = true;
         }
         showPhoneError('');
+        if (phoneInput) {
+            phoneInput.removeAttribute('aria-invalid');
+        }
         resetSubmitButton(greetingSubmit);
         revealGreeting();
         window.setTimeout(function () {
@@ -584,7 +665,7 @@
 
     if (phoneInput) {
         phoneInput.addEventListener('input', function () {
-            showPhoneError('');
+            clearPhoneInputInvalid();
             sendActualWidgetSize();
         });
     }

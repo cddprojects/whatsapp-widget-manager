@@ -34,6 +34,8 @@ $isOnline = is_widget_online($widget);
 $activeNumbers = widget_phone_list($widget);
 $destinationCount = count($activeNumbers);
 $destinationMethod = effective_destination_selection_method($widget, $destinationCount);
+$phoneSubmitButtonId = resolve_greeting_phone_submit_button_id($widget);
+$phoneErrorId = 'ctcw-phone-error-' . (int) $widget['id'];
 
 $widgetConfig = [
     'widgetId' => (int) $widget['id'],
@@ -62,6 +64,12 @@ $widgetConfig = [
     'greetingPhonePlaceholder' => (string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number'),
     'greetingSubmitText' => (string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp'),
     'greetingLeadSuccessMessage' => (string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...'),
+    'phoneSubmitButtonId' => $phoneSubmitButtonId,
+    'phoneValidation' => [
+        'empty' => t('widget.phone_validation.empty'),
+        'invalid' => t('widget.phone_validation.invalid'),
+        'minDigits' => t('widget.phone_validation.min_digits'),
+    ],
     'publicKey' => (string) $widget['public_key'],
     'saveLeadUrl' => SYSTEM_BASE_URL . '/save-widget-lead.php',
 ];
@@ -128,13 +136,18 @@ $mobileAnchorClass = 'is-mobile-' . $mobileVerticalSide . ' is-mobile-' . $mobil
                                 <input
                                     class="ctcw-phone-input"
                                     type="tel"
+                                    inputmode="tel"
+                                    autocomplete="tel"
                                     data-greeting-phone
                                     placeholder="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>"
-                                    autocomplete="tel"
+                                    aria-describedby="<?= e($phoneErrorId) ?>"
                                 >
                                 <button
-                                    type="button"
+                                    type="submit"
                                     class="ctcw-greeting-submit"
+                                    id="<?= e($phoneSubmitButtonId) ?>"
+                                    data-ctcw-role="phone-submit"
+                                    data-ctcw-submit-id="<?= e($phoneSubmitButtonId) ?>"
                                     data-greeting-submit
                                     aria-label="<?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?>"
                                 >
@@ -143,7 +156,7 @@ $mobileAnchorClass = 'is-mobile-' . $mobileVerticalSide . ' is-mobile-' . $mobil
                                     </svg>
                                 </button>
                             </div>
-                            <span class="ctcw-phone-error" data-greeting-phone-error hidden></span>
+                            <span class="ctcw-phone-error" id="<?= e($phoneErrorId) ?>" data-greeting-phone-error hidden></span>
                         </div>
                         <span class="ctcw-greeting-success" data-greeting-success hidden><?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?></span>
                     </div>

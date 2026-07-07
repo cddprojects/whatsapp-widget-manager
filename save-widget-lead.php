@@ -45,10 +45,12 @@ if (!domain_matches_referrer($widget, $referrer !== '' ? $referrer : null)) {
     json_response(['success' => false, 'message' => 'Domain not allowed'], 403);
 }
 
-$normalized = normalize_visitor_phone($visitorPhone);
-if ($normalized === null) {
-    json_response(['success' => false, 'message' => 'Invalid phone number'], 422);
+$normalized = validate_captured_visitor_phone($visitorPhone);
+if (empty($normalized['valid'])) {
+    json_response(['success' => false, 'message' => $normalized['message'] ?? t('widget.phone_validation.invalid')], 422);
 }
+
+$normalized = $normalized['normalized'];
 
 if (lead_recently_saved($widgetId, $normalized['visitor_full_phone'])) {
     json_response(['success' => true, 'message' => 'Lead saved']);

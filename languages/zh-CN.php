@@ -304,6 +304,7 @@ return [
     'label.greeting_message' => '问候消息',
     'label.phone_input_placeholder' => '电话输入占位符',
     'label.submit_button_text' => '提交按钮文字',
+    'label.phone_submit_button_id' => '电话提交按钮 ID（可选）',
     'label.success_message' => '成功消息',
     'label.custom_css' => '自定义 CSS',
     'label.custom_script_head' => '自定义脚本（head）',
@@ -319,6 +320,7 @@ return [
     'helper.domain_formats' => '接受的格式：example.com、www.example.com、https://example.com。',
     'helper.upload_replace_existing' => '如果未勾选，上传的号码将添加到当前已启用的号码中。',
     'helper.greeting_force_phone' => '启用后，访客必须先输入电话号码才能打开 WhatsApp。',
+    'helper.phone_submit_button_id' => '用作电话提交按钮的 HTML ID。仅可使用字母、数字、连字符和下划线。',
     'helper.business_hours_always_online' => '小组件始终可用，WhatsApp 点击始终启用。',
     'helper.business_hours_always_offline' => '小组件显示为离线，WhatsApp 点击始终禁用。',
     'helper.business_hours_custom' => '设置小组件可用的时间段。在这些时间之外，访客将看到离线消息。',
@@ -496,6 +498,9 @@ return [
 
     // Widget
     'widget.delete_confirm' => '删除此小组件？',
+    'widget.phone_validation.empty' => '请输入您的电话号码。',
+    'widget.phone_validation.invalid' => '请输入有效的电话号码。',
+    'widget.phone_validation.min_digits' => '请输入至少 8 位数字。',
 
     'widget_destinations.none' => '无目的地',
     'widget_destinations.setup_required' => '需要设置',
@@ -710,6 +715,7 @@ return [
     'validation.domain_required' => '请输入有效的网站域名。',
     'validation.whatsapp_number_required' => '请至少添加一个 WhatsApp 号码。',
     'validation.custom_url_invalid' => '自定义 URL 必须是有效的完整 URL。',
+    'validation.phone_submit_button_id_invalid' => '请使用 1–80 个字符，以字母开头，仅可包含字母、数字、连字符和下划线。',
     'validation.select_client' => '请选择要分配此小组件的客户。',
     'validation.whatsapp_number_required' => '请至少添加一个 WhatsApp 号码。',
     'validation.invalid_phone_numbers' => '请输入至少一个有效的 WhatsApp 号码，或删除所有号码以暂停小组件。',

@@ -546,6 +546,19 @@ $settingsSections = [
                         <span><?= e(t('label.submit_button_text')) ?></span>
                         <input type="text" name="greeting_submit_text" value="<?= e((string) ($widget['greeting_submit_text'] ?? t('default.greeting_submit_text'))) ?>">
                     </label>
+                    <label class="span-2" data-role="phone-submit-id-field">
+                        <span><?= e(t('label.phone_submit_button_id')) ?></span>
+                        <input
+                            type="text"
+                            name="greeting_phone_submit_button_id"
+                            value="<?= e((string) ($widget['greeting_phone_submit_button_id'] ?? '')) ?>"
+                            placeholder="lead-submit"
+                            maxlength="80"
+                            data-phone-submit-button-id-input
+                        >
+                        <small class="field-helper"><?= e(t('helper.phone_submit_button_id')) ?></small>
+                        <small class="field-error" data-phone-submit-button-id-error hidden></small>
+                    </label>
                     <label class="span-2">
                         <span><?= e(t('label.success_message')) ?></span>
                         <input type="text" name="greeting_lead_success_message" value="<?= e((string) ($widget['greeting_lead_success_message'] ?? t('default.greeting_lead_success_message'))) ?>">
