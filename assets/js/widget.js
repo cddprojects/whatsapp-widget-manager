@@ -37,7 +37,7 @@
         button: { width: 88, height: 72 },
         hover: { width: 88, height: 72 },
         greeting: { width: 320, height: 260 },
-        'greeting-phone': { width: 336, height: 300 }
+        'greeting-phone': { width: 336, height: 290 }
     };
 
     function getMeasureSelectors() {
@@ -254,7 +254,8 @@
         if (digits.length < 8) {
             return {
                 valid: false,
-                message: messages.invalid || 'Enter a valid phone number.'
+                message: messages.minDigits || 'Enter a valid phone number.'
+
             };
         }
 
