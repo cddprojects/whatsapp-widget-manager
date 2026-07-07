@@ -255,6 +255,7 @@
             return {
                 valid: false,
                 message: messages.minDigits || 'Enter a valid phone number.'
+
             };
         }
 

@@ -2590,7 +2590,7 @@ function validate_captured_visitor_phone(string $phone): array
 
     $digits = preg_replace('/\D+/', '', $raw) ?? '';
     if (strlen($digits) < 8) {
-        return ['valid' => false, 'message' => t('widget.phone_validation.min_digits')];
+        return ['valid' => false, 'message' => t('widget.phone_validation.invalid')];
     }
 
     if (strlen($digits) > 15) {
