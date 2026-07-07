@@ -92,37 +92,88 @@
         });
     }
 
-    function refreshGreetingCaptureOptions() {
-        var captureToggle = document.querySelector('[data-greeting-capture-toggle]');
-        var options = document.querySelector('[data-greeting-capture-options]');
-        var forceToggle = document.querySelector('[data-greeting-force-toggle]');
-        var requiredToggle = document.querySelector('[data-greeting-phone-required]');
-        if (!captureToggle || !options) {
+    function setGreetingSectionFieldsDisabled(section, disabled) {
+        if (!section) {
             return;
         }
 
-        var captureEnabled = captureToggle.checked;
-        options.hidden = !captureEnabled;
-        options.classList.toggle('is-disabled', !captureEnabled);
-        options.querySelectorAll('input, select, textarea').forEach(function (field) {
-            if (field === captureToggle) {
+        section.querySelectorAll('input, select, textarea, button').forEach(function (field) {
+            if (field.type === 'hidden') {
                 return;
             }
-            field.disabled = !captureEnabled;
+            field.disabled = disabled;
         });
+    }
 
-        if (!captureEnabled && forceToggle) {
-            forceToggle.checked = false;
+    function refreshGreetingDialogSettings() {
+        var greetingToggle = document.querySelector('[data-role="greeting-dialog-toggle"]');
+        var greetingSettings = document.querySelector('[data-role="greeting-dialog-settings"]');
+        var captureToggle = document.querySelector('[data-role="phone-capture-toggle"]');
+        var captureSettings = document.querySelector('[data-role="phone-capture-settings"]');
+        var forceToggle = document.querySelector('[data-role="force-phone-toggle"]');
+        var optionalRequiredSettings = document.querySelector('[data-greeting-optional-required-settings]');
+        var forceRequiredSettings = document.querySelector('[data-greeting-force-required-settings]');
+        var requiredToggle = document.querySelector('[data-greeting-phone-required]');
+
+        if (!greetingToggle || !greetingSettings) {
+            return;
         }
 
-        if (forceToggle && requiredToggle) {
-            if (forceToggle.checked) {
+        var greetingEnabled = greetingToggle.checked;
+        greetingToggle.setAttribute('aria-expanded', greetingEnabled ? 'true' : 'false');
+        greetingSettings.hidden = !greetingEnabled;
+
+        if (!greetingEnabled) {
+            setGreetingSectionFieldsDisabled(greetingSettings, true);
+            if (captureSettings) {
+                captureSettings.hidden = true;
+            }
+            return;
+        }
+
+        setGreetingSectionFieldsDisabled(greetingSettings, false);
+
+        var captureEnabled = !!(captureToggle && captureToggle.checked);
+        if (captureToggle) {
+            captureToggle.setAttribute('aria-expanded', captureEnabled ? 'true' : 'false');
+        }
+
+        if (captureSettings) {
+            captureSettings.hidden = !captureEnabled;
+        }
+
+        if (!captureEnabled) {
+            setGreetingSectionFieldsDisabled(captureSettings, true);
+            return;
+        }
+
+        setGreetingSectionFieldsDisabled(captureSettings, false);
+
+        var forceEnabled = !!(forceToggle && forceToggle.checked);
+        if (forceToggle) {
+            forceToggle.setAttribute('aria-expanded', forceEnabled ? 'true' : 'false');
+        }
+
+        if (optionalRequiredSettings) {
+            optionalRequiredSettings.hidden = forceEnabled;
+        }
+
+        if (forceRequiredSettings) {
+            forceRequiredSettings.hidden = !forceEnabled;
+        }
+
+        if (requiredToggle) {
+            if (forceEnabled) {
                 requiredToggle.checked = true;
                 requiredToggle.disabled = true;
-            } else if (captureEnabled) {
+            } else {
                 requiredToggle.disabled = false;
             }
         }
+    }
+
+    function refreshGreetingCaptureOptions() {
+        refreshGreetingDialogSettings();
     }
 
     function countPhoneRows(list) {
@@ -550,15 +601,19 @@
         refreshBusinessHours();
     }
 
-    var greetingCaptureToggle = document.querySelector('[data-greeting-capture-toggle]');
-    var greetingForceToggle = document.querySelector('[data-greeting-force-toggle]');
+    var greetingDialogToggle = document.querySelector('[data-role="greeting-dialog-toggle"]');
+    var greetingCaptureToggle = document.querySelector('[data-role="phone-capture-toggle"]');
+    var greetingForceToggle = document.querySelector('[data-role="force-phone-toggle"]');
+    if (greetingDialogToggle) {
+        greetingDialogToggle.addEventListener('change', refreshGreetingDialogSettings);
+    }
     if (greetingCaptureToggle) {
-        greetingCaptureToggle.addEventListener('change', refreshGreetingCaptureOptions);
+        greetingCaptureToggle.addEventListener('change', refreshGreetingDialogSettings);
     }
     if (greetingForceToggle) {
-        greetingForceToggle.addEventListener('change', refreshGreetingCaptureOptions);
+        greetingForceToggle.addEventListener('change', refreshGreetingDialogSettings);
     }
-    refreshGreetingCaptureOptions();
+    refreshGreetingDialogSettings();
 
     document.querySelectorAll('[data-style-select]').forEach(function (select) {
         select.addEventListener('change', refreshSelectedStyleCards);

@@ -435,62 +435,122 @@ $settingsSections = [
             </div>
         </div>
         <label class="toggle-row">
-            <input type="checkbox" name="greeting_enabled" value="1"<?= checked($widget['greeting_enabled']) ?>>
+            <input
+                type="checkbox"
+                name="greeting_enabled"
+                value="1"
+                data-role="greeting-dialog-toggle"
+                data-greeting-dialog-toggle
+                aria-controls="greeting-dialog-settings"
+                aria-expanded="<?= !empty($widget['greeting_enabled']) ? 'true' : 'false' ?>"
+                <?= checked($widget['greeting_enabled']) ?>
+            >
             <span><?= e(t('toggle.enable_greeting_dialog')) ?></span>
         </label>
-        <div class="form-grid two-columns">
-            <label>
-                <span><?= e(t('label.greeting_title')) ?></span>
-                <input type="text" name="greeting_title" value="<?= e($widget['greeting_title']) ?>">
-            </label>
-            <label>
-                <span><?= e(t('label.greeting_delay_seconds')) ?></span>
-                <input type="number" min="0" max="120" name="greeting_delay_seconds" value="<?= e((string) $widget['greeting_delay_seconds']) ?>">
-            </label>
-            <label class="span-2">
-                <span><?= e(t('label.greeting_message')) ?></span>
-                <textarea name="greeting_message" rows="3"><?= e($widget['greeting_message']) ?></textarea>
-            </label>
-        </div>
-        <label class="toggle-row">
-            <input type="checkbox" name="greeting_capture_phone" value="1" data-greeting-capture-toggle<?= checked($widget['greeting_capture_phone'] ?? 0) ?>>
-            <span><?= e(t('toggle.enable_phone_capture')) ?></span>
-        </label>
-        <div class="greeting-capture-options" data-greeting-capture-options>
-            <label class="toggle-row">
-                <input
-                    type="checkbox"
-                    name="greeting_force_phone_capture"
-                    value="1"
-                    data-greeting-force-toggle
-                    <?= checked($widget['greeting_force_phone_capture'] ?? 0) ?>
-                >
-                <span><?= e(t('toggle.force_phone_capture')) ?></span>
-            </label>
-            <small class="field-helper"><?= e(t('helper.greeting_force_phone')) ?></small>
-            <label class="toggle-row">
-                <input
-                    type="checkbox"
-                    name="greeting_phone_required"
-                    value="1"
-                    data-greeting-phone-required
-                    <?= checked($widget['greeting_phone_required'] ?? 1) ?>
-                >
-                <span><?= e(t('toggle.phone_number_required')) ?></span>
-            </label>
+        <div
+            id="greeting-dialog-settings"
+            class="greeting-dialog-dependent-settings"
+            data-role="greeting-dialog-settings"
+            data-greeting-dialog-settings
+            <?= !empty($widget['greeting_enabled']) ? '' : 'hidden' ?>
+        >
             <div class="form-grid two-columns">
                 <label>
-                    <span><?= e(t('label.phone_input_placeholder')) ?></span>
-                    <input type="text" name="greeting_phone_placeholder" value="<?= e((string) ($widget['greeting_phone_placeholder'] ?? t('default.greeting_phone_placeholder'))) ?>">
+                    <span><?= e(t('label.greeting_title')) ?></span>
+                    <input type="text" name="greeting_title" value="<?= e($widget['greeting_title']) ?>">
                 </label>
                 <label>
-                    <span><?= e(t('label.submit_button_text')) ?></span>
-                    <input type="text" name="greeting_submit_text" value="<?= e((string) ($widget['greeting_submit_text'] ?? t('default.greeting_submit_text'))) ?>">
+                    <span><?= e(t('label.greeting_delay_seconds')) ?></span>
+                    <input type="number" min="0" max="120" name="greeting_delay_seconds" value="<?= e((string) $widget['greeting_delay_seconds']) ?>">
                 </label>
                 <label class="span-2">
-                    <span><?= e(t('label.success_message')) ?></span>
-                    <input type="text" name="greeting_lead_success_message" value="<?= e((string) ($widget['greeting_lead_success_message'] ?? t('default.greeting_lead_success_message'))) ?>">
+                    <span><?= e(t('label.greeting_message')) ?></span>
+                    <textarea name="greeting_message" rows="3"><?= e($widget['greeting_message']) ?></textarea>
                 </label>
+            </div>
+            <label class="toggle-row greeting-dialog-subtoggle">
+                <input
+                    type="checkbox"
+                    name="greeting_capture_phone"
+                    value="1"
+                    data-role="phone-capture-toggle"
+                    data-greeting-capture-toggle
+                    aria-controls="phone-capture-settings"
+                    aria-expanded="<?= !empty($widget['greeting_capture_phone']) ? 'true' : 'false' ?>"
+                    <?= checked($widget['greeting_capture_phone'] ?? 0) ?>
+                >
+                <span><?= e(t('toggle.enable_phone_capture')) ?></span>
+            </label>
+            <div
+                id="phone-capture-settings"
+                class="phone-capture-dependent-settings"
+                data-role="phone-capture-settings"
+                data-greeting-capture-options
+                <?= !empty($widget['greeting_capture_phone']) ? '' : 'hidden' ?>
+            >
+                <label class="toggle-row">
+                    <input
+                        type="checkbox"
+                        name="greeting_force_phone_capture"
+                        value="1"
+                        data-role="force-phone-toggle"
+                        data-greeting-force-toggle
+                        aria-controls="force-phone-settings"
+                        aria-expanded="<?= !empty($widget['greeting_force_phone_capture']) ? 'true' : 'false' ?>"
+                        <?= checked($widget['greeting_force_phone_capture'] ?? 0) ?>
+                    >
+                    <span><?= e(t('toggle.force_phone_capture')) ?></span>
+                </label>
+                <small class="field-helper"><?= e(t('helper.greeting_force_phone')) ?></small>
+                <div
+                    id="force-phone-settings"
+                    class="force-phone-dependent-settings"
+                    data-role="force-phone-settings"
+                    data-greeting-optional-required-settings
+                    <?= !empty($widget['greeting_force_phone_capture']) ? 'hidden' : '' ?>
+                >
+                    <label class="toggle-row">
+                        <input
+                            type="checkbox"
+                            name="greeting_phone_required"
+                            value="1"
+                            data-greeting-phone-required
+                            <?= checked($widget['greeting_phone_required'] ?? 1) ?>
+                        >
+                        <span><?= e(t('toggle.phone_number_required')) ?></span>
+                    </label>
+                </div>
+                <div
+                    class="force-phone-dependent-settings"
+                    data-role="force-phone-required-readonly"
+                    data-greeting-force-required-settings
+                    <?= empty($widget['greeting_force_phone_capture']) ? 'hidden' : '' ?>
+                >
+                    <label class="toggle-row is-readonly">
+                        <input
+                            type="checkbox"
+                            value="1"
+                            data-greeting-phone-required-readonly
+                            checked
+                            disabled
+                        >
+                        <span><?= e(t('toggle.phone_number_required')) ?></span>
+                    </label>
+                </div>
+                <div class="form-grid two-columns">
+                    <label>
+                        <span><?= e(t('label.phone_input_placeholder')) ?></span>
+                        <input type="text" name="greeting_phone_placeholder" value="<?= e((string) ($widget['greeting_phone_placeholder'] ?? t('default.greeting_phone_placeholder'))) ?>">
+                    </label>
+                    <label>
+                        <span><?= e(t('label.submit_button_text')) ?></span>
+                        <input type="text" name="greeting_submit_text" value="<?= e((string) ($widget['greeting_submit_text'] ?? t('default.greeting_submit_text'))) ?>">
+                    </label>
+                    <label class="span-2">
+                        <span><?= e(t('label.success_message')) ?></span>
+                        <input type="text" name="greeting_lead_success_message" value="<?= e((string) ($widget['greeting_lead_success_message'] ?? t('default.greeting_lead_success_message'))) ?>">
+                    </label>
+                </div>
             </div>
         </div>
     </section>

@@ -2263,6 +2263,32 @@ code {
     line-height: 1.5;
 }
 
+.greeting-dialog-dependent-settings {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.greeting-dialog-dependent-settings[hidden],
+.phone-capture-dependent-settings[hidden],
+.force-phone-dependent-settings[hidden] {
+    display: none !important;
+}
+
+.greeting-dialog-subtoggle {
+    margin-top: 18px;
+}
+
+.phone-capture-dependent-settings {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.toggle-row.is-readonly {
+    opacity: 0.85;
+}
+
 .greeting-capture-options.is-disabled {
     opacity: 0.55;
 }
