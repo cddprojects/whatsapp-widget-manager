@@ -652,6 +652,10 @@
 
     document.querySelectorAll('.dropdown-menu, .action-menu-panel').forEach(function (panel) {
         panel.addEventListener('click', function (event) {
+            if (event.target.closest('button, a, [role="menuitem"], input, select, textarea, label')) {
+                return;
+            }
+
             event.stopPropagation();
         });
     });
