@@ -17,7 +17,7 @@ return [
     'nav.main' => '主导航',
     'nav.my_leads' => '我的线索',
     'nav.all_leads' => '全部线索',
-    'nav.lead_recycle_bin' => 'Lead Recycle Bin',
+    'nav.lead_recycle_bin' => '线索回收站',
 
     // Page titles
     'page.dashboard' => '仪表盘',
