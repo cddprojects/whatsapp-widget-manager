@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-/** @var string $leadPageMode client|superadmin|recycle_bin */
+/** @var string $leadPageMode client|superadmin|recycle_bin|all_leads */
+/** @var string $sort */
 /** @var array $result */
 /** @var string $query */
 /** @var string $dateFrom */
@@ -22,11 +23,14 @@ declare(strict_types=1);
 
 $isRecycleBin = $leadPageMode === 'recycle_bin';
 $isClientPage = $leadPageMode === 'client';
+$isAllLeadsPage = $leadPageMode === 'all_leads';
 $isSuperadminPage = $leadPageMode === 'superadmin';
+$useSuperadminLeadActions = $isSuperadminPage || $isAllLeadsPage;
+$sort = $sort ?? 'newest';
 $showSelection = true;
 $showDeleteActions = !$isRecycleBin;
 $showRestoreActions = $isRecycleBin;
-$showClientWidgetColumn = $isSuperadminPage && $showClientColumn && $clientFilterId <= 0;
+$showClientWidgetColumn = $isAllLeadsPage || ($isSuperadminPage && $showClientColumn && $clientFilterId <= 0);
 $hasWidgetFilter = $widgetOptions !== [];
 $hasClientFilter = $showClientColumn && $clientOptions !== [];
 $recyclePrimaryRowClass = 'recycle-bin-filter-row recycle-bin-filter-row-primary';
@@ -60,7 +64,7 @@ $toolbarSelectedButtons = static function () use (
     $exportUrl,
     $showDeleteActions,
     $showRestoreActions,
-    $isSuperadminPage
+    $useSuperadminLeadActions
 ): void {
     ?>
     <span class="lead-selected-pill" data-selected-lead-count><?= e(t('lead.selected_count', ['count' => '0'])) ?></span>
@@ -68,7 +72,7 @@ $toolbarSelectedButtons = static function () use (
         <a class="btn btn-light" href="<?= e($exportUrl) ?>"><?= e(t('button.export_csv')) ?></a>
     <?php endif; ?>
     <?php if ($showDeleteActions): ?>
-        <?php if ($isSuperadminPage): ?>
+        <?php if ($useSuperadminLeadActions): ?>
             <button type="button" class="btn btn-light btn-lead-bulk-action" data-delete-selected-leads>
                 <span class="lead-action-icon" aria-hidden="true">
                     <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M2.5 4.5A1.5 1.5 0 0 1 4 3h12a1.5 1.5 0 0 1 1.415 1.002l-2 6A1.5 1.5 0 0 1 14.001 11H6.236l-.586 2.344A1.5 1.5 0 0 1 4.18 14.5H3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h.68l2-8H4a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1.5Zm3.736 6 1-4h7.265l1.333 4H6.236Z"/></svg>
@@ -143,6 +147,72 @@ $toolbarSelectedButtons = static function () use (
                         <?php $toolbarDefaultButtons(); ?>
                     </div>
                     <?php if ($showRestoreActions): ?>
+                        <div class="lead-toolbar-selected" data-lead-toolbar-selected hidden>
+                            <?php $toolbarSelectedButtons(); ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </form>
+    <?php elseif ($isAllLeadsPage): ?>
+        <form class="all-leads-filter-form admin-filter-bar" method="get" action="<?= e($formAction) ?>">
+            <div class="all-leads-filter-row all-leads-filter-row-primary">
+                <label class="search-field lead-filter-search">
+                    <span><?= e(t('filter.search')) ?></span>
+                    <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_leads')) ?>">
+                </label>
+                <?php if ($hasClientFilter): ?>
+                    <label class="lead-filter-client">
+                        <span><?= e(t('filter.client')) ?></span>
+                        <select name="client_id">
+                            <option value="0"><?= e(t('filter.all_clients')) ?></option>
+                            <?php foreach ($clientOptions as $clientOption): ?>
+                                <option value="<?= (int) $clientOption['id'] ?>"<?= (int) $clientOption['id'] === $clientFilterId ? ' selected' : '' ?>>
+                                    <?= e($clientOption['name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                <?php endif; ?>
+                <?php if ($hasWidgetFilter): ?>
+                    <label class="lead-filter-widget">
+                        <span><?= e(t('filter.widget')) ?></span>
+                        <select name="widget_id">
+                            <option value="0"><?= e(t('filter.all_widgets')) ?></option>
+                            <?php foreach ($widgetOptions as $widgetOption): ?>
+                                <option value="<?= (int) $widgetOption['id'] ?>"<?= (int) $widgetOption['id'] === $widgetFilterId ? ' selected' : '' ?>>
+                                    <?= e($widgetOption['widget_name']) ?><?php if (!empty($widgetOption['owner_name'])): ?> — <?= e($widgetOption['owner_name']) ?><?php endif; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                <?php endif; ?>
+                <label class="lead-filter-sort">
+                    <span><?= e(t('filter.sort')) ?></span>
+                    <select name="sort">
+                        <option value="newest"<?= $sort === 'newest' ? ' selected' : '' ?>><?= e(t('filter.newest_first')) ?></option>
+                        <option value="oldest"<?= $sort === 'oldest' ? ' selected' : '' ?>><?= e(t('filter.oldest_first')) ?></option>
+                        <option value="phone_az"<?= $sort === 'phone_az' ? ' selected' : '' ?>><?= e(t('filter.lead_phone_az')) ?></option>
+                        <option value="phone_za"<?= $sort === 'phone_za' ? ' selected' : '' ?>><?= e(t('filter.lead_phone_za')) ?></option>
+                        <option value="client_az"<?= $sort === 'client_az' ? ' selected' : '' ?>><?= e(t('filter.client_name_az')) ?></option>
+                        <option value="client_za"<?= $sort === 'client_za' ? ' selected' : '' ?>><?= e(t('filter.client_name_za')) ?></option>
+                    </select>
+                </label>
+            </div>
+            <div class="all-leads-filter-row all-leads-filter-row-secondary">
+                <label class="lead-filter-from">
+                    <span><?= e(t('filter.from_date')) ?></span>
+                    <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
+                </label>
+                <label class="lead-filter-to">
+                    <span><?= e(t('filter.to_date')) ?></span>
+                    <input type="date" name="date_to" value="<?= e($dateTo) ?>">
+                </label>
+                <div class="all-leads-toolbar-actions">
+                    <div class="lead-toolbar-default" data-lead-toolbar-default>
+                        <?php $toolbarDefaultButtons(); ?>
+                    </div>
+                    <?php if ($showDeleteActions): ?>
                         <div class="lead-toolbar-selected" data-lead-toolbar-selected hidden>
                             <?php $toolbarSelectedButtons(); ?>
                         </div>
@@ -403,7 +473,7 @@ $toolbarSelectedButtons = static function () use (
                                 <?php else: ?>
                                 <div class="lead-row-actions">
                                     <?php if ($showDeleteActions): ?>
-                                        <?php if ($isSuperadminPage): ?>
+                                        <?php if ($useSuperadminLeadActions): ?>
                                             <button
                                                 type="button"
                                                 class="btn btn-light btn-compact btn-lead-action"

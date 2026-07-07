@@ -227,6 +227,30 @@ function build_client_leads_where(array $options, array &$params): string
     return implode(' AND ', $where);
 }
 
+function client_leads_order_sql(array $options): string
+{
+    if (!empty($options['recycle_bin'])) {
+        return 'wl.deleted_at DESC';
+    }
+
+    $sort = trim((string) ($options['sort'] ?? 'newest'));
+
+    switch ($sort) {
+        case 'oldest':
+            return 'wl.created_at ASC';
+        case 'phone_az':
+            return 'COALESCE(NULLIF(wl.visitor_full_phone, \'\'), wl.visitor_phone) ASC, wl.created_at DESC';
+        case 'phone_za':
+            return 'COALESCE(NULLIF(wl.visitor_full_phone, \'\'), wl.visitor_phone) DESC, wl.created_at DESC';
+        case 'client_az':
+            return 'u.name ASC, wl.created_at DESC';
+        case 'client_za':
+            return 'u.name DESC, wl.created_at DESC';
+        default:
+            return 'wl.created_at DESC';
+    }
+}
+
 function search_client_leads(array $options): array
 {
     $page = max(1, (int) ($options['page'] ?? 1));
@@ -257,7 +281,7 @@ function search_client_leads(array $options): array
             LEFT JOIN users u ON u.id = wl.client_id
             LEFT JOIN users deleted_user ON deleted_user.id = wl.deleted_by_user_id
             WHERE ' . $whereSql . '
-            ORDER BY ' . (!empty($options['recycle_bin']) ? 'wl.deleted_at DESC' : 'wl.created_at DESC') . '
+            ORDER BY ' . client_leads_order_sql($options) . '
             LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
@@ -796,7 +820,7 @@ function render_lead_source_cell(array $lead): void
     $compactPath = format_lead_source_compact_path($lead);
 
     if ($fullUrl === '' && $compactPath === '' && $title === t('lead.source_unknown')) {
-        echo '<span class="lead-source-empty">—</span>';
+        echo '<span class="lead-source-unavailable">' . e(t('lead.source_unavailable')) . '</span>';
         return;
     }
 
