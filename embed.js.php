@@ -91,7 +91,7 @@ $config = [
         }
 
         if (state === 'greeting-phone') {
-            return { width: 390, height: 340 };
+            return { width: 390, height: 240 };
         }
         if (state === 'greeting') {
             return { width: 380, height: 300 };
