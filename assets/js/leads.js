@@ -217,12 +217,13 @@
     }
 
     function getDeleteModalCopy(mode) {
-        if (mode === 'superadmin') {
+        if (mode === 'superadmin' || mode === 'all_leads') {
             return {
                 title: ctcwI18n('lead.move_to_recycle_bin_title'),
                 body: ctcwI18n('lead.move_to_recycle_bin_body'),
                 confirm: ctcwI18n('lead.move_to_recycle_bin'),
                 bulkTitle: ctcwI18n('lead.move_selected_to_recycle_bin_title'),
+                bulkBody: ctcwI18n('lead.move_selected_to_recycle_bin_body'),
                 bulkBodyOne: ctcwI18n('lead.move_to_recycle_bin_body_one'),
                 bulkBodyOther: ctcwI18n('lead.move_to_recycle_bin_body_other'),
                 bulkConfirmOne: ctcwI18n('lead.move_to_recycle_bin'),
@@ -330,8 +331,9 @@
                 }
                 if (confirm) {
                     confirm.textContent = copy.confirm;
-                    confirm.classList.toggle('btn-danger-soft', mode !== 'superadmin');
-                    confirm.classList.toggle('btn-primary-soft', mode === 'superadmin');
+                    var isRecycleMove = mode === 'superadmin' || mode === 'all_leads';
+                    confirm.classList.toggle('btn-danger-soft', !isRecycleMove);
+                    confirm.classList.toggle('btn-primary-soft', isRecycleMove);
                 }
                 if (singleModal) {
                     singleModal.hidden = false;
@@ -354,9 +356,10 @@
                     bulkTitle.textContent = deleteCopy.bulkTitle;
                 }
                 if (bulkMessage) {
-                    bulkMessage.textContent = selectedIds.length === 1
-                        ? deleteCopy.bulkBodyOne
-                        : deleteCopy.bulkBodyOther.replace('{count}', String(selectedIds.length));
+                    bulkMessage.textContent = deleteCopy.bulkBody
+                        || (selectedIds.length === 1
+                            ? deleteCopy.bulkBodyOne
+                            : deleteCopy.bulkBodyOther.replace('{count}', String(selectedIds.length)));
                 }
                 if (bulkConfirm) {
                     bulkConfirm.textContent = selectedIds.length === 1
@@ -404,6 +407,7 @@
 
             var permanentButton = event.target.closest('[data-permanent-delete-lead]');
             if (permanentButton) {
+                closeActionMenus();
                 pendingLeadId = parseInt(permanentButton.getAttribute('data-lead-id') || '0', 10);
                 pendingBulkAction = 'permanent-single';
                 if (permanentModal) {
@@ -597,6 +601,12 @@
         }
 
         updateLeadSelectionUi(root);
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeActionMenus();
+            }
+        });
     }
 
     if (document.readyState === 'loading') {

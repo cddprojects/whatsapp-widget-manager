@@ -225,6 +225,7 @@ function dashboard_js_i18n(): array
         'lead.move_selected_to_recycle_bin' => t('lead.move_selected_to_recycle_bin'),
         'lead.move_to_recycle_bin_title' => t('lead.move_to_recycle_bin_title'),
         'lead.move_selected_to_recycle_bin_title' => t('lead.move_selected_to_recycle_bin_title'),
+        'lead.move_selected_to_recycle_bin_body' => t('lead.move_selected_to_recycle_bin_body'),
         'lead.move_to_recycle_bin_body' => t('lead.move_to_recycle_bin_body'),
         'lead.move_to_recycle_bin_body_one' => t('lead.move_to_recycle_bin_body_one'),
         'lead.move_to_recycle_bin_body_other' => t('lead.move_to_recycle_bin_body_other'),
