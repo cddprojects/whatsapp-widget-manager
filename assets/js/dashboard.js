@@ -1587,6 +1587,9 @@ function initAdminLivePreview() {
     function buildAdminPreviewMarkup(formState) {
         var style = escapeHtml(formState.desktopStyle);
         var cta = escapeHtml(formState.callToAction);
+        var hoverBox = formState.desktopStyle === 'style-5'
+            ? '<span class="ctcw-hover-box">' + cta + '</span>'
+            : '';
 
         return '<div class="ctcw-admin-live-preview-inner">'
             + '<span class="ctcw-preview-badge">' + escapeHtml(window.ctcwI18n('preview.label')) + '</span>'
@@ -1595,6 +1598,7 @@ function initAdminLivePreview() {
             + '<button type="button" class="ctcw-widget" tabindex="-1" aria-label="Widget preview" data-preview-destination="' + escapeHtml(formState.previewDestination) + '">'
             + '<span class="ctcw-icon">' + whatsappIcon + '</span>'
             + '<span class="ctcw-text">' + cta + '</span>'
+            + hoverBox
             + '</button>'
             + '</div>'
             + '</div>';
