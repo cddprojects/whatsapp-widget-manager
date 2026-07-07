@@ -164,6 +164,10 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     display: inline-block;
 }
 
+.ctcw-hover-box {
+    display: none;
+}
+
 .ctcw-greeting,
 .ctcw-widget-popup {
     position: relative;

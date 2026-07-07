@@ -91,6 +91,14 @@ $desktopAlign = $desktopHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
 $mobileAlign = $mobileHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
 $desktopAnchorClass = 'is-' . $desktopVerticalSide . ' is-' . $desktopHorizontalSide;
 $mobileAnchorClass = 'is-mobile-' . $mobileVerticalSide . ' is-mobile-' . $mobileHorizontalSide;
+$greetingTitle = (string) ($widget['greeting_title'] ?? '');
+$greetingMessage = (string) ($widget['greeting_message'] ?? '');
+$callToActionText = $isOnline
+    ? (string) ($widget['call_to_action'] ?? '')
+    : (string) ($widget['offline_message'] ?? '');
+$phoneSubmitButtonText = (string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp');
+$successMessage = (string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...');
+$styleFiveHoverText = $callToActionText;
 ?>
 <!doctype html>
 <html lang="en">
@@ -124,14 +132,14 @@ $mobileAnchorClass = 'is-mobile-' . $mobileVerticalSide . ' is-mobile-' . $mobil
         <?php if (!empty($widget['greeting_enabled'])): ?>
             <div class="ctcw-greeting ctcw-widget-popup<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?>" data-greeting>
                 <div class="ctcw-greeting-header">
-                    <strong class="ctcw-greeting-title"><?= e($widget['greeting_title']) ?></strong>
+                    <strong class="ctcw-greeting-title"><?= e($greetingTitle) ?></strong>
                     <button class="ctcw-close" type="button" aria-label="Close WhatsApp widget" data-close-greeting>
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <?php if (!empty($widget['greeting_capture_phone'])): ?>
                     <div class="ctcw-greeting-form">
-                        <p class="ctcw-greeting-message"><?= e($widget['greeting_message']) ?></p>
+                        <p class="ctcw-greeting-message"><?= e($greetingMessage) ?></p>
                         <div class="ctcw-phone-field">
                             <div class="ctcw-phone-row">
                                 <input
@@ -150,7 +158,7 @@ $mobileAnchorClass = 'is-mobile-' . $mobileVerticalSide . ' is-mobile-' . $mobil
                                     data-ctcw-role="phone-submit"
                                     data-ctcw-submit-id="<?= e($phoneSubmitButtonId) ?>"
                                     data-greeting-submit
-                                    aria-label="<?= e((string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp')) ?>"
+                                    aria-label="<?= e($phoneSubmitButtonText) ?>"
                                 >
                                     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
                                         <path fill="currentColor" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
@@ -159,18 +167,18 @@ $mobileAnchorClass = 'is-mobile-' . $mobileVerticalSide . ' is-mobile-' . $mobil
                             </div>
                             <span class="ctcw-phone-error" id="<?= e($phoneErrorId) ?>" data-greeting-phone-error hidden></span>
                         </div>
-                        <span class="ctcw-greeting-success" data-greeting-success hidden><?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?></span>
+                        <span class="ctcw-greeting-success" data-greeting-success hidden><?= e($successMessage) ?></span>
                     </div>
                 <?php else: ?>
-                    <p class="ctcw-greeting-message"><?= e($widget['greeting_message']) ?></p>
+                    <p class="ctcw-greeting-message"><?= e($greetingMessage) ?></p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
-        <button class="ctcw-widget ctcw-launcher" type="button" data-widget-button aria-label="<?= e($widget['call_to_action']) ?>">
+        <button class="ctcw-widget ctcw-launcher" type="button" data-widget-button aria-label="<?= e($callToActionText) ?>">
             <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
-            <span class="ctcw-text"><?= e($isOnline ? (string) $widget['call_to_action'] : (string) $widget['offline_message']) ?></span>
+            <span class="ctcw-text"><?= e($callToActionText) ?></span>
             <?php if ($desktopStyle === 'style-5' || $mobileStyle === 'style-5'): ?>
-                <span class="ctcw-hover-box"><?= e($widget['greeting_message'] ?: $widget['call_to_action']) ?></span>
+                <span class="ctcw-hover-box"><?= e($styleFiveHoverText) ?></span>
             <?php endif; ?>
         </button>
     </div>
