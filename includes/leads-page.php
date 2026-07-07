@@ -150,6 +150,52 @@ $toolbarSelectedButtons = static function () use (
                 </div>
             </div>
         </form>
+    <?php elseif ($isClientPage): ?>
+        <form
+            class="client-lead-filter-form admin-filter-bar<?= $hasWidgetFilter ? '' : ' client-lead-filter-form--no-widget' ?>"
+            method="get"
+            action="<?= e($formAction) ?>"
+        >
+            <div class="client-lead-filter-row client-lead-filter-row-primary<?= $hasWidgetFilter ? '' : ' client-lead-filter-row-primary--no-widget' ?>">
+                <label class="search-field lead-filter-search">
+                    <span><?= e(t('filter.search')) ?></span>
+                    <input type="search" name="q" value="<?= e($query) ?>" placeholder="<?= e(t('filter.placeholder_leads')) ?>">
+                </label>
+                <?php if ($hasWidgetFilter): ?>
+                    <label class="lead-filter-widget">
+                        <span><?= e(t('filter.widget')) ?></span>
+                        <select name="widget_id">
+                            <option value="0"><?= e(t('filter.all_widgets')) ?></option>
+                            <?php foreach ($widgetOptions as $widgetOption): ?>
+                                <option value="<?= (int) $widgetOption['id'] ?>"<?= (int) $widgetOption['id'] === $widgetFilterId ? ' selected' : '' ?>>
+                                    <?= e($widgetOption['widget_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                <?php endif; ?>
+            </div>
+            <div class="client-lead-filter-row client-lead-filter-row-secondary">
+                <label class="lead-filter-from">
+                    <span><?= e(t('filter.from_date')) ?></span>
+                    <input type="date" name="date_from" value="<?= e($dateFrom) ?>">
+                </label>
+                <label class="lead-filter-to">
+                    <span><?= e(t('filter.to_date')) ?></span>
+                    <input type="date" name="date_to" value="<?= e($dateTo) ?>">
+                </label>
+                <div class="client-lead-toolbar-actions">
+                    <div class="lead-toolbar-default" data-lead-toolbar-default>
+                        <?php $toolbarDefaultButtons(); ?>
+                    </div>
+                    <?php if ($showDeleteActions): ?>
+                        <div class="lead-toolbar-selected" data-lead-toolbar-selected hidden>
+                            <?php $toolbarSelectedButtons(); ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </form>
     <?php else: ?>
         <form
             class="lead-filter-toolbar admin-filter-bar<?= $hasWidgetFilter ? '' : ' lead-filter-toolbar--no-widget' ?>"
