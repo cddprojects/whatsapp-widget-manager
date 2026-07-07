@@ -146,7 +146,7 @@ function applySize(width, height, state) {
 
     // Force desktop greeting iframe height to 235px
     if (!isMobile() && (nextState === 'greeting' || nextState === 'greeting-phone')) {
-        height = 235;
+        height = 255;
     }
 
     var size = clampSize(width, height, nextState);
