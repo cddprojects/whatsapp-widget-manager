@@ -909,6 +909,7 @@ function default_widget_data(): array
     return [
         'widget_name' => 'My WhatsApp Widget',
         'website_domain' => '',
+        'website_name' => '',
         'allow_www' => 1,
         'allow_subdomains' => 0,
         'domain_lock_enabled' => 1,
@@ -1016,6 +1017,7 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
     $data = [
         'widget_name' => trim((string) ($post['widget_name'] ?? $defaults['widget_name'])),
         'website_domain' => $websiteDomain,
+        'website_name' => trim((string) ($post['website_name'] ?? ($existingWidget['website_name'] ?? ''))),
         'allow_www' => post_checkbox('allow_www'),
         'allow_subdomains' => post_checkbox('allow_subdomains'),
         'domain_lock_enabled' => post_checkbox('domain_lock_enabled'),
@@ -2002,6 +2004,26 @@ function format_widget_owner_display(array $widget): string
     return t('meta.no_client_assigned');
 }
 
+function ensure_website_name_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (!database_table_exists('widgets')) {
+        return;
+    }
+
+    if (!table_has_column('widgets', 'website_name')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN website_name VARCHAR(120) NULL DEFAULT NULL AFTER website_domain"
+        );
+    }
+}
+
 function ensure_greeting_phone_submit_button_id_schema(): void
 {
     static $ensured = false;
@@ -2717,6 +2739,7 @@ function ensure_widget_activation_schema(): void
 
 try {
     ensure_widget_activation_schema();
+    ensure_website_name_schema();
     ensure_greeting_phone_submit_button_id_schema();
     ensure_lead_recycle_schema();
 } catch (Throwable $exception) {

@@ -42,6 +42,7 @@ $widgetConfig = [
     'initialMode' => in_array((string) ($_GET['mode'] ?? ''), ['desktop', 'mobile'], true) ? (string) $_GET['mode'] : '',
     'widgetName' => (string) $widget['widget_name'],
     'site' => (string) $widget['website_domain'],
+    'websiteName' => (string) ($widget['website_name'] ?? ''),
     'destinationCount' => $destinationCount,
     'destinationSelectionMethod' => $destinationMethod,
     'destinationResolveUrl' => SYSTEM_BASE_URL . '/resolve-widget-destination.php',

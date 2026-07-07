@@ -1,0 +1,2 @@
+ALTER TABLE widgets
+    ADD COLUMN IF NOT EXISTS website_name VARCHAR(120) NULL DEFAULT NULL AFTER website_domain;

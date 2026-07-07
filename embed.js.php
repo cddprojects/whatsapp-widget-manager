@@ -38,6 +38,7 @@ $config = [
     'widgetId' => (string) $widget['id'],
     'frameId' => $frameId,
     'src' => $widgetSrc,
+    'websiteName' => (string) ($widget['website_name'] ?? ''),
     'desktop' => [
         'position' => iframe_position_settings($widget, 'desktop'),
     ],
@@ -184,17 +185,76 @@ function applySize(width, height, state) {
         applySize(initial.width, initial.height, 'icon');
     }
 
+    function trustedIframeOrigin() {
+        try {
+            return new URL(config.src).origin;
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function hostnameSiteLabel(hostname) {
+        var normalized = String(hostname || '').replace(/^www\./i, '');
+        if (!normalized) {
+            return '';
+        }
+
+        var parts = normalized.split('.').filter(Boolean);
+        if (parts.length > 1) {
+            return parts[0];
+        }
+
+        return normalized;
+    }
+
+    function getPageContext() {
+        var ogSiteName = document.querySelector('meta[property="og:site_name"]');
+        var applicationName = document.querySelector('meta[name="application-name"]');
+        var ogTitle = document.querySelector('meta[property="og:title"]');
+        var savedSiteName = String(config.websiteName || '').trim();
+        var detectedSiteName = (ogSiteName ? ogSiteName.getAttribute('content') : '') || '';
+        detectedSiteName = detectedSiteName.trim();
+        if (!detectedSiteName && applicationName) {
+            detectedSiteName = String(applicationName.getAttribute('content') || '').trim();
+        }
+        if (!detectedSiteName) {
+            detectedSiteName = hostnameSiteLabel(window.location.hostname);
+        }
+
+        var title = String(document.title || '').trim();
+        if (!title && ogTitle) {
+            title = String(ogTitle.getAttribute('content') || '').trim();
+        }
+
+        return {
+            siteName: savedSiteName || detectedSiteName || '',
+            siteUrl: window.location.origin || '',
+            site: window.location.hostname.replace(/^www\./i, ''),
+            title: title,
+            url: window.location.pathname || '/',
+            urlFull: window.location.href
+        };
+    }
+
     function sendViewport() {
         if (!iframe || !iframe.contentWindow) {
             return;
         }
+
+        var pageContext = getPageContext();
+        var targetOrigin = trustedIframeOrigin() || '*';
+
         iframe.contentWindow.postMessage({
-            type: 'ctcw:viewport',
+            type: 'ctcw:page-context',
             width: window.innerWidth,
             height: window.innerHeight,
-            url: window.location.href,
-            title: document.title || ''
-        }, '*');
+            siteName: pageContext.siteName,
+            siteUrl: pageContext.siteUrl,
+            site: pageContext.site,
+            title: pageContext.title,
+            url: pageContext.url,
+            urlFull: pageContext.urlFull
+        }, targetOrigin);
     }
 
     function mount() {
@@ -281,4 +341,7 @@ function applySize(width, height, state) {
             applySize(lastSize.width, lastSize.height, lastState);
         }
     });
+
+    window.addEventListener('popstate', sendViewport);
+    window.addEventListener('hashchange', sendViewport);
 })();
