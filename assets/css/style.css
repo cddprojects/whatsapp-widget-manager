@@ -358,6 +358,68 @@ code {
     text-align: right;
 }
 
+.clients-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.clients-table col.col-client-name {
+    width: 32%;
+}
+
+.clients-table col.col-metric:nth-of-type(2) {
+    width: 14%;
+}
+
+.clients-table col.col-metric:nth-of-type(3) {
+    width: 18%;
+}
+
+.clients-table col.col-metric:nth-of-type(4) {
+    width: 14%;
+}
+
+.clients-table col.col-actions {
+    width: 22%;
+}
+
+.clients-table .col-client-name {
+    text-align: left;
+}
+
+.clients-table th.col-metric,
+.clients-table td.col-metric {
+    text-align: center;
+}
+
+.clients-table .col-actions {
+    text-align: right;
+}
+
+.client-directory-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.clients-table-actions {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.clients-table-actions .btn {
+    white-space: nowrap;
+}
+
+.clients-table-wrap {
+    overflow-x: visible;
+}
+
 .admin-form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2993,5 +3055,71 @@ code {
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
+    }
+
+    .clients-table thead {
+        display: none;
+    }
+
+    .clients-table tbody tr {
+        display: block;
+        margin-bottom: 12px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+    }
+
+    .clients-table tbody td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border: 0;
+        text-align: right;
+    }
+
+    .clients-table tbody td::before {
+        content: attr(data-label);
+        flex: 0 0 42%;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .clients-table tbody td.col-client-name {
+        display: block;
+        padding-top: 0;
+        text-align: left;
+    }
+
+    .clients-table tbody td.col-client-name::before {
+        content: none;
+    }
+
+    .clients-table tbody td.col-client-name .client-directory-name {
+        font-size: 1.05rem;
+    }
+
+    .clients-table tbody td.col-actions {
+        padding-bottom: 0;
+    }
+
+    .clients-table tbody td.col-actions::before {
+        content: none;
+    }
+
+    .clients-table-actions {
+        display: flex;
+        width: 100%;
+        justify-content: stretch;
+        gap: 8px;
+    }
+
+    .clients-table-actions .btn {
+        flex: 1 1 0;
+        justify-content: center;
     }
 }
