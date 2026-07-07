@@ -254,7 +254,7 @@
         if (digits.length < 8) {
             return {
                 valid: false,
-                message: messages.minDigits || 'Enter at least 8 digits.'
+                message: messages.invalid || 'Enter a valid phone number.'
             };
         }
 
