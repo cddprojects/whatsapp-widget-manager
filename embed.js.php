@@ -140,17 +140,31 @@ $config = [
         iframe.style[position.horizontalSide] = position.horizontalValue;
     }
 
-    function applySize(width, height, state) {
-        var size = clampSize(width, height, state);
-        var nextState = state || lastState || 'icon';
-        if (lastSize && lastSize.width === size.width && lastSize.height === size.height && lastState === nextState) {
-            return;
-        }
-        lastSize = size;
-        lastState = nextState;
-        iframe.style.width = size.width + 'px';
-        iframe.style.height = size.height + 'px';
+function applySize(width, height, state) {
+    var nextState = state || lastState || 'icon';
+
+    // Force desktop greeting iframe height to 235px
+    if (!isMobile() && (nextState === 'greeting' || nextState === 'greeting-phone')) {
+        height = 235;
     }
+
+    var size = clampSize(width, height, nextState);
+
+    if (
+        lastSize &&
+        lastSize.width === size.width &&
+        lastSize.height === size.height &&
+        lastState === nextState
+    ) {
+        return;
+    }
+
+    lastSize = size;
+    lastState = nextState;
+
+    iframe.style.width = size.width + 'px';
+    iframe.style.height = size.height + 'px';
+}
 
     function applyBaseStyles() {
         iframe.setAttribute('scrolling', 'no');
