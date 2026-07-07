@@ -80,8 +80,8 @@ $mobileVerticalValue = (string) ($widget['mobile_vertical_position_value'] ?? '2
 $mobileHorizontalValue = (string) ($widget['mobile_horizontal_position_value'] ?? '25px');
 $desktopAlign = $desktopHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
 $mobileAlign = $mobileHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
-$desktopAnchorClass = 'ctcw-anchor-' . $desktopVerticalSide . ' ctcw-anchor-' . $desktopHorizontalSide;
-$mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile-anchor-' . $mobileHorizontalSide;
+$desktopAnchorClass = 'is-' . $desktopVerticalSide . ' is-' . $desktopHorizontalSide;
+$mobileAnchorClass = 'is-mobile-' . $mobileVerticalSide . ' is-mobile-' . $mobileHorizontalSide;
 ?>
 <!doctype html>
 <html lang="en">
@@ -93,27 +93,6 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
     <link rel="stylesheet" href="assets/css/widget.css?v=<?= (int) filemtime(__DIR__ . '/assets/css/widget.css') ?>">
     <?php if ($showWidget): ?>
         <?= $widget['custom_script_head'] ?? '' ?>
-        <style>
-            .ctcw-container {
-                position: absolute;
-                top: auto;
-                bottom: auto;
-                left: auto;
-                right: auto;
-                <?= e($desktopVerticalSide) ?>: 12px;
-                <?= e($desktopHorizontalSide) ?>: 12px;
-                align-items: <?= e($desktopAlign) ?>;
-            }
-            html.ctcw-mobile .ctcw-container {
-                top: auto;
-                bottom: auto;
-                left: auto;
-                right: auto;
-                <?= e($mobileVerticalSide) ?>: 12px;
-                <?= e($mobileHorizontalSide) ?>: 12px;
-                align-items: <?= e($mobileAlign) ?>;
-            }
-        </style>
         <?php if (!empty($widget['custom_css'])): ?>
             <style>
                 <?= $widget['custom_css'] ?>
@@ -125,19 +104,25 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
 <?php if ($showWidget): ?>
     <?= $widget['custom_script_body'] ?? '' ?>
     <div
-        class="ctcw-container ctcw-widget-root <?= e($desktopAnchorClass) ?> <?= e($mobileAnchorClass) ?> <?= e($desktopStyle) ?> <?= $isOnline ? 'is-online' : 'is-offline' ?>"
+        class="ctcw-container ctcw-widget-root ctcw-widget-anchor <?= e($desktopAnchorClass) ?> <?= e($mobileAnchorClass) ?> <?= e($desktopStyle) ?> <?= $isOnline ? 'is-online' : 'is-offline' ?>"
         data-mobile-style="<?= e($mobileStyle) ?>"
         data-desktop-style="<?= e($desktopStyle) ?>"
         data-show-desktop="<?= !empty($widget['show_desktop']) ? '1' : '0' ?>"
         data-show-mobile="<?= !empty($widget['show_mobile']) ? '1' : '0' ?>"
+        data-desktop-align="<?= e($desktopAlign) ?>"
+        data-mobile-align="<?= e($mobileAlign) ?>"
     >
         <?php if (!empty($widget['greeting_enabled'])): ?>
-            <div class="ctcw-greeting<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?>" data-greeting>
-                <button class="ctcw-close" type="button" aria-label="Close greeting" data-close-greeting>&times;</button>
+            <div class="ctcw-greeting ctcw-widget-popup<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?>" data-greeting>
+                <div class="ctcw-greeting-header">
+                    <strong class="ctcw-greeting-title"><?= e($widget['greeting_title']) ?></strong>
+                    <button class="ctcw-close" type="button" aria-label="Close WhatsApp widget" data-close-greeting>
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
                 <?php if (!empty($widget['greeting_capture_phone'])): ?>
                     <div class="ctcw-greeting-form">
-                        <strong><?= e($widget['greeting_title']) ?></strong>
-                        <p><?= e($widget['greeting_message']) ?></p>
+                        <p class="ctcw-greeting-message"><?= e($widget['greeting_message']) ?></p>
                         <div class="ctcw-phone-field">
                             <div class="ctcw-phone-row">
                                 <input
@@ -163,12 +148,11 @@ $mobileAnchorClass = 'ctcw-mobile-anchor-' . $mobileVerticalSide . ' ctcw-mobile
                         <span class="ctcw-greeting-success" data-greeting-success hidden><?= e((string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...')) ?></span>
                     </div>
                 <?php else: ?>
-                    <strong><?= e($widget['greeting_title']) ?></strong>
-                    <p><?= e($widget['greeting_message']) ?></p>
+                    <p class="ctcw-greeting-message"><?= e($widget['greeting_message']) ?></p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
-        <button class="ctcw-widget" type="button" data-widget-button aria-label="<?= e($widget['call_to_action']) ?>">
+        <button class="ctcw-widget ctcw-launcher" type="button" data-widget-button aria-label="<?= e($widget['call_to_action']) ?>">
             <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
             <span class="ctcw-text"><?= e($isOnline ? (string) $widget['call_to_action'] : (string) $widget['offline_message']) ?></span>
             <?php if ($desktopStyle === 'style-5' || $mobileStyle === 'style-5'): ?>

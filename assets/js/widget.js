@@ -28,7 +28,32 @@
         greeting: { width: 380, height: 300 },
         'greeting-phone': { width: 390, height: 340 }
     };
-    var measureSelectors = '.ctcw-widget-root, .ctcw-greeting, .ctcw-widget, .ctcw-hover-box';
+    var mobileStateMinimums = {
+        icon: { width: 68, height: 68 },
+        button: { width: 88, height: 72 },
+        hover: { width: 88, height: 72 },
+        greeting: { width: 320, height: 260 },
+        'greeting-phone': { width: 336, height: 300 }
+    };
+
+    function getMeasureSelectors() {
+        if (isGreetingVisible()) {
+            return '.ctcw-widget, .ctcw-greeting, .ctcw-widget-popup';
+        }
+        if (container && container.classList.contains('is-hovering')) {
+            return '.ctcw-widget, .ctcw-hover-box';
+        }
+        return '.ctcw-widget';
+    }
+
+    function getBoundsPadding() {
+        return isMobile() ? 8 : 16;
+    }
+
+    function minimumForState(state) {
+        var table = isMobile() ? mobileStateMinimums : stateMinimums;
+        return table[state] || table.icon;
+    }
 
     if (!container || !button) {
         return;
@@ -93,7 +118,8 @@
         if (style.display === 'none' || style.visibility === 'hidden') {
             return false;
         }
-        if (el.classList.contains('ctcw-greeting') && !el.classList.contains('is-visible')) {
+        if ((el.classList.contains('ctcw-greeting') || el.classList.contains('ctcw-widget-popup'))
+            && !el.classList.contains('is-visible')) {
             return false;
         }
         if (el.classList.contains('ctcw-hover-box')) {
@@ -106,15 +132,17 @@
     }
 
     function getVisibleWidgetBounds() {
-        var elements = Array.from(document.querySelectorAll(measureSelectors)).filter(isElementVisible);
+        var elements = Array.from(document.querySelectorAll(getMeasureSelectors())).filter(isElementVisible);
         if (!elements.length) {
-            return { width: 120, height: 120 };
+            var fallback = minimumForState(resolveSizeState());
+            return { width: fallback.width, height: fallback.height };
         }
 
         var minX = Infinity;
         var minY = Infinity;
         var maxX = -Infinity;
         var maxY = -Infinity;
+        var padding = getBoundsPadding();
 
         elements.forEach(function (el) {
             var rect = el.getBoundingClientRect();
@@ -125,8 +153,8 @@
         });
 
         return {
-            width: Math.ceil(maxX - minX + 32),
-            height: Math.ceil(maxY - minY + 32)
+            width: Math.ceil(maxX - minX + padding),
+            height: Math.ceil(maxY - minY + padding)
         };
     }
 
@@ -139,9 +167,16 @@
 
             var state = resolveSizeState();
             var bounds = getVisibleWidgetBounds();
-            var minimum = stateMinimums[state] || stateMinimums.icon;
+            var minimum = minimumForState(state);
+            var viewportLimit = isMobile()
+                ? Math.max(280, (parentViewportWidth || window.innerWidth || 320) - 24)
+                : null;
             var width = Math.max(minimum.width, bounds.width);
             var height = Math.max(minimum.height, bounds.height);
+
+            if (viewportLimit) {
+                width = Math.min(width, viewportLimit);
+            }
 
             window.parent.postMessage({
                 type: 'ctcw:size',
