@@ -207,6 +207,36 @@
         return false;
     }
 
+    function initPrefilledMessageVariables() {
+        var textarea = document.querySelector('[data-prefilled-message-textarea]');
+        if (!textarea) {
+            return;
+        }
+
+        document.querySelectorAll('[data-variable-insert]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var token = button.getAttribute('data-variable-insert') || '';
+                if (token === '') {
+                    return;
+                }
+
+                var start = textarea.selectionStart;
+                var end = textarea.selectionEnd;
+                var value = textarea.value;
+
+                if (typeof start === 'number' && typeof end === 'number') {
+                    textarea.value = value.slice(0, start) + token + value.slice(end);
+                    var nextPos = start + token.length;
+                    textarea.setSelectionRange(nextPos, nextPos);
+                } else {
+                    textarea.value = value + token;
+                }
+
+                textarea.focus();
+            });
+        });
+    }
+
     function initPhoneSubmitButtonIdValidation() {
         var input = document.querySelector('[data-phone-submit-button-id-input]');
         var form = document.querySelector('[data-widget-form]');
@@ -1185,6 +1215,7 @@
             });
         });
         bootFeature('Destination distribution UI', initDestinationDistributionUi);
+        bootFeature('Prefilled message variables', initPrefilledMessageVariables);
         bootFeature('Phone submit button ID validation', initPhoneSubmitButtonIdValidation);
         bootFeature('Admin live preview', initAdminLivePreview);
         bootFeature('Client create form', initClientCreateForm);

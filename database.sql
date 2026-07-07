@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS widgets (
     public_key VARCHAR(100) NOT NULL UNIQUE,
     widget_name VARCHAR(190) NOT NULL,
     website_domain VARCHAR(255) NOT NULL,
+    website_name VARCHAR(120) NULL DEFAULT NULL,
     allow_www TINYINT(1) NOT NULL DEFAULT 1,
     allow_subdomains TINYINT(1) NOT NULL DEFAULT 0,
     domain_lock_enabled TINYINT(1) NOT NULL DEFAULT 1,

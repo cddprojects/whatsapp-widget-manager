@@ -17,8 +17,12 @@
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
     var hoverTimer = null;
     var pageContext = {
-        url: '',
-        title: ''
+        siteName: '',
+        siteUrl: '',
+        site: '',
+        title: '',
+        url: '/',
+        urlFull: ''
     };
     var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-5', 'style-7'];
     var stateMinimums = {
@@ -321,42 +325,104 @@
         phoneError.hidden = !message;
     }
 
+    function isTrustedParentMessage(event) {
+        if (!event || !event.data) {
+            return false;
+        }
+
+        var trustedOrigin = getTrustedParentOrigin();
+        if (trustedOrigin && event.origin !== trustedOrigin) {
+            return false;
+        }
+
+        return true;
+    }
+
     function updatePageContext(data) {
         if (!data) {
             return;
         }
+
+        if (typeof data.siteName === 'string') {
+            pageContext.siteName = data.siteName;
+        }
+        if (typeof data.siteUrl === 'string') {
+            pageContext.siteUrl = data.siteUrl;
+        }
+        if (typeof data.site === 'string' && data.site !== '') {
+            pageContext.site = data.site;
+        }
+        if (typeof data.title === 'string') {
+            pageContext.title = data.title;
+        }
         if (typeof data.url === 'string' && data.url !== '') {
             pageContext.url = data.url;
         }
-        if (typeof data.title === 'string' && data.title !== '') {
-            pageContext.title = data.title;
+        if (typeof data.urlFull === 'string' && data.urlFull !== '') {
+            pageContext.urlFull = data.urlFull;
+        } else if (typeof data.url === 'string' && data.url !== '' && /^https?:\/\//i.test(data.url)) {
+            pageContext.urlFull = data.url;
         }
     }
 
-    function getLeadPageContext() {
-        if (pageContext.url || pageContext.title) {
+    function hasPageContext() {
+        return !!(
+            pageContext.siteName
+            || pageContext.siteUrl
+            || pageContext.site
+            || pageContext.title
+            || pageContext.urlFull
+        );
+    }
+
+    function getMessageContext() {
+        if (hasPageContext()) {
             return {
-                url: pageContext.url,
-                title: pageContext.title
+                siteName: pageContext.siteName || config.websiteName || pageContext.site || config.site || '',
+                siteUrl: pageContext.siteUrl || '',
+                site: pageContext.site || config.site || '',
+                title: pageContext.title || '',
+                url: pageContext.url || '/',
+                urlFull: pageContext.urlFull || ''
             };
         }
 
-        var url = document.referrer || '';
-        var title = '';
-        try {
-            if (window.parent && window.parent !== window) {
-                title = window.parent.document.title || '';
-                if (window.parent.location && window.parent.location.href) {
-                    url = window.parent.location.href;
-                }
+        return {
+            siteName: config.websiteName || config.site || '',
+            siteUrl: '',
+            site: config.site || '',
+            title: '',
+            url: '/',
+            urlFull: document.referrer || ''
+        };
+    }
+
+    function resolvePrefilledMessage(template, context) {
+        var replacements = {
+            '{site_name}': context.siteName || context.site || '',
+            '{site_url}': context.siteUrl || '',
+            '{site}': context.site || '',
+            '{title}': context.title || '',
+            '{url}': context.url || '/',
+            '{url_full}': context.urlFull || ''
+        };
+
+        return String(template || '').replace(
+            /\{site_name\}|\{site_url\}|\{site\}|\{title\}|\{url_full\}|\{url\}/g,
+            function (token) {
+                return Object.prototype.hasOwnProperty.call(replacements, token)
+                    ? replacements[token]
+                    : token;
             }
-        } catch (error) {
-            // Cross-origin embed: parent page data arrives via postMessage.
-        }
+        );
+    }
+
+    function getLeadPageContext() {
+        var context = getMessageContext();
 
         return {
-            url: url,
-            title: title
+            url: context.urlFull || document.referrer || '',
+            title: context.title || ''
         };
     }
 
@@ -529,24 +595,8 @@
             });
     }
 
-    function pageData() {
-        var referrer = document.referrer || '';
-        var cleanUrl = referrer ? referrer.split('#')[0].split('?')[0] : '';
-        return {
-            site: config.site || '',
-            title: referrer || config.widgetName || '',
-            url: cleanUrl || referrer,
-            url_full: referrer
-        };
-    }
-
     function buildMessage() {
-        var data = pageData();
-        return String(config.prefilledMessage || '')
-            .replaceAll('{site}', data.site)
-            .replaceAll('{title}', data.title)
-            .replaceAll('{url_full}', data.url_full)
-            .replaceAll('{url}', data.url);
+        return resolvePrefilledMessage(config.prefilledMessage, getMessageContext());
     }
 
     function appendTextParam(url, encodedMessage) {
@@ -705,14 +755,34 @@
     button.addEventListener('click', handleWhatsAppClick, true);
 
     window.addEventListener('message', function (event) {
-        if (!event.data) {
+        if (!isTrustedParentMessage(event)) {
             return;
         }
-        if (event.data.type === 'ctcw:viewport') {
+
+        if (event.data.type === 'ctcw:page-context') {
             parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
             updatePageContext(event.data);
             applyResponsiveState();
             return;
+        }
+
+        if (event.data.type === 'ctcw:viewport') {
+            parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
+            var legacyUrl = typeof event.data.url === 'string' ? event.data.url : '';
+            var legacyPath = '/';
+            if (legacyUrl !== '') {
+                try {
+                    legacyPath = new URL(legacyUrl).pathname || '/';
+                } catch (error) {
+                    legacyPath = '/';
+                }
+            }
+            updatePageContext({
+                title: event.data.title || '',
+                urlFull: legacyUrl,
+                url: legacyPath
+            });
+            applyResponsiveState();
         }
     });
 

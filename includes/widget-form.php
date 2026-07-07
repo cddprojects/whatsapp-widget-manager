@@ -145,14 +145,37 @@ $settingsSections = [
         </div>
         <label>
             <span><?= e(t('label.message')) ?></span>
-            <textarea name="prefilled_message" rows="5"><?= e($widget['prefilled_message']) ?></textarea>
+            <textarea name="prefilled_message" rows="5" data-prefilled-message-textarea><?= e($widget['prefilled_message']) ?></textarea>
         </label>
-        <div class="helper-chips">
-            <code>{site}</code>
-            <code>{title}</code>
-            <code>{url}</code>
-            <code>{url_full}</code>
+        <div class="message-variable-reference" data-message-variable-reference>
+            <?php
+            $messageVariables = [
+                ['token' => '{site_name}', 'description' => t('message_variable.site_name')],
+                ['token' => '{site_url}', 'description' => t('message_variable.site_url')],
+                ['token' => '{site}', 'description' => t('message_variable.site')],
+                ['token' => '{title}', 'description' => t('message_variable.title')],
+                ['token' => '{url}', 'description' => t('message_variable.url')],
+                ['token' => '{url_full}', 'description' => t('message_variable.url_full')],
+            ];
+            foreach ($messageVariables as $messageVariable):
+            ?>
+                <button
+                    type="button"
+                    class="message-variable-item"
+                    data-variable-insert="<?= e($messageVariable['token']) ?>"
+                    title="<?= e(t('message_variable.insert', ['variable' => $messageVariable['token']])) ?>"
+                >
+                    <code><?= e($messageVariable['token']) ?></code>
+                    <span><?= e($messageVariable['description']) ?></span>
+                </button>
+            <?php endforeach; ?>
         </div>
+        <p class="field-helper message-variable-helper"><?= e(t('helper.prefilled_message_variables')) ?></p>
+        <label>
+            <span><?= e(t('label.website_name')) ?></span>
+            <input type="text" name="website_name" value="<?= e((string) ($widget['website_name'] ?? '')) ?>" placeholder="<?= e(t('placeholder.website_name')) ?>">
+            <small class="field-helper"><?= e(t('helper.website_name')) ?></small>
+        </label>
     </section>
 
     <section class="settings-card" data-settings-panel="call-to-action">
