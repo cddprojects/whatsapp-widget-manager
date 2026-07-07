@@ -80,15 +80,15 @@ $config = [
     function minimumForState(state) {
         if (isMobile()) {
             if (state === 'greeting-phone') {
-                return { width: 320, height: 300 };
+                return { width: 330, height: 300 };
             }
             if (state === 'greeting') {
-                return { width: 300, height: 240 };
+                return { width: 310, height: 240 };
             }
             if (state === 'button' || state === 'hover') {
-                return { width: 88, height: 72 };
+                return { width: 98, height: 72 };
             }
-            return { width: 68, height: 68 };
+            return { width: 78, height: 78 };
         }
 
         if (state === 'greeting-phone') {
