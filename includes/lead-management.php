@@ -107,6 +107,18 @@ function app_today_date(): string
     return date('Y-m-d');
 }
 
+function app_yesterday_bounds(): array
+{
+    $timezone = new DateTimeZone(date_default_timezone_get());
+    $todayStart = new DateTimeImmutable('today', $timezone);
+    $yesterdayStart = $todayStart->modify('-1 day');
+
+    return [
+        'start' => $yesterdayStart->format('Y-m-d H:i:s'),
+        'end' => $todayStart->format('Y-m-d H:i:s'),
+    ];
+}
+
 function normalize_lead_ids(array $leadIds): array
 {
     $normalized = [];
@@ -319,6 +331,34 @@ function count_active_leads(?int $clientId = null, bool $todayOnly = false): int
     if ($todayOnly) {
         $where[] = 'DATE(created_at) = :today';
         $params['today'] = app_today_date();
+    }
+
+    $stmt = db()->prepare('SELECT COUNT(*) FROM widget_leads WHERE ' . implode(' AND ', $where));
+    $stmt->execute($params);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function count_yesterday_active_leads(?int $clientId = null): int
+{
+    if (!database_table_exists('widget_leads')) {
+        return 0;
+    }
+
+    $bounds = app_yesterday_bounds();
+    $where = [
+        'deleted_at IS NULL',
+        'created_at >= :yesterday_start',
+        'created_at < :today_start',
+    ];
+    $params = [
+        'yesterday_start' => $bounds['start'],
+        'today_start' => $bounds['end'],
+    ];
+
+    if ($clientId !== null && $clientId > 0) {
+        $where[] = 'client_id = :client_id';
+        $params['client_id'] = $clientId;
     }
 
     $stmt = db()->prepare('SELECT COUNT(*) FROM widget_leads WHERE ' . implode(' AND ', $where));

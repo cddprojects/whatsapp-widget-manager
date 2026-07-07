@@ -2307,6 +2307,7 @@ function dashboard_summary_stats(): array
         'disabled_clients' => (int) $disabledClients,
         'total_widgets' => (int) $widgets,
         'today_leads' => count_active_leads(null, true),
+        'yesterday_leads' => count_yesterday_active_leads(null),
         'total_active_leads' => count_active_leads(null, false),
     ];
 }

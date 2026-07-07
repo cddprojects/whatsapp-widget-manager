@@ -21,11 +21,16 @@ require __DIR__ . '/includes/header.php';
     </div>
 </section>
 
-<section class="summary-grid lead-summary-grid dashboard-lead-summary">
+<section class="summary-grid superadmin-lead-metrics">
     <article class="summary-card">
         <span class="summary-label"><?= e(t('lead.today_title')) ?></span>
         <strong><?= (int) ($stats['today_leads'] ?? 0) ?></strong>
         <small><?= e(t('lead.today_scope_all')) ?></small>
+    </article>
+    <article class="summary-card">
+        <span class="summary-label"><?= e(t('lead.yesterday_title')) ?></span>
+        <strong><?= (int) ($stats['yesterday_leads'] ?? 0) ?></strong>
+        <small><?= e(t('lead.yesterday_scope_all')) ?></small>
     </article>
     <article class="summary-card">
         <span class="summary-label"><?= e(t('lead.total_active_title')) ?></span>

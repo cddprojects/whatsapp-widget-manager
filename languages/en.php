@@ -531,10 +531,12 @@ return [
 
     // Lead capture
     'lead.today_title' => 'Today\'s Leads',
+    'lead.yesterday_title' => 'Yesterday\'s Leads',
     'lead.total_active_title' => 'Total Active Leads',
     'lead.today_scope_client' => 'Across all of your widgets',
     'lead.total_scope_client' => 'Across all of your widgets',
     'lead.today_scope_all' => 'Across all clients',
+    'lead.yesterday_scope_all' => 'Across all clients',
     'lead.total_scope_all' => 'Across all clients',
     'lead.delete_title' => 'Delete lead?',
     'lead.delete_body_client' => 'Are you sure you want to delete this lead? It will be removed from your lead list.',
