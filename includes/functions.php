@@ -1176,9 +1176,11 @@ function validate_widget_data(array $data): array
 
 function insert_widget(int $userId, array $data): int
 {
+    ensure_greeting_phone_submit_button_id_schema();
     $data['user_id'] = $userId;
     $data['public_key'] = generate_public_key();
     unset($data['widget_status']);
+    $data = filter_widget_data_for_existing_columns($data);
 
     $columns = array_keys($data);
     $placeholders = array_map(static fn ($column) => ':' . $column, $columns);
@@ -1194,6 +1196,8 @@ function insert_widget(int $userId, array $data): int
 
 function update_widget(int $widgetId, int $userId, array $data): void
 {
+    ensure_greeting_phone_submit_button_id_schema();
+    $data = filter_widget_data_for_existing_columns($data);
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
     $data['id'] = $widgetId;
     $data['user_id'] = $userId;
@@ -1998,9 +2002,46 @@ function format_widget_owner_display(array $widget): string
     return t('meta.no_client_assigned');
 }
 
+function ensure_greeting_phone_submit_button_id_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (!database_table_exists('widgets')) {
+        return;
+    }
+
+    if (!table_has_column('widgets', 'greeting_phone_submit_button_id')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN greeting_phone_submit_button_id VARCHAR(80) NULL DEFAULT NULL AFTER greeting_submit_text"
+        );
+    }
+}
+
+function filter_widget_data_for_existing_columns(array $data): array
+{
+    if (!database_table_exists('widgets')) {
+        return $data;
+    }
+
+    foreach (array_keys($data) as $column) {
+        if (!table_has_column('widgets', $column)) {
+            unset($data[$column]);
+        }
+    }
+
+    return $data;
+}
+
 function update_widget_admin(int $widgetId, array $data): void
 {
+    ensure_greeting_phone_submit_button_id_schema();
     unset($data['widget_status']);
+    $data = filter_widget_data_for_existing_columns($data);
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
     $data['id'] = $widgetId;
     $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
@@ -2266,6 +2307,7 @@ function dashboard_summary_stats(): array
         'disabled_clients' => (int) $disabledClients,
         'total_widgets' => (int) $widgets,
         'today_leads' => count_active_leads(null, true),
+        'yesterday_leads' => count_yesterday_active_leads(null),
         'total_active_leads' => count_active_leads(null, false),
     ];
 }
@@ -2675,6 +2717,7 @@ function ensure_widget_activation_schema(): void
 
 try {
     ensure_widget_activation_schema();
+    ensure_greeting_phone_submit_button_id_schema();
     ensure_lead_recycle_schema();
 } catch (Throwable $exception) {
     // Leave connection errors to the calling page; schema ensure runs when DB is available.
