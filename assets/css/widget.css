@@ -262,6 +262,10 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     border-color: #2563eb;
 }
 
+.ctcw-phone-input[aria-invalid="true"] {
+    border-color: #dc2626;
+}
+
 .ctcw-phone-error {
     color: #dc2626;
     font-size: 12px;

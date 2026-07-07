@@ -189,6 +189,7 @@ function dashboard_js_i18n(): array
         'phone.min_one_form' => t('phone.min_one_form'),
         'custom_code.reset_confirm' => t('custom_code.reset_confirm'),
         'widget.delete_confirm' => t('widget.delete_confirm'),
+        'validation.phone_submit_button_id_invalid' => t('validation.phone_submit_button_id_invalid'),
         'embed.copied' => t('embed.copied'),
         'embed.copy_code' => t('embed.copy_code'),
         'password.weak' => t('password.weak'),

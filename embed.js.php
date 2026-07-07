@@ -233,10 +233,42 @@ function applySize(width, height, state) {
         if (!iframe || event.source !== iframe.contentWindow) {
             return;
         }
-        if (!event.data || (event.data.type !== 'ctcw:size' && event.data.type !== 'ctcw') || String(event.data.id) !== config.widgetId) {
+
+        var trustedWidgetOrigin = '';
+        try {
+            trustedWidgetOrigin = new URL(config.src).origin;
+        } catch (error) {
+            trustedWidgetOrigin = '';
+        }
+
+        if (trustedWidgetOrigin && event.origin !== trustedWidgetOrigin) {
             return;
         }
-        applySize(event.data.width, event.data.height, event.data.state || 'icon');
+
+        if (!event.data) {
+            return;
+        }
+
+        if (event.data.type === 'ctcw:size' || event.data.type === 'ctcw') {
+            if (String(event.data.id) !== config.widgetId) {
+                return;
+            }
+            applySize(event.data.width, event.data.height, event.data.state || 'icon');
+            return;
+        }
+
+        if (event.data.type === 'ctcw:phone-submit-success') {
+            if (String(event.data.widgetId) !== config.widgetId) {
+                return;
+            }
+
+            window.dispatchEvent(new CustomEvent('ctcw:phone-submit-success', {
+                detail: {
+                    widgetId: event.data.widgetId,
+                    submitButtonId: event.data.submitButtonId
+                }
+            }));
+        }
     });
 
     window.addEventListener('resize', function () {

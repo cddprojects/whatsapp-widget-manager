@@ -955,6 +955,7 @@ function default_widget_data(): array
         'greeting_force_phone_capture' => 0,
         'greeting_phone_placeholder' => 'Enter your phone number',
         'greeting_submit_text' => 'Continue to WhatsApp',
+        'greeting_phone_submit_button_id' => '',
         'greeting_lead_success_message' => 'Redirecting to WhatsApp...',
         'custom_css' => '',
         'custom_script_head' => '',
@@ -1058,6 +1059,7 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         'greeting_force_phone_capture' => 0,
         'greeting_phone_placeholder' => trim((string) ($post['greeting_phone_placeholder'] ?? $defaults['greeting_phone_placeholder'])),
         'greeting_submit_text' => trim((string) ($post['greeting_submit_text'] ?? $defaults['greeting_submit_text'])),
+        'greeting_phone_submit_button_id' => '',
         'greeting_lead_success_message' => trim((string) ($post['greeting_lead_success_message'] ?? $defaults['greeting_lead_success_message'])),
         'custom_css' => strip_php_tags((string) ($post['custom_css'] ?? '')),
         'custom_script_head' => strip_php_tags((string) ($post['custom_script_head'] ?? '')),
@@ -1106,15 +1108,18 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
             $data['greeting_capture_phone'] = 1;
             $data['greeting_force_phone_capture'] = $greetingForcePhoneCapture;
             $data['greeting_phone_required'] = $greetingPhoneRequired;
+            $data['greeting_phone_submit_button_id'] = trim((string) ($post['greeting_phone_submit_button_id'] ?? ''));
         } else {
             $data['greeting_capture_phone'] = 0;
             $data['greeting_force_phone_capture'] = (int) ($existing['greeting_force_phone_capture'] ?? 0);
             $data['greeting_phone_required'] = (int) ($existing['greeting_phone_required'] ?? 1);
+            $data['greeting_phone_submit_button_id'] = (string) ($existing['greeting_phone_submit_button_id'] ?? '');
         }
     } else {
         $data['greeting_capture_phone'] = (int) ($existing['greeting_capture_phone'] ?? 0);
         $data['greeting_force_phone_capture'] = (int) ($existing['greeting_force_phone_capture'] ?? 0);
         $data['greeting_phone_required'] = (int) ($existing['greeting_phone_required'] ?? 1);
+        $data['greeting_phone_submit_button_id'] = (string) ($existing['greeting_phone_submit_button_id'] ?? '');
     }
 
     if ($sameMobile) {
@@ -1157,6 +1162,13 @@ function validate_widget_data(array $data): array
 
     if ($data['custom_url'] !== '' && !filter_var($data['custom_url'], FILTER_VALIDATE_URL)) {
         $errors[] = t('validation.custom_url_invalid');
+    }
+
+    if (!empty($data['greeting_capture_phone'])) {
+        $submitButtonId = trim((string) ($data['greeting_phone_submit_button_id'] ?? ''));
+        if ($submitButtonId !== '' && !is_valid_phone_submit_button_id($submitButtonId)) {
+            $errors[] = t('validation.phone_submit_button_id_invalid');
+        }
     }
 
     return $errors;
@@ -2496,14 +2508,29 @@ function validate_uploaded_phone_file(array $file): array
 
 function normalize_visitor_phone(string $phone): ?array
 {
+    $result = validate_captured_visitor_phone($phone);
+
+    return !empty($result['valid']) ? $result['normalized'] : null;
+}
+
+function validate_captured_visitor_phone(string $phone): array
+{
     $raw = trim(strip_tags($phone));
     if ($raw === '') {
-        return null;
+        return ['valid' => false, 'message' => t('widget.phone_validation.empty')];
     }
 
-    $digits = clean_phone_number($raw);
-    if (strlen($digits) < 8 || strlen($digits) > 15) {
-        return null;
+    if (!preg_match('/^\+?[0-9\s().-]+$/', $raw)) {
+        return ['valid' => false, 'message' => t('widget.phone_validation.invalid')];
+    }
+
+    $digits = preg_replace('/\D+/', '', $raw) ?? '';
+    if (strlen($digits) < 8) {
+        return ['valid' => false, 'message' => t('widget.phone_validation.min_digits')];
+    }
+
+    if (strlen($digits) > 15) {
+        return ['valid' => false, 'message' => t('widget.phone_validation.invalid')];
     }
 
     $display = preg_replace('/[^\d+]/', '', $raw) ?? $digits;
@@ -2512,10 +2539,28 @@ function normalize_visitor_phone(string $phone): ?array
     }
 
     return [
-        'visitor_phone' => $display,
-        'visitor_country_code' => null,
-        'visitor_full_phone' => $digits,
+        'valid' => true,
+        'normalized' => [
+            'visitor_phone' => $display,
+            'visitor_country_code' => null,
+            'visitor_full_phone' => $digits,
+        ],
     ];
+}
+
+function is_valid_phone_submit_button_id(string $id): bool
+{
+    return $id === '' || (bool) preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,79}$/', $id);
+}
+
+function resolve_greeting_phone_submit_button_id(array $widget): string
+{
+    $custom = trim((string) ($widget['greeting_phone_submit_button_id'] ?? ''));
+    if ($custom !== '' && is_valid_phone_submit_button_id($custom)) {
+        return $custom;
+    }
+
+    return 'ctcw-phone-submit-' . (int) ($widget['id'] ?? 0);
 }
 
 function lead_recently_saved(int $widgetId, string $fullPhone): bool
