@@ -39,4 +39,6 @@ require __DIR__ . '/includes/header.php';
     </article>
 </section>
 
+<p class="lead-timezone-note dashboard-timezone-note"><?= e(t('lead.times_timezone_note')) ?></p>
+
 <?php require __DIR__ . '/includes/footer.php'; ?>

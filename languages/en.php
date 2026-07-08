@@ -542,6 +542,8 @@ return [
 
     // Lead capture
     'lead.today_title' => 'Today\'s Leads',
+    'lead.times_timezone_note' => 'Times shown in Asia/Kuala_Lumpur',
+    'lead.export_captured_at' => 'Captured At (Asia/Kuala_Lumpur)',
     'lead.yesterday_title' => 'Yesterday\'s Leads',
     'lead.total_active_title' => 'Total Active Leads',
     'lead.today_scope_client' => 'Across all of your widgets',
