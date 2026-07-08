@@ -478,13 +478,13 @@ $settingsSections = [
             <?= !empty($widget['greeting_enabled']) ? '' : 'hidden' ?>
         >
             <div class="form-grid two-columns">
-                <label>
+                <label style="margin-bottom:65px;">
                     <span><?= e(t('label.greeting_title')) ?></span>
-                    <input type="text" name="greeting_title" value="<?= e($widget['greeting_title']) ?>">
+                    <input type="text" name="greeting_title" value="<?= e($widget['greeting_title']) ?>" style="margin:auto;">
                 </label>
                 <label>
                     <span><?= e(t('label.greeting_open_behavior')) ?></span>
-                    <select name="greeting_open_behavior" data-role="greeting-open-behavior">
+                    <select name="greeting_open_behavior" data-role="greeting-open-behavior" style="margin-bottom:10px;">
                         <option value="auto_delay"<?= selected((string) ($widget['greeting_open_behavior'] ?? 'auto_delay'), 'auto_delay') ?>><?= e(t('option.greeting_open_auto_delay')) ?></option>
                         <option value="click_only"<?= selected((string) ($widget['greeting_open_behavior'] ?? 'auto_delay'), 'click_only') ?>><?= e(t('option.greeting_open_click_only')) ?></option>
                     </select>

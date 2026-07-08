@@ -2379,7 +2379,7 @@ code {
 
 .field-helper {
     display: block;
-    margin: -4px 0 12px;
+    margin: 0px 0px;
     color: var(--muted);
     font-size: 13px;
     line-height: 1.5;
