@@ -1965,6 +1965,70 @@ code {
     margin-top: 18px;
 }
 
+.lead-pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.lead-pagination-summary {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.lead-pagination-per-page {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.lead-pagination-per-page-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.lead-pagination-per-page-label select {
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+}
+
+.lead-pagination-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.lead-pagination-page {
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+    .lead-pagination-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lead-pagination-nav {
+        justify-content: space-between;
+    }
+}
+
 .profile-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -41,9 +41,9 @@ require __DIR__ . '/includes/header.php';
         <small><?= e(t('lead.today_scope_client')) ?></small>
     </article>
     <article class="summary-card">
-        <span class="summary-label"><?= e(t('lead.total_active_title')) ?></span>
-        <strong><?= number_format(count_active_leads((int) $user['id'], false)) ?></strong>
-        <small><?= e(t('lead.total_scope_client')) ?></small>
+        <span class="summary-label"><?= e(t('lead.yesterday_title')) ?></span>
+        <strong><?= (int) count_yesterday_active_leads((int) $user['id']) ?></strong>
+        <small><?= e(t('lead.today_scope_client')) ?></small>
     </article>
 </section>
 

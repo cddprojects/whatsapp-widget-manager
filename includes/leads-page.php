@@ -20,6 +20,7 @@ declare(strict_types=1);
 /** @var string $deleteBulkLabel */
 /** @var string $emptyMessage */
 /** @var string $csrfToken */
+/** @var int $perPage */
 
 $isRecycleBin = $leadPageMode === 'recycle_bin';
 $isClientPage = $leadPageMode === 'client';
@@ -27,6 +28,18 @@ $isAllLeadsPage = $leadPageMode === 'all_leads';
 $isSuperadminPage = $leadPageMode === 'superadmin';
 $useSuperadminLeadActions = $isSuperadminPage || $isAllLeadsPage;
 $sort = $sort ?? 'newest';
+$perPage = normalize_lead_list_per_page($perPage ?? ($result['per_page'] ?? null));
+$page = (int) ($result['page'] ?? 1);
+$leadPaginationQuery = [
+    'q' => $query,
+    'date_from' => $dateFrom,
+    'date_to' => $dateTo,
+    'widget_id' => $widgetFilterId,
+    'client_id' => $clientFilterId,
+    'sort' => $isAllLeadsPage ? $sort : '',
+    'page' => $page,
+    'per_page' => $perPage,
+];
 $showSelection = true;
 $showDeleteActions = !$isRecycleBin;
 $showRestoreActions = $isRecycleBin;
@@ -101,6 +114,7 @@ $toolbarSelectedButtons = static function () use (
 >
     <?php if ($isRecycleBin): ?>
         <form class="recycle-bin-filter-form admin-filter-bar" method="get" action="<?= e($formAction) ?>">
+            <?php render_lead_filter_pagination_fields($perPage); ?>
             <div class="<?= e($recyclePrimaryRowClass) ?>">
                 <label class="search-field lead-filter-search">
                     <span><?= e(t('filter.search')) ?></span>
@@ -156,6 +170,7 @@ $toolbarSelectedButtons = static function () use (
         </form>
     <?php elseif ($isAllLeadsPage): ?>
         <form class="all-leads-filter-form admin-filter-bar" method="get" action="<?= e($formAction) ?>">
+            <?php render_lead_filter_pagination_fields($perPage); ?>
             <div class="all-leads-filter-row all-leads-filter-row-primary">
                 <label class="search-field lead-filter-search">
                     <span><?= e(t('filter.search')) ?></span>
@@ -226,6 +241,7 @@ $toolbarSelectedButtons = static function () use (
             method="get"
             action="<?= e($formAction) ?>"
         >
+            <?php render_lead_filter_pagination_fields($perPage); ?>
             <div class="client-lead-filter-row client-lead-filter-row-primary<?= $hasWidgetFilter ? '' : ' client-lead-filter-row-primary--no-widget' ?>">
                 <label class="search-field lead-filter-search">
                     <span><?= e(t('filter.search')) ?></span>
@@ -272,6 +288,7 @@ $toolbarSelectedButtons = static function () use (
             method="get"
             action="<?= e($formAction) ?>"
         >
+            <?php render_lead_filter_pagination_fields($perPage); ?>
             <?php if ($clientFilterId > 0 && $leadPageMode === 'superadmin'): ?>
                 <input type="hidden" name="client_id" value="<?= (int) $clientFilterId ?>">
             <?php endif; ?>
@@ -507,6 +524,8 @@ $toolbarSelectedButtons = static function () use (
             </table>
         </div>
     <?php endif; ?>
+
+    <?php render_lead_list_pagination($formAction, $result, $leadPaginationQuery, $perPage); ?>
 
     <?php include __DIR__ . '/leads-modals.php'; ?>
     <div class="ctcw-lead-toast" data-lead-toast hidden role="status" aria-live="polite"></div>
