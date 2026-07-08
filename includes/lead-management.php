@@ -5,6 +5,81 @@ const LEAD_BULK_ACTION_MAX_IDS = 200;
 const LEAD_RECYCLE_RETENTION_MIN_DAYS = 1;
 const LEAD_RECYCLE_RETENTION_MAX_DAYS = 9999;
 const LEAD_RECYCLE_DEFAULT_DAYS = 30;
+const LEAD_LIST_PER_PAGE_DEFAULT = 30;
+const LEAD_LIST_PER_PAGE_OPTIONS = [30, 50, 100, 150];
+
+function lead_list_allowed_per_page_options(): array
+{
+    return LEAD_LIST_PER_PAGE_OPTIONS;
+}
+
+function normalize_lead_list_per_page(int|string|null $value): int
+{
+    $perPage = (int) $value;
+
+    return in_array($perPage, LEAD_LIST_PER_PAGE_OPTIONS, true)
+        ? $perPage
+        : LEAD_LIST_PER_PAGE_DEFAULT;
+}
+
+function normalize_lead_list_page(int|string|null $page, int $totalPages): int
+{
+    $normalizedPage = max(1, (int) $page);
+
+    return min($normalizedPage, max(1, $totalPages));
+}
+
+function lead_list_visible_range(int $page, int $perPage, int $total): array
+{
+    if ($total <= 0) {
+        return ['from' => 0, 'to' => 0];
+    }
+
+    return [
+        'from' => (($page - 1) * $perPage) + 1,
+        'to' => min($total, $page * $perPage),
+    ];
+}
+
+function build_lead_list_query_params(array $params): array
+{
+    $query = [];
+
+    if (trim((string) ($params['q'] ?? '')) !== '') {
+        $query['q'] = trim((string) $params['q']);
+    }
+
+    if (trim((string) ($params['date_from'] ?? '')) !== '') {
+        $query['date_from'] = trim((string) $params['date_from']);
+    }
+
+    if (trim((string) ($params['date_to'] ?? '')) !== '') {
+        $query['date_to'] = trim((string) $params['date_to']);
+    }
+
+    if ((int) ($params['client_id'] ?? 0) > 0) {
+        $query['client_id'] = (int) $params['client_id'];
+    }
+
+    if ((int) ($params['widget_id'] ?? 0) > 0) {
+        $query['widget_id'] = (int) $params['widget_id'];
+    }
+
+    $sort = trim((string) ($params['sort'] ?? ''));
+    if ($sort !== '') {
+        $query['sort'] = $sort;
+    }
+
+    $perPage = normalize_lead_list_per_page($params['per_page'] ?? null);
+    $query['per_page'] = $perPage;
+
+    $page = max(1, (int) ($params['page'] ?? 1));
+    if ($page > 1) {
+        $query['page'] = $page;
+    }
+
+    return $query;
+}
 
 function ensure_lead_recycle_schema(): void
 {
@@ -363,9 +438,7 @@ function client_leads_order_sql(array $options): string
 
 function search_client_leads(array $options): array
 {
-    $page = max(1, (int) ($options['page'] ?? 1));
-    $perPage = max(1, min(100, (int) ($options['per_page'] ?? 25)));
-    $offset = ($page - 1) * $perPage;
+    $perPage = normalize_lead_list_per_page($options['per_page'] ?? null);
     $params = [];
     $whereSql = build_client_leads_where($options, $params);
     $retentionDays = lead_recycle_retention_days();
@@ -379,6 +452,9 @@ function search_client_leads(array $options): array
     );
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
+    $pages = (int) max(1, (int) ceil($total / $perPage));
+    $page = normalize_lead_list_page($options['page'] ?? 1, $pages);
+    $offset = ($page - 1) * $perPage;
 
     $sql = 'SELECT wl.*, w.widget_name, u.name AS owner_name, u.email AS owner_email,
                    deleted_user.name AS deleted_by_name,
@@ -401,7 +477,7 @@ function search_client_leads(array $options): array
         'total' => $total,
         'page' => $page,
         'per_page' => $perPage,
-        'pages' => (int) max(1, ceil($total / $perPage)),
+        'pages' => $pages,
     ];
 }
 

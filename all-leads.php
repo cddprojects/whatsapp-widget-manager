@@ -11,6 +11,7 @@ $widgetFilterId = (int) ($_GET['widget_id'] ?? 0);
 $clientFilterId = (int) ($_GET['client_id'] ?? 0);
 $sort = trim((string) ($_GET['sort'] ?? 'newest'));
 $page = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = normalize_lead_list_per_page($_GET['per_page'] ?? null);
 
 $allowedSorts = ['newest', 'oldest', 'phone_az', 'phone_za', 'client_az', 'client_za'];
 if (!in_array($sort, $allowedSorts, true)) {
@@ -25,8 +26,10 @@ $result = search_client_leads([
     'date_to' => $dateTo,
     'sort' => $sort,
     'page' => $page,
-    'per_page' => 25,
+    'per_page' => $perPage,
 ]);
+$page = (int) $result['page'];
+$perPage = (int) $result['per_page'];
 
 $clientOptions = db()->query("SELECT id, name, email FROM users WHERE role = '" . ROLE_CLIENT . "' ORDER BY name ASC")->fetchAll() ?: [];
 
@@ -62,17 +65,5 @@ $csrfToken = csrf_token();
 $widgetOptions = widgets_for_admin_filter($clientFilterId > 0 ? $clientFilterId : null);
 require __DIR__ . '/includes/leads-page.php';
 ?>
-
-<?php if ($result['pages'] > 1): ?>
-    <div class="pagination-bar">
-        <?php if ($page > 1): ?>
-            <a class="btn btn-light" href="?<?= e(http_build_query(['client_id' => $clientFilterId, 'widget_id' => $widgetFilterId, 'sort' => $sort, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page - 1])) ?>"><?= e(t('pagination.previous')) ?></a>
-        <?php endif; ?>
-        <span><?= e(t('pagination.page_of', ['page' => (string) $page, 'pages' => (string) $result['pages']])) ?></span>
-        <?php if ($page < $result['pages']): ?>
-            <a class="btn btn-light" href="?<?= e(http_build_query(['client_id' => $clientFilterId, 'widget_id' => $widgetFilterId, 'sort' => $sort, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page + 1])) ?>"><?= e(t('pagination.next')) ?></a>
-        <?php endif; ?>
-    </div>
-<?php endif; ?>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

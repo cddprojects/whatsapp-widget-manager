@@ -10,6 +10,7 @@ $dateFrom = trim((string) ($_GET['date_from'] ?? ''));
 $dateTo = trim((string) ($_GET['date_to'] ?? ''));
 $widgetFilterId = (int) ($_GET['widget_id'] ?? 0);
 $page = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = normalize_lead_list_per_page($_GET['per_page'] ?? null);
 
 $result = search_client_leads([
     'client_id' => $clientId,
@@ -18,8 +19,10 @@ $result = search_client_leads([
     'date_from' => $dateFrom,
     'date_to' => $dateTo,
     'page' => $page,
-    'per_page' => 25,
+    'per_page' => $perPage,
 ]);
+$page = (int) $result['page'];
+$perPage = (int) $result['per_page'];
 
 $exportUrl = 'export-leads.php?scope=client&widget_id=' . (int) $widgetFilterId
     . '&q=' . urlencode($query)
@@ -67,17 +70,5 @@ $emptyMessage = t('empty.no_active_leads');
 $csrfToken = csrf_token();
 require __DIR__ . '/includes/leads-page.php';
 ?>
-
-<?php if ($result['pages'] > 1): ?>
-    <div class="pagination-bar">
-        <?php if ($page > 1): ?>
-            <a class="btn btn-light" href="?<?= e(http_build_query(['widget_id' => $widgetFilterId, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page - 1])) ?>"><?= e(t('pagination.previous')) ?></a>
-        <?php endif; ?>
-        <span><?= e(t('pagination.page_of', ['page' => (string) $page, 'pages' => (string) $result['pages']])) ?></span>
-        <?php if ($page < $result['pages']): ?>
-            <a class="btn btn-light" href="?<?= e(http_build_query(['widget_id' => $widgetFilterId, 'q' => $query, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'page' => $page + 1])) ?>"><?= e(t('pagination.next')) ?></a>
-        <?php endif; ?>
-    </div>
-<?php endif; ?>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

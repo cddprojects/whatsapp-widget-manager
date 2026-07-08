@@ -2752,6 +2752,7 @@ function json_response(array $payload, int $status = 200): void
 }
 
 require_once __DIR__ . '/lead-management.php';
+require_once __DIR__ . '/lead-pagination.php';
 
 function ensure_widget_activation_schema(): void
 {

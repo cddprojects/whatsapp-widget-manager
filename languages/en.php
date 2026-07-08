@@ -228,6 +228,9 @@ return [
     'pagination.previous' => 'Previous',
     'pagination.next' => 'Next',
     'pagination.page_of' => 'Page {page} of {pages}',
+    'pagination.showing_range' => 'Showing {from}–{to} of {total} leads',
+    'pagination.rows_per_page' => 'Rows per page',
+    'pagination.per_page_option' => '{count} per page',
 
     // Filter / search
     'filter.search' => 'Search',

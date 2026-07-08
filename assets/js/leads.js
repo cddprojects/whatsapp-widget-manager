@@ -602,6 +602,16 @@
 
         updateLeadSelectionUi(root);
 
+        var perPageSelect = root.querySelector('[data-lead-per-page-select]');
+        if (perPageSelect) {
+            perPageSelect.addEventListener('change', function () {
+                var form = perPageSelect.closest('[data-lead-per-page-form]');
+                if (form) {
+                    form.submit();
+                }
+            });
+        }
+
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 closeActionMenus();

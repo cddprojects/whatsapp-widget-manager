@@ -228,6 +228,9 @@ return [
     'pagination.previous' => '上一页',
     'pagination.next' => '下一页',
     'pagination.page_of' => '第 {page} 页，共 {pages} 页',
+    'pagination.showing_range' => '显示第 {from}–{to} 条，共 {total} 条线索',
+    'pagination.rows_per_page' => '每页行数',
+    'pagination.per_page_option' => '每页 {count} 条',
 
     // Filter / search
     'filter.search' => '搜索',
