@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS widgets (
     greeting_title VARCHAR(160) NULL,
     greeting_message TEXT NULL,
     greeting_delay_seconds INT UNSIGNED NOT NULL DEFAULT 2,
+    greeting_open_behavior VARCHAR(30) NOT NULL DEFAULT 'auto_delay',
     greeting_capture_phone TINYINT(1) NOT NULL DEFAULT 0,
     greeting_phone_required TINYINT(1) NOT NULL DEFAULT 1,
     greeting_allow_phone_plus TINYINT(1) NOT NULL DEFAULT 1,

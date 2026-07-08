@@ -483,6 +483,15 @@ $settingsSections = [
                     <input type="text" name="greeting_title" value="<?= e($widget['greeting_title']) ?>">
                 </label>
                 <label>
+                    <span><?= e(t('label.greeting_open_behavior')) ?></span>
+                    <select name="greeting_open_behavior" data-role="greeting-open-behavior">
+                        <option value="auto_delay"<?= selected((string) ($widget['greeting_open_behavior'] ?? 'auto_delay'), 'auto_delay') ?>><?= e(t('option.greeting_open_auto_delay')) ?></option>
+                        <option value="click_only"<?= selected((string) ($widget['greeting_open_behavior'] ?? 'auto_delay'), 'click_only') ?>><?= e(t('option.greeting_open_click_only')) ?></option>
+                    </select>
+                    <small class="field-helper" data-role="greeting-open-behavior-helper-auto"<?= ($widget['greeting_open_behavior'] ?? 'auto_delay') === 'click_only' ? ' hidden' : '' ?>><?= e(t('helper.greeting_open_auto_delay')) ?></small>
+                    <small class="field-helper" data-role="greeting-open-behavior-helper-click"<?= ($widget['greeting_open_behavior'] ?? 'auto_delay') === 'click_only' ? '' : ' hidden' ?>><?= e(t('helper.greeting_open_click_only')) ?></small>
+                </label>
+                <label data-role="greeting-delay-field"<?= ($widget['greeting_open_behavior'] ?? 'auto_delay') === 'click_only' ? ' hidden' : '' ?>>
                     <span><?= e(t('label.greeting_delay_seconds')) ?></span>
                     <input type="number" min="0" max="120" name="greeting_delay_seconds" value="<?= e((string) $widget['greeting_delay_seconds']) ?>">
                 </label>

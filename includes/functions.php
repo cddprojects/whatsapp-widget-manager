@@ -951,6 +951,7 @@ function default_widget_data(): array
         'greeting_title' => 'Hi 👋',
         'greeting_message' => 'Need Help? Contact Us !',
         'greeting_delay_seconds' => 2,
+        'greeting_open_behavior' => 'auto_delay',
         'greeting_capture_phone' => 0,
         'greeting_phone_required' => 1,
         'greeting_allow_phone_plus' => 1,
@@ -1057,6 +1058,7 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         'greeting_title' => trim((string) ($post['greeting_title'] ?? $defaults['greeting_title'])),
         'greeting_message' => trim((string) ($post['greeting_message'] ?? $defaults['greeting_message'])),
         'greeting_delay_seconds' => max(0, min(120, (int) ($post['greeting_delay_seconds'] ?? 2))),
+        'greeting_open_behavior' => 'auto_delay',
         'greeting_capture_phone' => 0,
         'greeting_phone_required' => 0,
         'greeting_allow_phone_plus' => 1,
@@ -1100,6 +1102,9 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
 
     if ($greetingEnabled) {
         $greetingCapturePhone = post_checkbox('greeting_capture_phone');
+        $data['greeting_open_behavior'] = normalize_greeting_open_behavior(
+            (string) ($post['greeting_open_behavior'] ?? ($existing['greeting_open_behavior'] ?? $defaults['greeting_open_behavior']))
+        );
 
         if ($greetingCapturePhone) {
             $greetingForcePhoneCapture = post_checkbox('greeting_force_phone_capture');
@@ -1126,6 +1131,9 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         $data['greeting_force_phone_capture'] = (int) ($existing['greeting_force_phone_capture'] ?? 0);
         $data['greeting_phone_required'] = (int) ($existing['greeting_phone_required'] ?? 1);
         $data['greeting_allow_phone_plus'] = (int) ($existing['greeting_allow_phone_plus'] ?? 1);
+        $data['greeting_open_behavior'] = normalize_greeting_open_behavior(
+            (string) ($existing['greeting_open_behavior'] ?? $defaults['greeting_open_behavior'])
+        );
         $data['greeting_phone_submit_button_id'] = (string) ($existing['greeting_phone_submit_button_id'] ?? '');
     }
 
@@ -1183,6 +1191,7 @@ function validate_widget_data(array $data): array
 
 function insert_widget(int $userId, array $data): int
 {
+    ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     $data['user_id'] = $userId;
@@ -1204,6 +1213,7 @@ function insert_widget(int $userId, array $data): int
 
 function update_widget(int $widgetId, int $userId, array $data): void
 {
+    ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     $data = filter_widget_data_for_existing_columns($data);
@@ -2031,6 +2041,31 @@ function ensure_website_name_schema(): void
     }
 }
 
+function ensure_greeting_open_behavior_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (!database_table_exists('widgets')) {
+        return;
+    }
+
+    if (!table_has_column('widgets', 'greeting_open_behavior')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN greeting_open_behavior VARCHAR(30) NOT NULL DEFAULT 'auto_delay' AFTER greeting_delay_seconds"
+        );
+    }
+}
+
+function normalize_greeting_open_behavior(string $value): string
+{
+    return in_array($value, ['auto_delay', 'click_only'], true) ? $value : 'auto_delay';
+}
+
 function ensure_greeting_allow_phone_plus_schema(): void
 {
     static $ensured = false;
@@ -2088,6 +2123,7 @@ function filter_widget_data_for_existing_columns(array $data): array
 
 function update_widget_admin(int $widgetId, array $data): void
 {
+    ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     unset($data['widget_status']);
@@ -2794,6 +2830,7 @@ function ensure_widget_activation_schema(): void
 try {
     ensure_widget_activation_schema();
     ensure_website_name_schema();
+    ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     ensure_lead_recycle_schema();
