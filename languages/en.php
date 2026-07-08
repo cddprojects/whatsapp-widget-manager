@@ -511,7 +511,7 @@ return [
     'message_variable.insert' => 'Insert {variable}',
     'widget.phone_validation.empty' => 'Enter your phone number.',
     'widget.phone_validation.invalid' => 'Enter a valid phone number.',
-    'widget.phone_validation.min_digits' => 'Enter at least 8 digits.',
+    'widget.phone_validation.min_digits' => 'Enter a valid phone number.',
 
     'widget_destinations.none' => 'No destinations',
     'widget_destinations.setup_required' => 'Setup required',
