@@ -170,6 +170,33 @@
                 requiredToggle.disabled = false;
             }
         }
+
+        refreshGreetingOpenBehaviorFields();
+    }
+
+    function refreshGreetingOpenBehaviorFields() {
+        var behaviorSelect = document.querySelector('[data-role="greeting-open-behavior"]');
+        var delayField = document.querySelector('[data-role="greeting-delay-field"]');
+        var autoHelper = document.querySelector('[data-role="greeting-open-behavior-helper-auto"]');
+        var clickHelper = document.querySelector('[data-role="greeting-open-behavior-helper-click"]');
+
+        if (!behaviorSelect) {
+            return;
+        }
+
+        var clickOnly = behaviorSelect.value === 'click_only';
+
+        if (delayField) {
+            delayField.hidden = clickOnly;
+        }
+
+        if (autoHelper) {
+            autoHelper.hidden = clickOnly;
+        }
+
+        if (clickHelper) {
+            clickHelper.hidden = !clickOnly;
+        }
     }
 
     function refreshGreetingCaptureOptions() {
@@ -701,6 +728,13 @@
     }
     if (greetingForceToggle) {
         greetingForceToggle.addEventListener('change', refreshGreetingDialogSettings);
+    }
+    var greetingOpenBehaviorSelect = document.querySelector('[data-role="greeting-open-behavior"]');
+    if (greetingOpenBehaviorSelect) {
+        greetingOpenBehaviorSelect.addEventListener('change', function () {
+            refreshGreetingOpenBehaviorFields();
+            renderAdminLivePreview();
+        });
     }
     refreshGreetingDialogSettings();
 
@@ -1426,6 +1460,7 @@ function initAdminLivePreview() {
     }
 
     var previewEnabledStorageKey = 'ctcw_admin_live_preview_enabled';
+    var previewGreetingTimer = null;
     var previewPlaceholderDestination = '+60123456789';
     var previewPositionClasses = [
         'ctcw-preview-bottom-right',
@@ -1531,6 +1566,8 @@ function initAdminLivePreview() {
             desktopHorizontalPosition: horizontal === 'left' ? 'left' : 'right',
             callToAction: getFieldValue('call_to_action') || window.ctcwI18n('preview.default_cta'),
             greetingEnabled: !!getFieldValue('greeting_enabled'),
+            greetingOpenBehavior: getFieldValue('greeting_open_behavior') || 'auto_delay',
+            greetingDelaySeconds: parseInt(getFieldValue('greeting_delay_seconds') || '2', 10) || 0,
             greetingTitle: getFieldValue('greeting_title') || 'Hi 👋',
             greetingMessage: getFieldValue('greeting_message') || 'Need Help? Contact Us !',
             greetingCapturePhone: !!getFieldValue('greeting_capture_phone'),
@@ -1560,14 +1597,14 @@ function initAdminLivePreview() {
             : '';
 
         if (!formState.greetingCapturePhone) {
-            return '<div class="ctcw-greeting is-visible">'
+            return '<div class="ctcw-greeting" data-preview-greeting>'
                 + '<strong>' + title + '</strong>'
                 + '<p>' + message + '</p>'
                 + forceNote
                 + '</div>';
         }
 
-        return '<div class="ctcw-greeting has-capture is-visible">'
+        return '<div class="ctcw-greeting has-capture" data-preview-greeting>'
             + '<div class="ctcw-greeting-form">'
             + '<strong>' + title + '</strong>'
             + '<p>' + message + '</p>'
@@ -1640,6 +1677,8 @@ function initAdminLivePreview() {
         var customCssStyle = getOrCreateCustomCssStyle();
 
         if (!previewEnabled) {
+            window.clearTimeout(previewGreetingTimer);
+            previewGreetingTimer = null;
             root.classList.remove('is-enabled');
             root.innerHTML = '';
             root.setAttribute('aria-hidden', 'true');
@@ -1662,6 +1701,16 @@ function initAdminLivePreview() {
         applyPreviewPosition(root, formState);
         customCssStyle.textContent = scopePreviewCss(formState.customCss);
         updateDebugFrameState(root);
+
+        window.clearTimeout(previewGreetingTimer);
+        previewGreetingTimer = null;
+        var previewGreeting = root.querySelector('[data-preview-greeting]');
+        if (previewGreeting && formState.greetingEnabled && formState.greetingOpenBehavior === 'auto_delay') {
+            previewGreetingTimer = window.setTimeout(function () {
+                previewGreeting.classList.add('is-visible');
+            }, Math.max(0, Number(formState.greetingDelaySeconds || 0)) * 1000);
+        }
+
         previewDebugLog('[CTC] Preview enabled:', previewEnabled);
         previewDebugLog('[CTC] Preview root:', root);
         previewDebugLog('[CTC] Preview state:', formState);
@@ -1693,6 +1742,32 @@ function initAdminLivePreview() {
             setLivePreviewEnabled(this.checked);
         });
         renderAdminLivePreview();
+    }
+
+    if (!window.ctcwPreviewGreetingClickBound) {
+        window.ctcwPreviewGreetingClickBound = true;
+        document.addEventListener('click', function (event) {
+            var previewButton = event.target.closest('#ctcw-admin-live-preview .ctcw-widget[data-preview-destination]');
+            if (!previewButton) {
+                return;
+            }
+
+            var previewRoot = document.getElementById('ctcw-admin-live-preview');
+            if (!previewRoot || !previewRoot.classList.contains('is-enabled')) {
+                return;
+            }
+
+            var greetingToggle = document.querySelector('[data-role="greeting-dialog-toggle"]');
+            var behaviorSelect = document.querySelector('[data-role="greeting-open-behavior"]');
+            if (!greetingToggle || !greetingToggle.checked || !behaviorSelect || behaviorSelect.value !== 'click_only') {
+                return;
+            }
+
+            var previewGreeting = previewRoot.querySelector('[data-preview-greeting]');
+            if (previewGreeting) {
+                previewGreeting.classList.add('is-visible');
+            }
+        });
     }
 
     form.addEventListener('input', renderAdminLivePreview);

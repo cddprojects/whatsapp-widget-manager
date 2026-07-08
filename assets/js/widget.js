@@ -690,6 +690,23 @@
         }, 60);
     }
 
+    function isClickOnlyGreeting() {
+        return config.greetingOpenBehavior === 'click_only';
+    }
+
+    function shouldAutoOpenGreeting() {
+        return !!(config.greetingEnabled && greeting && !isClickOnlyGreeting());
+    }
+
+    function openGreetingOnClick() {
+        if (isForcePhoneCapture()) {
+            showGreetingPhoneCapture();
+            return;
+        }
+
+        revealGreeting();
+    }
+
     function handleWhatsAppClick(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -718,6 +735,26 @@
             return;
         }
 
+        if (config.greetingEnabled && greeting && !isGreetingVisible()) {
+            if (isClickOnlyGreeting()) {
+                openGreetingOnClick();
+                return;
+            }
+        }
+
+        if (isClickOnlyGreeting() && isGreetingVisible()) {
+            if (config.greetingCapturePhone && greeting.classList.contains('has-capture')) {
+                return;
+            }
+
+            closeGreetingDialog();
+            redirectWithResolvedDestination().catch(function () {
+                currentState = isIconOnlyStyle() ? 'icon' : 'button';
+                sendActualWidgetSize();
+            });
+            return;
+        }
+
         if (isForcePhoneCapture()) {
             showGreetingPhoneCapture();
             return;
@@ -729,7 +766,7 @@
         });
     }
 
-    if (config.greetingEnabled && greeting) {
+    if (shouldAutoOpenGreeting()) {
         window.setTimeout(
             revealGreeting,
             Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000

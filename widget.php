@@ -59,6 +59,7 @@ $widgetConfig = [
     'online' => $isOnline,
     'offlineMessage' => (string) $widget['offline_message'],
     'greetingEnabled' => !empty($widget['greeting_enabled']),
+    'greetingOpenBehavior' => normalize_greeting_open_behavior((string) ($widget['greeting_open_behavior'] ?? 'auto_delay')),
     'greetingDelaySeconds' => (int) $widget['greeting_delay_seconds'],
     'greetingCapturePhone' => !empty($widget['greeting_capture_phone']),
     'greetingPhoneRequired' => !empty($widget['greeting_phone_required']),
