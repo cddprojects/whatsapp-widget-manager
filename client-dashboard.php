@@ -47,6 +47,8 @@ require __DIR__ . '/includes/header.php';
     </article>
 </section>
 
+<p class="lead-timezone-note dashboard-timezone-note"><?= e(t('lead.times_timezone_note')) ?></p>
+
 <div class="form-actions page-inline-actions">
     <a class="btn btn-light" href="client-leads.php"><?= e(t('nav.my_leads')) ?></a>
 </div>

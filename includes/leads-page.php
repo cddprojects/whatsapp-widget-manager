@@ -316,6 +316,7 @@ $toolbarSelectedButtons = static function () use (
     <?php endif; ?>
 
     <p class="results-meta" data-leads-results-meta><?= e(t($result['total'] === 1 ? 'results.leads_found_one' : 'results.leads_found_other', ['count' => (string) $result['total']])) ?></p>
+    <?php render_lead_timezone_note(); ?>
 
     <?php if (!$result['rows']): ?>
         <div class="empty-state compact-empty" data-leads-empty-state>

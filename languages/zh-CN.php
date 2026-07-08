@@ -542,6 +542,8 @@ return [
 
     // Lead capture
     'lead.today_title' => '今日线索',
+    'lead.times_timezone_note' => '时间显示为 Asia/Kuala_Lumpur',
+    'lead.export_captured_at' => 'Captured At (Asia/Kuala_Lumpur)',
     'lead.yesterday_title' => '昨日线索',
     'lead.total_active_title' => '有效线索总数',
     'lead.today_scope_client' => '来自您的全部小组件',

@@ -20,7 +20,7 @@ if ($scope === 'client') {
         'date_from' => $dateFrom,
         'date_to' => $dateTo,
     ]);
-    $filename = 'my-leads-' . date('Y-m-d') . '.csv';
+    $filename = 'my-leads-' . app_lead_today_date_local() . '.csv';
 } elseif ($scope === 'admin') {
     require_superadmin();
     $clientId = (int) ($_GET['client_id'] ?? 0);
@@ -36,7 +36,7 @@ if ($scope === 'client') {
         'date_from' => $dateFrom,
         'date_to' => $dateTo,
     ]);
-    $filename = 'client-leads-' . $clientId . '-' . date('Y-m-d') . '.csv';
+    $filename = 'client-leads-' . $clientId . '-' . app_lead_today_date_local() . '.csv';
 } elseif ($scope === 'all') {
     require_superadmin();
     $clientId = (int) ($_GET['client_id'] ?? 0);
@@ -52,7 +52,7 @@ if ($scope === 'client') {
         'date_to' => $dateTo,
         'sort' => $sort,
     ]);
-    $filename = 'all-leads-' . date('Y-m-d') . '.csv';
+    $filename = 'all-leads-' . app_lead_today_date_local() . '.csv';
 } else {
     http_response_code(403);
     exit(t('error.access_denied'));
@@ -64,7 +64,7 @@ header('Content-Disposition: attachment; filename="' . $filename . '"');
 $out = fopen('php://output', 'w');
 
 if ($scope === 'all') {
-    fputcsv($out, ['visitor_phone', 'client_name', 'widget_name', 'source_domain', 'source_url', 'page_title', 'created_at']);
+    fputcsv($out, ['visitor_phone', 'client_name', 'widget_name', 'source_domain', 'source_url', 'page_title', t('lead.export_captured_at')]);
     foreach ($rows as $lead) {
         fputcsv($out, [
             format_lead_display_phone($lead),
@@ -73,11 +73,11 @@ if ($scope === 'all') {
             $lead['source_domain'] ?? '',
             $lead['source_url'] ?? '',
             $lead['page_title'] ?? '',
-            $lead['created_at'] ?? '',
+            format_lead_datetime_for_export($lead['created_at'] ?? null),
         ]);
     }
 } else {
-    fputcsv($out, ['visitor_phone', 'visitor_full_phone', 'widget_name', 'source_domain', 'source_url', 'page_title', 'created_at']);
+    fputcsv($out, ['visitor_phone', 'visitor_full_phone', 'widget_name', 'source_domain', 'source_url', 'page_title', t('lead.export_captured_at')]);
     foreach ($rows as $lead) {
         fputcsv($out, [
             $lead['visitor_phone'],
@@ -86,7 +86,7 @@ if ($scope === 'all') {
             $lead['source_domain'],
             $lead['source_url'],
             $lead['page_title'],
-            $lead['created_at'],
+            format_lead_datetime_for_export($lead['created_at'] ?? null),
         ]);
     }
 }

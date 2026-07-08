@@ -102,21 +102,117 @@ function lead_recycle_retention_days(): int
     return max(LEAD_RECYCLE_RETENTION_MIN_DAYS, min(LEAD_RECYCLE_RETENTION_MAX_DAYS, $days));
 }
 
-function app_today_date(): string
+function app_lead_timezone(): DateTimeZone
 {
-    return date('Y-m-d');
+    return new DateTimeZone('Asia/Kuala_Lumpur');
 }
 
-function app_yesterday_bounds(): array
+function app_utc_timezone(): DateTimeZone
 {
-    $timezone = new DateTimeZone(date_default_timezone_get());
-    $todayStart = new DateTimeImmutable('today', $timezone);
-    $yesterdayStart = $todayStart->modify('-1 day');
+    return new DateTimeZone('UTC');
+}
+
+function app_lead_today_date_local(): string
+{
+    return (new DateTimeImmutable('today', app_lead_timezone()))->format('Y-m-d');
+}
+
+function app_lead_calendar_day_start_local(string $dateYmd): DateTimeImmutable
+{
+    return new DateTimeImmutable($dateYmd . ' 00:00:00', app_lead_timezone());
+}
+
+function app_lead_malaysia_day_bounds_utc(string $dateYmd): array
+{
+    $startLocal = app_lead_calendar_day_start_local($dateYmd);
+    $endLocal = $startLocal->modify('+1 day');
 
     return [
-        'start' => $yesterdayStart->format('Y-m-d H:i:s'),
-        'end' => $todayStart->format('Y-m-d H:i:s'),
+        'start' => $startLocal->setTimezone(app_utc_timezone())->format('Y-m-d H:i:s'),
+        'end' => $endLocal->setTimezone(app_utc_timezone())->format('Y-m-d H:i:s'),
     ];
+}
+
+function app_lead_today_bounds_utc(): array
+{
+    $appTz = app_lead_timezone();
+    $todayStartLocal = new DateTimeImmutable('today', $appTz);
+    $tomorrowStartLocal = $todayStartLocal->modify('+1 day');
+    $utcTz = app_utc_timezone();
+
+    return [
+        'start' => $todayStartLocal->setTimezone($utcTz)->format('Y-m-d H:i:s'),
+        'end' => $tomorrowStartLocal->setTimezone($utcTz)->format('Y-m-d H:i:s'),
+    ];
+}
+
+function app_lead_yesterday_bounds_utc(): array
+{
+    $appTz = app_lead_timezone();
+    $todayStartLocal = new DateTimeImmutable('today', $appTz);
+    $yesterdayStartLocal = $todayStartLocal->modify('-1 day');
+    $utcTz = app_utc_timezone();
+
+    return [
+        'start' => $yesterdayStartLocal->setTimezone($utcTz)->format('Y-m-d H:i:s'),
+        'end' => $todayStartLocal->setTimezone($utcTz)->format('Y-m-d H:i:s'),
+    ];
+}
+
+function parse_lead_db_timestamp(?string $value): ?DateTimeImmutable
+{
+    if ($value === null || trim($value) === '') {
+        return null;
+    }
+
+    $raw = trim($value);
+    $parsed = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $raw, app_utc_timezone());
+    if ($parsed instanceof DateTimeImmutable) {
+        return $parsed;
+    }
+
+    $parsedWithMicro = DateTimeImmutable::createFromFormat('Y-m-d H:i:s.u', $raw, app_utc_timezone());
+
+    return $parsedWithMicro instanceof DateTimeImmutable ? $parsedWithMicro : null;
+}
+
+function format_lead_datetime_date_for_display(?string $value): string
+{
+    $parsed = parse_lead_db_timestamp($value);
+    if ($parsed === null) {
+        return '';
+    }
+
+    return $parsed->setTimezone(app_lead_timezone())->format('M j, Y');
+}
+
+function format_lead_datetime_time_for_display(?string $value): string
+{
+    $parsed = parse_lead_db_timestamp($value);
+    if ($parsed === null) {
+        return '';
+    }
+
+    return $parsed->setTimezone(app_lead_timezone())->format('g:i A');
+}
+
+function format_lead_datetime_for_export(?string $value): string
+{
+    $parsed = parse_lead_db_timestamp($value);
+    if ($parsed === null) {
+        return trim((string) $value);
+    }
+
+    $local = $parsed->setTimezone(app_lead_timezone());
+
+    return $local->format('Y-m-d H:i:s');
+}
+
+function render_lead_timezone_note(): void
+{
+    ?>
+    <p class="lead-timezone-note"><?= e(t('lead.times_timezone_note')) ?></p>
+    <?php
 }
 
 function normalize_lead_ids(array $leadIds): array
@@ -216,18 +312,20 @@ function build_client_leads_where(array $options, array &$params): string
         $params['q'] = '%' . $query . '%';
     }
 
+    $dateColumn = $recycleBin ? 'wl.deleted_at' : 'wl.created_at';
+
     $dateFrom = trim((string) ($options['date_from'] ?? ''));
     if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
-        $dateColumn = $recycleBin ? 'wl.deleted_at' : 'wl.created_at';
-        $where[] = 'DATE(' . $dateColumn . ') >= :date_from';
-        $params['date_from'] = $dateFrom;
+        $fromBounds = app_lead_malaysia_day_bounds_utc($dateFrom);
+        $where[] = $dateColumn . ' >= :date_from_start_utc';
+        $params['date_from_start_utc'] = $fromBounds['start'];
     }
 
     $dateTo = trim((string) ($options['date_to'] ?? ''));
     if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
-        $dateColumn = $recycleBin ? 'wl.deleted_at' : 'wl.created_at';
-        $where[] = 'DATE(' . $dateColumn . ') <= :date_to';
-        $params['date_to'] = $dateTo;
+        $toBounds = app_lead_malaysia_day_bounds_utc($dateTo);
+        $where[] = $dateColumn . ' < :date_to_end_utc';
+        $params['date_to_end_utc'] = $toBounds['end'];
     }
 
     $deletedByRole = trim((string) ($options['deleted_by_role'] ?? ''));
@@ -329,8 +427,11 @@ function count_active_leads(?int $clientId = null, bool $todayOnly = false): int
     }
 
     if ($todayOnly) {
-        $where[] = 'DATE(created_at) = :today';
-        $params['today'] = app_today_date();
+        $bounds = app_lead_today_bounds_utc();
+        $where[] = 'created_at >= :today_start_utc';
+        $where[] = 'created_at < :today_end_utc';
+        $params['today_start_utc'] = $bounds['start'];
+        $params['today_end_utc'] = $bounds['end'];
     }
 
     $stmt = db()->prepare('SELECT COUNT(*) FROM widget_leads WHERE ' . implode(' AND ', $where));
@@ -345,15 +446,15 @@ function count_yesterday_active_leads(?int $clientId = null): int
         return 0;
     }
 
-    $bounds = app_yesterday_bounds();
+    $bounds = app_lead_yesterday_bounds_utc();
     $where = [
         'deleted_at IS NULL',
-        'created_at >= :yesterday_start',
-        'created_at < :today_start',
+        'created_at >= :yesterday_start_utc',
+        'created_at < :today_start_utc',
     ];
     $params = [
-        'yesterday_start' => $bounds['start'],
-        'today_start' => $bounds['end'],
+        'yesterday_start_utc' => $bounds['start'],
+        'today_start_utc' => $bounds['end'],
     ];
 
     if ($clientId !== null && $clientId > 0) {
@@ -901,15 +1002,16 @@ function render_lead_captured_cell(?string $value): void
         return;
     }
 
-    $timestamp = strtotime($value);
-    if ($timestamp === false) {
+    $dateLabel = format_lead_datetime_date_for_display($value);
+    $timeLabel = format_lead_datetime_time_for_display($value);
+    if ($dateLabel === '' || $timeLabel === '') {
         echo e((string) $value);
         return;
     }
     ?>
     <span class="lead-captured-cell">
-        <span class="lead-captured-date"><?= e(date('M j, Y', $timestamp)) ?></span>
-        <span class="lead-captured-time"><?= e(date('g:i A', $timestamp)) ?></span>
+        <span class="lead-captured-date"><?= e($dateLabel) ?></span>
+        <span class="lead-captured-time"><?= e($timeLabel) ?></span>
     </span>
     <?php
 }

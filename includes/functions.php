@@ -2632,7 +2632,7 @@ function lead_recently_saved(int $widgetId, string $fullPhone): bool
     $stmt = db()->prepare(
         'SELECT id FROM widget_leads
          WHERE widget_id = :widget_id AND visitor_full_phone = :phone
-           AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+           AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 MINUTE)
          LIMIT 1'
     );
     $stmt->execute(['widget_id' => $widgetId, 'phone' => $fullPhone]);
@@ -2666,7 +2666,7 @@ function insert_widget_lead(array $widget, array $lead): int
     }
 
     $placeholders = array_map(static fn ($column) => ':' . $column, $columns);
-    $sql = 'INSERT INTO widget_leads (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+    $sql = 'INSERT INTO widget_leads (' . implode(', ', $columns) . ', created_at) VALUES (' . implode(', ', $placeholders) . ', UTC_TIMESTAMP())';
     $stmt = db()->prepare($sql);
     $stmt->execute($values);
 

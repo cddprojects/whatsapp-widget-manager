@@ -2382,6 +2382,16 @@ code {
     font-size: 12px;
 }
 
+.lead-timezone-note {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.dashboard-timezone-note {
+    margin-top: -4px;
+}
+
 .lead-page-card .table-wrap.lead-table-wrap {
     overflow-x: visible;
 }
