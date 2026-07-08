@@ -63,32 +63,20 @@ header('Content-Disposition: attachment; filename="' . $filename . '"');
 
 $out = fopen('php://output', 'w');
 
-if ($scope === 'all') {
-    fputcsv($out, ['visitor_phone', 'client_name', 'widget_name', 'source_domain', 'source_url', 'page_title', t('lead.export_captured_at')]);
-    foreach ($rows as $lead) {
-        fputcsv($out, [
-            format_lead_display_phone($lead),
-            $lead['owner_name'] ?? '',
-            $lead['widget_name'] ?? '',
-            $lead['source_domain'] ?? '',
-            $lead['source_url'] ?? '',
-            $lead['page_title'] ?? '',
-            format_lead_datetime_for_export($lead['created_at'] ?? null),
-        ]);
-    }
-} else {
-    fputcsv($out, ['visitor_phone', 'visitor_full_phone', 'widget_name', 'source_domain', 'source_url', 'page_title', t('lead.export_captured_at')]);
-    foreach ($rows as $lead) {
-        fputcsv($out, [
-            $lead['visitor_phone'],
-            $lead['visitor_full_phone'],
-            $lead['widget_name'],
-            $lead['source_domain'],
-            $lead['source_url'],
-            $lead['page_title'],
-            format_lead_datetime_for_export($lead['created_at'] ?? null),
-        ]);
-    }
+fputcsv($out, [
+    t('lead.export_visitor_phone'),
+    t('lead.export_widget_name'),
+    t('lead.export_source_url'),
+    t('lead.export_captured_at'),
+]);
+
+foreach ($rows as $lead) {
+    fputcsv($out, [
+        format_lead_export_phone($lead),
+        $lead['widget_name'] ?? '',
+        $lead['source_url'] ?? '',
+        format_lead_datetime_for_export($lead['created_at'] ?? null),
+    ]);
 }
 
 fclose($out);

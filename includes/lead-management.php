@@ -949,6 +949,16 @@ function format_retention_days_label(int $days): string
         : t('lead.retention_day_other', ['count' => (string) $days]);
 }
 
+function format_lead_export_phone(array $lead): string
+{
+    $fullPhone = trim((string) ($lead['visitor_full_phone'] ?? ''));
+    if ($fullPhone !== '') {
+        return $fullPhone;
+    }
+
+    return trim((string) ($lead['visitor_phone'] ?? ''));
+}
+
 function format_lead_display_phone(array $lead): string
 {
     $phone = trim((string) ($lead['visitor_phone'] ?? ''));
