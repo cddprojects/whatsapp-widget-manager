@@ -321,6 +321,7 @@ return [
     'helper.domain_formats' => '接受的格式：example.com、www.example.com、https://example.com。',
     'helper.upload_replace_existing' => '如果未勾选，上传的号码将添加到当前已启用的号码中。',
     'helper.greeting_force_phone' => '启用后，访客必须先输入电话号码才能打开 WhatsApp。',
+    'helper.allow_phone_plus_symbol' => '启用后，访客可输入国际号码，电话输入框会显示 + 前缀。',
     'helper.phone_submit_button_id' => '用作电话提交按钮的 HTML ID。仅可使用字母、数字、连字符和下划线。',
     'helper.business_hours_always_online' => '小组件始终可用，WhatsApp 点击始终启用。',
     'helper.business_hours_always_offline' => '小组件显示为离线，WhatsApp 点击始终禁用。',
@@ -384,6 +385,7 @@ return [
     'toggle.show_globally' => '在所有页面全局显示',
     'toggle.enable_greeting_dialog' => '启用问候对话框',
     'toggle.enable_phone_capture' => '启用电话号码收集',
+    'toggle.allow_phone_plus_symbol' => '允许电话号码使用 + 符号',
     'toggle.force_phone_capture' => '强制用户输入电话号码',
     'toggle.phone_number_required' => '电话号码必填',
     'toggle.enable_domain_lock' => '启用域名锁定',
@@ -512,6 +514,7 @@ return [
     'widget.phone_validation.empty' => '请输入您的电话号码。',
     'widget.phone_validation.invalid' => '请输入有效的电话号码。',
     'widget.phone_validation.min_digits' => '请输入至少 8 位数字。',
+    'widget.phone_validation.without_plus' => '请输入不含 + 符号的数字。',
 
     'widget_destinations.none' => '无目的地',
     'widget_destinations.setup_required' => '需要设置',

@@ -45,7 +45,7 @@ if (!domain_matches_referrer($widget, $referrer !== '' ? $referrer : null)) {
     json_response(['success' => false, 'message' => 'Domain not allowed'], 403);
 }
 
-$normalized = validate_captured_visitor_phone($visitorPhone);
+$normalized = validate_captured_visitor_phone($visitorPhone, widget_allows_phone_plus($widget));
 if (empty($normalized['valid'])) {
     json_response(['success' => false, 'message' => $normalized['message'] ?? t('widget.phone_validation.invalid')], 422);
 }

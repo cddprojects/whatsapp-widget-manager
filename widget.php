@@ -36,6 +36,7 @@ $destinationCount = count($activeNumbers);
 $destinationMethod = effective_destination_selection_method($widget, $destinationCount);
 $phoneSubmitButtonId = resolve_greeting_phone_submit_button_id($widget);
 $phoneErrorId = 'ctcw-phone-error-' . (int) $widget['id'];
+$allowPhonePlus = !empty($widget['greeting_allow_phone_plus']);
 
 $widgetConfig = [
     'widgetId' => (int) $widget['id'],
@@ -62,6 +63,7 @@ $widgetConfig = [
     'greetingCapturePhone' => !empty($widget['greeting_capture_phone']),
     'greetingPhoneRequired' => !empty($widget['greeting_phone_required']),
     'greetingForcePhoneCapture' => !empty($widget['greeting_force_phone_capture']),
+    'allowPhonePlusSymbol' => $allowPhonePlus,
     'greetingPhonePlaceholder' => (string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number'),
     'greetingSubmitText' => (string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp'),
     'greetingLeadSuccessMessage' => (string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...'),
@@ -70,6 +72,7 @@ $widgetConfig = [
         'empty' => t('widget.phone_validation.empty'),
         'invalid' => t('widget.phone_validation.invalid'),
         'minDigits' => t('widget.phone_validation.min_digits'),
+        'withoutPlus' => t('widget.phone_validation.without_plus'),
     ],
     'publicKey' => (string) $widget['public_key'],
     'saveLeadUrl' => SYSTEM_BASE_URL . '/save-widget-lead.php',
@@ -142,15 +145,20 @@ $styleFiveHoverText = $callToActionText;
                         <p class="ctcw-greeting-message"><?= e($greetingMessage) ?></p>
                         <div class="ctcw-phone-field">
                             <div class="ctcw-phone-row">
-                                <input
-                                    class="ctcw-phone-input"
-                                    type="tel"
-                                    inputmode="tel"
-                                    autocomplete="tel"
-                                    data-greeting-phone
-                                    placeholder="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>"
-                                    aria-describedby="<?= e($phoneErrorId) ?>"
-                                >
+                                <div class="ctcw-phone-input-group<?= $allowPhonePlus ? ' ctcw-has-plus-prefix' : '' ?>">
+                                    <?php if ($allowPhonePlus): ?>
+                                        <span class="ctcw-phone-prefix" aria-hidden="true">+</span>
+                                    <?php endif; ?>
+                                    <input
+                                        class="ctcw-phone-input"
+                                        type="tel"
+                                        inputmode="tel"
+                                        autocomplete="tel"
+                                        data-greeting-phone
+                                        placeholder="<?= e((string) ($widget['greeting_phone_placeholder'] ?? 'Enter your phone number')) ?>"
+                                        aria-describedby="<?= e($phoneErrorId) ?>"
+                                    >
+                                </div>
                                 <button
                                     type="submit"
                                     class="ctcw-greeting-submit"

@@ -953,6 +953,7 @@ function default_widget_data(): array
         'greeting_delay_seconds' => 2,
         'greeting_capture_phone' => 0,
         'greeting_phone_required' => 1,
+        'greeting_allow_phone_plus' => 1,
         'greeting_force_phone_capture' => 0,
         'greeting_phone_placeholder' => 'Enter your phone number',
         'greeting_submit_text' => 'Continue to WhatsApp',
@@ -1058,6 +1059,7 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         'greeting_delay_seconds' => max(0, min(120, (int) ($post['greeting_delay_seconds'] ?? 2))),
         'greeting_capture_phone' => 0,
         'greeting_phone_required' => 0,
+        'greeting_allow_phone_plus' => 1,
         'greeting_force_phone_capture' => 0,
         'greeting_phone_placeholder' => trim((string) ($post['greeting_phone_placeholder'] ?? $defaults['greeting_phone_placeholder'])),
         'greeting_submit_text' => trim((string) ($post['greeting_submit_text'] ?? $defaults['greeting_submit_text'])),
@@ -1110,17 +1112,20 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
             $data['greeting_capture_phone'] = 1;
             $data['greeting_force_phone_capture'] = $greetingForcePhoneCapture;
             $data['greeting_phone_required'] = $greetingPhoneRequired;
+            $data['greeting_allow_phone_plus'] = post_checkbox('greeting_allow_phone_plus');
             $data['greeting_phone_submit_button_id'] = trim((string) ($post['greeting_phone_submit_button_id'] ?? ''));
         } else {
             $data['greeting_capture_phone'] = 0;
             $data['greeting_force_phone_capture'] = (int) ($existing['greeting_force_phone_capture'] ?? 0);
             $data['greeting_phone_required'] = (int) ($existing['greeting_phone_required'] ?? 1);
+            $data['greeting_allow_phone_plus'] = (int) ($existing['greeting_allow_phone_plus'] ?? 1);
             $data['greeting_phone_submit_button_id'] = (string) ($existing['greeting_phone_submit_button_id'] ?? '');
         }
     } else {
         $data['greeting_capture_phone'] = (int) ($existing['greeting_capture_phone'] ?? 0);
         $data['greeting_force_phone_capture'] = (int) ($existing['greeting_force_phone_capture'] ?? 0);
         $data['greeting_phone_required'] = (int) ($existing['greeting_phone_required'] ?? 1);
+        $data['greeting_allow_phone_plus'] = (int) ($existing['greeting_allow_phone_plus'] ?? 1);
         $data['greeting_phone_submit_button_id'] = (string) ($existing['greeting_phone_submit_button_id'] ?? '');
     }
 
@@ -1178,6 +1183,7 @@ function validate_widget_data(array $data): array
 
 function insert_widget(int $userId, array $data): int
 {
+    ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     $data['user_id'] = $userId;
     $data['public_key'] = generate_public_key();
@@ -1198,6 +1204,7 @@ function insert_widget(int $userId, array $data): int
 
 function update_widget(int $widgetId, int $userId, array $data): void
 {
+    ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     $data = filter_widget_data_for_existing_columns($data);
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
@@ -2024,6 +2031,26 @@ function ensure_website_name_schema(): void
     }
 }
 
+function ensure_greeting_allow_phone_plus_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (!database_table_exists('widgets')) {
+        return;
+    }
+
+    if (!table_has_column('widgets', 'greeting_allow_phone_plus')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN greeting_allow_phone_plus TINYINT(1) NOT NULL DEFAULT 1 AFTER greeting_phone_required"
+        );
+    }
+}
+
 function ensure_greeting_phone_submit_button_id_schema(): void
 {
     static $ensured = false;
@@ -2061,6 +2088,7 @@ function filter_widget_data_for_existing_columns(array $data): array
 
 function update_widget_admin(int $widgetId, array $data): void
 {
+    ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     unset($data['widget_status']);
     $data = filter_widget_data_for_existing_columns($data);
@@ -2577,14 +2605,42 @@ function normalize_visitor_phone(string $phone): ?array
     return !empty($result['valid']) ? $result['normalized'] : null;
 }
 
-function validate_captured_visitor_phone(string $phone): array
+function widget_allows_phone_plus(array $widget): bool
+{
+    return !empty($widget['greeting_allow_phone_plus']);
+}
+
+function captured_phone_has_invalid_plus_placement(string $phone): bool
+{
+    $plusCount = substr_count($phone, '+');
+    if ($plusCount === 0) {
+        return false;
+    }
+
+    if ($plusCount > 1) {
+        return true;
+    }
+
+    return !str_starts_with($phone, '+');
+}
+
+function validate_captured_visitor_phone(string $phone, bool $allowPhonePlus = true): array
 {
     $raw = trim(strip_tags($phone));
     if ($raw === '') {
         return ['valid' => false, 'message' => t('widget.phone_validation.empty')];
     }
 
-    if (!preg_match('/^\+?[0-9\s().-]+$/', $raw)) {
+    if (!$allowPhonePlus && str_contains($raw, '+')) {
+        return ['valid' => false, 'message' => t('widget.phone_validation.without_plus')];
+    }
+
+    if ($allowPhonePlus && captured_phone_has_invalid_plus_placement($raw)) {
+        return ['valid' => false, 'message' => t('widget.phone_validation.invalid')];
+    }
+
+    $pattern = $allowPhonePlus ? '/^\+?[0-9\s().-]+$/' : '/^[0-9\s().-]+$/';
+    if (!preg_match($pattern, $raw)) {
         return ['valid' => false, 'message' => t('widget.phone_validation.invalid')];
     }
 
@@ -2597,10 +2653,7 @@ function validate_captured_visitor_phone(string $phone): array
         return ['valid' => false, 'message' => t('widget.phone_validation.invalid')];
     }
 
-    $display = preg_replace('/[^\d+]/', '', $raw) ?? $digits;
-    if ($display !== '' && $display[0] !== '+') {
-        $display = '+' . $digits;
-    }
+    $display = $allowPhonePlus ? '+' . $digits : $digits;
 
     return [
         'valid' => true,
@@ -2740,6 +2793,7 @@ function ensure_widget_activation_schema(): void
 try {
     ensure_widget_activation_schema();
     ensure_website_name_schema();
+    ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     ensure_lead_recycle_schema();
 } catch (Throwable $exception) {

@@ -321,6 +321,7 @@ return [
     'helper.domain_formats' => 'Accepted formats: example.com, www.example.com, https://example.com.',
     'helper.upload_replace_existing' => 'If unchecked, uploaded numbers will be added to your current active numbers.',
     'helper.greeting_force_phone' => 'When enabled, visitors must enter their phone number before they can open WhatsApp.',
+    'helper.allow_phone_plus_symbol' => 'When enabled, visitors can enter international numbers and the phone input shows a + prefix.',
     'helper.phone_submit_button_id' => 'Used as the HTML ID for the phone submit button. Use letters, numbers, hyphens, and underscores only.',
     'helper.business_hours_always_online' => 'The widget is always available and WhatsApp clicks remain enabled.',
     'helper.business_hours_always_offline' => 'The widget is shown as offline and WhatsApp clicks are disabled at all times.',
@@ -384,6 +385,7 @@ return [
     'toggle.show_globally' => 'Show on all pages globally',
     'toggle.enable_greeting_dialog' => 'Enable greeting dialog',
     'toggle.enable_phone_capture' => 'Enable phone number capture',
+    'toggle.allow_phone_plus_symbol' => 'Allow + symbol in phone number',
     'toggle.force_phone_capture' => 'Force user to insert phone number',
     'toggle.phone_number_required' => 'Phone number required',
     'toggle.enable_domain_lock' => 'Enable domain lock',
@@ -511,7 +513,10 @@ return [
     'message_variable.insert' => 'Insert {variable}',
     'widget.phone_validation.empty' => 'Enter your phone number.',
     'widget.phone_validation.invalid' => 'Enter a valid phone number.',
+
+    'widget.phone_validation.without_plus' => 'Enter numbers without the + symbol.',
     'widget.phone_validation.min_digits' => 'Enter a valid phone number.',
+
 
     'widget_destinations.none' => 'No destinations',
     'widget_destinations.setup_required' => 'Setup required',
