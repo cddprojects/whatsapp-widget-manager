@@ -393,7 +393,7 @@ code {
 }
 
 .clients-table .col-actions {
-    text-align: right;
+    text-align: center;
 }
 
 .client-directory-name {
@@ -417,7 +417,8 @@ code {
 }
 
 .clients-table-wrap {
-    overflow-x: visible;
+    overflow: visible;
+    /* overflow-x: visible; */
 }
 
 .admin-form-grid {
@@ -1105,7 +1106,8 @@ code {
 }
 
 .table-wrap {
-    overflow-x: auto;
+    overflow: visible;
+    /* overflow-x: auto; */
     border: 1px solid var(--line);
     border-radius: 14px;
 }
@@ -1948,7 +1950,7 @@ code {
 }
 
 .search-field {
-    grid-column: span 2;
+    grid-column: span 1;
 }
 
 .results-meta {
