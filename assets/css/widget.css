@@ -241,20 +241,55 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     gap: 8px;
 }
 
+.ctcw-phone-input-group {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1 1 auto;
+    min-height: 44px;
+    height: 46px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.ctcw-phone-input-group:focus-within {
+    border-color: #2563eb;
+}
+
+.ctcw-phone-input-group:has(.ctcw-phone-input[aria-invalid="true"]) {
+    border-color: #dc2626;
+}
+
+.ctcw-phone-prefix {
+    flex: 0 0 auto;
+    padding-left: 12px;
+    padding-right: 4px;
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1;
+}
+
 .ctcw-phone-input {
     flex: 1 1 auto;
     min-width: 0;
     width: 100%;
-    height: 46px;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
     padding: 10px 12px;
     color: var(--ctcw-text);
-    background: #ffffff;
+    background: transparent;
     font: inherit;
     font-size: 13px;
     outline: none;
     box-shadow: none !important;
+}
+
+.ctcw-has-plus-prefix .ctcw-phone-input {
+    padding-left: 4px;
 }
 
 .ctcw-phone-input::placeholder {
@@ -263,11 +298,11 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 }
 
 .ctcw-phone-input:focus {
-    border-color: #2563eb;
+    border-color: transparent;
 }
 
 .ctcw-phone-input[aria-invalid="true"] {
-    border-color: #dc2626;
+    border-color: transparent;
 }
 
 .ctcw-phone-error {
@@ -620,11 +655,20 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
         flex-wrap: nowrap;
         gap: 8px;
     }
+
+    .ctcw-phone-input-group {
+        min-width: 0;
+    }
 }
 
 @media (max-width: 389px) {
     .ctcw-phone-row {
         flex-wrap: wrap;
+    }
+
+    .ctcw-phone-input-group {
+        flex: 1 1 100%;
+        width: 100%;
     }
 
     .ctcw-greeting-submit {

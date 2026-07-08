@@ -560,6 +560,16 @@ $settingsSections = [
                         <span><?= e(t('toggle.phone_number_required')) ?></span>
                     </label>
                 </div>
+                <label class="toggle-row">
+                    <input
+                        type="checkbox"
+                        name="greeting_allow_phone_plus"
+                        value="1"
+                        <?= checked($widget['greeting_allow_phone_plus'] ?? 1) ?>
+                    >
+                    <span><?= e(t('toggle.allow_phone_plus_symbol')) ?></span>
+                </label>
+                <small class="field-helper"><?= e(t('helper.allow_phone_plus_symbol')) ?></small>
                 <div class="form-grid two-columns">
                     <label>
                         <span><?= e(t('label.phone_input_placeholder')) ?></span>

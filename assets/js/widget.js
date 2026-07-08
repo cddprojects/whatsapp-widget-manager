@@ -231,9 +231,22 @@
         scheduleSizeReports();
     }
 
+    function capturedPhoneHasInvalidPlusPlacement(value) {
+        var plusMatches = String(value || '').match(/\+/g);
+        if (!plusMatches) {
+            return false;
+        }
+        if (plusMatches.length > 1) {
+            return true;
+        }
+
+        return String(value || '').indexOf('+') !== 0;
+    }
+
     function validateCapturedPhoneNumber(rawValue) {
         var value = String(rawValue || '').trim();
         var messages = config.phoneValidation || {};
+        var allowPlus = !!config.allowPhonePlusSymbol;
 
         if (!value) {
             return {
@@ -242,7 +255,22 @@
             };
         }
 
-        if (!/^\+?[0-9\s().-]+$/.test(value)) {
+        if (!allowPlus && value.indexOf('+') !== -1) {
+            return {
+                valid: false,
+                message: messages.withoutPlus || 'Enter numbers without the + symbol.'
+            };
+        }
+
+        if (allowPlus && capturedPhoneHasInvalidPlusPlacement(value)) {
+            return {
+                valid: false,
+                message: messages.invalid || 'Enter a valid phone number.'
+            };
+        }
+
+        var pattern = allowPlus ? /^\+?[0-9\s().-]+$/ : /^[0-9\s().-]+$/;
+        if (!pattern.test(value)) {
             return {
                 valid: false,
                 message: messages.invalid || 'Enter a valid phone number.'
@@ -267,7 +295,8 @@
 
         return {
             valid: true,
-            normalizedDigits: digits
+            normalizedDigits: digits,
+            normalizedPhone: allowPlus ? '+' + digits : digits
         };
     }
 
@@ -551,6 +580,10 @@
 
         clearPhoneInputInvalid();
 
+        var phoneToSave = validation.valid && validation.normalizedPhone
+            ? validation.normalizedPhone
+            : phone;
+
         if (!config.saveLeadUrl) {
             if (forceMode) {
                 setPhoneInputInvalid(saveFailedMessage);
@@ -572,7 +605,7 @@
             closeGreetingDialog();
         }
 
-        saveLead(phone, '')
+        saveLead(phoneToSave, '')
             .then(function () {
                 notifyPhoneSubmitSuccess();
                 if (forceMode && greetingSuccess) {
