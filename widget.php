@@ -81,16 +81,27 @@ $widgetConfig = [
 
 $desktopStyle = normalize_widget_style((string) ($widget['desktop_style'] ?? 'style-1'));
 $mobileStyle = normalize_widget_style((string) ($widget['mobile_style'] ?? 'style-1'));
+$useDesktopMobilePosition = !empty($widget['same_mobile_desktop_settings']);
 $desktopPositionType = (string) ($widget['desktop_position_type'] ?? 'fixed');
-$mobilePositionType = (string) ($widget['mobile_position_type'] ?? 'fixed');
+$mobilePositionType = $useDesktopMobilePosition
+    ? $desktopPositionType
+    : (string) ($widget['mobile_position_type'] ?? 'fixed');
 $desktopVerticalSide = (string) ($widget['desktop_vertical_position_type'] ?? 'bottom');
 $desktopHorizontalSide = (string) ($widget['desktop_horizontal_position_type'] ?? 'right');
-$mobileVerticalSide = (string) ($widget['mobile_vertical_position_type'] ?? 'bottom');
-$mobileHorizontalSide = (string) ($widget['mobile_horizontal_position_type'] ?? 'right');
-$desktopVerticalValue = (string) ($widget['desktop_vertical_position_value'] ?? '25px');
-$desktopHorizontalValue = (string) ($widget['desktop_horizontal_position_value'] ?? '25px');
-$mobileVerticalValue = (string) ($widget['mobile_vertical_position_value'] ?? '25px');
-$mobileHorizontalValue = (string) ($widget['mobile_horizontal_position_value'] ?? '25px');
+$mobileVerticalSide = $useDesktopMobilePosition
+    ? $desktopVerticalSide
+    : (string) ($widget['mobile_vertical_position_type'] ?? 'bottom');
+$mobileHorizontalSide = $useDesktopMobilePosition
+    ? $desktopHorizontalSide
+    : (string) ($widget['mobile_horizontal_position_type'] ?? 'right');
+$desktopVerticalValue = css_unit_value((string) ($widget['desktop_vertical_position_value'] ?? '25px'), '25px');
+$desktopHorizontalValue = css_unit_value((string) ($widget['desktop_horizontal_position_value'] ?? '25px'), '25px');
+$mobileVerticalValue = $useDesktopMobilePosition
+    ? $desktopVerticalValue
+    : css_unit_value((string) ($widget['mobile_vertical_position_value'] ?? '25px'), '25px');
+$mobileHorizontalValue = $useDesktopMobilePosition
+    ? $desktopHorizontalValue
+    : css_unit_value((string) ($widget['mobile_horizontal_position_value'] ?? '25px'), '25px');
 $desktopAlign = $desktopHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
 $mobileAlign = $mobileHorizontalSide === 'left' ? 'flex-start' : 'flex-end';
 $desktopAnchorClass = 'is-' . $desktopVerticalSide . ' is-' . $desktopHorizontalSide;

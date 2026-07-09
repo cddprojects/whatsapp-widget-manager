@@ -1470,19 +1470,19 @@ function widget_frame_size(array $widget): array
 
 function iframe_position_css(array $widget, string $device): string
 {
-    $positionType = enum_value((string) ($widget[$device . '_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed');
-    $verticalSide = enum_value((string) ($widget[$device . '_vertical_position_type'] ?? 'bottom'), ['top', 'bottom'], 'bottom');
-    $verticalValue = css_unit_value((string) ($widget[$device . '_vertical_position_value'] ?? '25px'), '25px');
-    $horizontalSide = enum_value((string) ($widget[$device . '_horizontal_position_type'] ?? 'right'), ['left', 'right'], 'right');
-    $horizontalValue = css_unit_value((string) ($widget[$device . '_horizontal_position_value'] ?? '25px'), '25px');
+    $settings = iframe_position_settings($widget, $device);
 
-    return 'position:' . $positionType . '; top:auto; bottom:auto; left:auto; right:auto; '
-        . $verticalSide . ':' . $verticalValue . '; '
-        . $horizontalSide . ':' . $horizontalValue . ';';
+    return 'position:' . $settings['position'] . '; top:auto; bottom:auto; left:auto; right:auto; '
+        . $settings['verticalSide'] . ':' . $settings['verticalValue'] . '; '
+        . $settings['horizontalSide'] . ':' . $settings['horizontalValue'] . ';';
 }
 
 function iframe_position_settings(array $widget, string $device): array
 {
+    if ($device === 'mobile' && !empty($widget['same_mobile_desktop_settings'])) {
+        $device = 'desktop';
+    }
+
     return [
         'position' => enum_value((string) ($widget[$device . '_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed'),
         'verticalSide' => enum_value((string) ($widget[$device . '_vertical_position_type'] ?? 'bottom'), ['top', 'bottom'], 'bottom'),

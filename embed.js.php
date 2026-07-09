@@ -116,6 +116,8 @@ $config = [
     function applyPosition() {
         var active = activeConfig();
         var position = active.position;
+        var verticalValue = position.verticalValue || '25px';
+        var horizontalValue = position.horizontalValue || '25px';
 
         iframe.style.position = position.position;
         iframe.style.top = 'auto';
@@ -125,21 +127,17 @@ $config = [
 
         if (isMobile()) {
             if (position.verticalSide === 'bottom') {
-                iframe.style.bottom = 'calc(max(16px, env(safe-area-inset-bottom)) + 8px)';
+                iframe.style.bottom = 'calc(' + verticalValue + ' + env(safe-area-inset-bottom, 0px))';
             } else {
-                iframe.style.top = 'max(16px, env(safe-area-inset-top))';
+                iframe.style.top = 'calc(' + verticalValue + ' + env(safe-area-inset-top, 0px))';
             }
 
-            if (position.horizontalSide === 'right') {
-                iframe.style.right = 'max(12px, env(safe-area-inset-right))';
-            } else {
-                iframe.style.left = 'max(12px, env(safe-area-inset-left))';
-            }
+            iframe.style[position.horizontalSide] = horizontalValue;
             return;
         }
 
-        iframe.style[position.verticalSide] = position.verticalValue;
-        iframe.style[position.horizontalSide] = position.horizontalValue;
+        iframe.style[position.verticalSide] = verticalValue;
+        iframe.style[position.horizontalSide] = horizontalValue;
     }
 
 function applySize(width, height, state) {
