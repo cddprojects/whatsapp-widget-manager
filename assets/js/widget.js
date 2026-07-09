@@ -34,11 +34,12 @@
     };
     var mobileStateMinimums = {
         icon: { width: 68, height: 68 },
-        button: { width: 88, height: 72 },
-        hover: { width: 88, height: 72 },
+        button: { width: 150, height: 72 },
+        hover: { width: 150, height: 72 },
         greeting: { width: 320, height: 260 },
         'greeting-phone': { width: 336, height: 290 }
     };
+    var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend', 'style-9-left-hover'];
 
     function getMeasureSelectors() {
         if (isGreetingVisible()) {
@@ -99,7 +100,82 @@
     }
 
     function isIconOnlyStyle() {
+        if (isMobile() && mobileCollapsedIconStyles.indexOf(currentStyle) !== -1) {
+            return true;
+        }
+
         return iconOnlyStyles.indexOf(currentStyle) !== -1;
+    }
+
+    function isCollapsedIconOnlyStyle() {
+        return isIconOnlyStyle();
+    }
+
+    function getMobileViewportLimit() {
+        return Math.max(280, (parentViewportWidth || window.innerWidth || 320) - 24);
+    }
+
+    function measureTriggerElement(el) {
+        if (!el) {
+            return { width: 0, height: 0 };
+        }
+
+        var rect = el.getBoundingClientRect();
+        return {
+            width: Math.ceil(Math.max(rect.width, el.scrollWidth, el.offsetWidth)),
+            height: Math.ceil(Math.max(rect.height, el.scrollHeight, el.offsetHeight))
+        };
+    }
+
+    function measureCollapsedTriggerBounds() {
+        var padding = getBoundsPadding();
+        var trigger = button;
+
+        if (!trigger) {
+            return minimumForState(resolveSizeState());
+        }
+
+        if (isGreetingVisible()) {
+            return getVisibleWidgetBounds();
+        }
+
+        if (isCollapsedIconOnlyStyle()) {
+            var iconRect = measureTriggerElement(trigger);
+            return {
+                width: Math.max(minimumForState('icon').width, iconRect.width + padding),
+                height: Math.max(minimumForState('icon').height, iconRect.height + padding)
+            };
+        }
+
+        var triggerSize = measureTriggerElement(trigger);
+        var width = Math.max(minimumForState('button').width, triggerSize.width + padding);
+        var height = Math.max(minimumForState('button').height, triggerSize.height + padding);
+        var viewportLimit = isMobile() ? getMobileViewportLimit() : null;
+
+        if (viewportLimit) {
+            width = Math.min(width, viewportLimit);
+        }
+
+        return { width: width, height: height };
+    }
+
+    function renderCollapsedTrigger() {
+        container.classList.remove('is-hovering');
+        container.classList.toggle('ctcw-greeting-open', false);
+        container.classList.toggle('ctcw-greeting-closed', !!greeting);
+
+        if (greeting) {
+            greeting.classList.remove('is-visible');
+        }
+
+        currentState = isCollapsedIconOnlyStyle() ? 'icon' : 'button';
+    }
+
+    function requestWidgetResize() {
+        window.requestAnimationFrame(function () {
+            sendActualWidgetSize();
+            scheduleSizeReports();
+        });
     }
 
     function resolveSizeState() {
@@ -174,11 +250,9 @@
             }
 
             var state = resolveSizeState();
-            var bounds = getVisibleWidgetBounds();
+            var bounds = isGreetingVisible() ? getVisibleWidgetBounds() : measureCollapsedTriggerBounds();
             var minimum = minimumForState(state);
-            var viewportLimit = isMobile()
-                ? Math.max(280, (parentViewportWidth || window.innerWidth || 320) - 24)
-                : null;
+            var viewportLimit = isMobile() ? getMobileViewportLimit() : null;
             var width = Math.max(minimum.width, bounds.width);
             var height = Math.max(minimum.height, bounds.height);
 
@@ -197,7 +271,7 @@
     }
 
     function scheduleSizeReports() {
-        [50, 300, 800].forEach(function (delay) {
+        [0, 50, 150, 300, 600, 900].forEach(function (delay) {
             window.setTimeout(sendActualWidgetSize, delay);
         });
     }
@@ -206,7 +280,7 @@
         if (!greeting) {
             return;
         }
-        greeting.classList.remove('is-visible');
+
         showPhoneError('');
         if (phoneInput) {
             phoneInput.removeAttribute('aria-invalid');
@@ -215,9 +289,8 @@
             greetingSuccess.hidden = true;
         }
         resetSubmitButton(greetingSubmit);
-        currentState = isIconOnlyStyle() ? 'icon' : 'button';
-        sendActualWidgetSize();
-        scheduleSizeReports();
+        renderCollapsedTrigger();
+        requestWidgetResize();
     }
 
     function applyResponsiveState() {
@@ -231,6 +304,11 @@
         });
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
+        if (mobile) {
+            container.style.maxWidth = getMobileViewportLimit() + 'px';
+        } else {
+            container.style.removeProperty('max-width');
+        }
         sendActualWidgetSize();
         scheduleSizeReports();
     }
@@ -660,6 +738,8 @@
         if (!greeting) {
             return;
         }
+        container.classList.toggle('ctcw-greeting-open', true);
+        container.classList.toggle('ctcw-greeting-closed', false);
         currentState = config.greetingCapturePhone && greeting.classList.contains('has-capture')
             ? 'greeting-phone'
             : 'greeting';
@@ -796,7 +876,7 @@
     }
 
     function startHover() {
-        if (isGreetingVisible()) {
+        if (isMobile() || isGreetingVisible()) {
             return;
         }
         window.clearTimeout(hoverTimer);
@@ -809,7 +889,7 @@
     }
 
     function endHover() {
-        if (isGreetingVisible()) {
+        if (isMobile() || isGreetingVisible()) {
             return;
         }
         window.clearTimeout(hoverTimer);

@@ -3,7 +3,7 @@
     --ctcw-green-dark: #128c7e;
     --ctcw-text: #102a43;
     --ctcw-shadow: none;
-    --ctcw-mobile-offset: max(12px, env(safe-area-inset-bottom));
+    --ctcw-mobile-offset: calc(max(16px, env(safe-area-inset-bottom)) + 8px);
     --ctcw-mobile-side-offset: max(12px, env(safe-area-inset-right));
     --ctcw-mobile-left-offset: max(12px, env(safe-area-inset-left));
     --ctcw-popup-gap: 12px;
@@ -119,7 +119,8 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 }
 
 .ctcw-widget,
-.ctcw-launcher {
+.ctcw-launcher,
+.ctcw-cta-button {
     border: 0;
     cursor: pointer;
     display: inline-flex;
@@ -139,6 +140,15 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     pointer-events: auto;
     white-space: nowrap;
     flex-shrink: 0;
+    max-width: 100%;
+}
+
+.ctcw-widget-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    pointer-events: auto;
 }
 
 .ctcw-widget:hover {
@@ -160,8 +170,10 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     height: 100%;
 }
 
-.ctcw-text {
+.ctcw-text,
+.ctcw-cta-label {
     display: inline-block;
+    min-width: 0;
 }
 
 .ctcw-hover-box {
@@ -562,7 +574,46 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 
 @media (max-width: 767px) {
     .ctcw-widget-anchor {
-        max-width: calc(100vw - 24px);
+        width: max-content;
+        max-width: none;
+    }
+
+    .ctcw-widget-trigger,
+    .ctcw-cta-button,
+    .ctcw-widget,
+    .ctcw-launcher {
+        width: auto;
+        max-width: none;
+    }
+
+    .ctcw-cta-label,
+    .style-1 .ctcw-text,
+    .style-4 .ctcw-text,
+    .style-8 .ctcw-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-widget {
+        width: 58px;
+        min-width: 58px;
+        max-width: 58px;
+        padding: 0 17px;
+    }
+
+    html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-text,
+    html.ctcw-mobile .style-9-left-hover:not(.is-hovering) .ctcw-text {
+        display: none;
+        max-width: 0;
+        opacity: 0;
+        padding: 0;
+    }
+
+    html.ctcw-mobile .style-9-left-hover:not(.is-hovering) .ctcw-widget {
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        gap: 0;
     }
 
     .ctcw-greeting,
