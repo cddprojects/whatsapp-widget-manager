@@ -196,7 +196,7 @@ $successMessage = (string) ($widget['greeting_lead_success_message'] ?? 'Redirec
         <div class="ctcw-widget-trigger">
             <button class="ctcw-widget ctcw-launcher ctcw-cta-button" type="button" data-widget-button aria-label="<?= e($callToActionText) ?>">
                 <span class="ctcw-icon ctcw-cta-icon"><?= whatsapp_icon_svg() ?></span>
-                <span class="ctcw-text ctcw-cta-label"><?= e($callToActionText) ?></span>
+                <span class="ctcw-text ctcw-cta-label ctcw-style-9-label"><?= e($callToActionText) ?></span>
             </button>
         </div>
     </div>
