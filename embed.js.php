@@ -88,7 +88,7 @@ $config = [
             if (state === 'button' || state === 'hover') {
                 return { width: 150, height: 72 };
             }
-            return { width: 78, height: 78 };
+            return { width: 86, height: 86 };
         }
 
         if (state === 'greeting-phone') {
