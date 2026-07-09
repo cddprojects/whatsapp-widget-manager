@@ -3,9 +3,8 @@
     --ctcw-green-dark: #128c7e;
     --ctcw-text: #102a43;
     --ctcw-shadow: none;
-    --ctcw-mobile-offset: calc(max(16px, env(safe-area-inset-bottom)) + 8px);
-    --ctcw-mobile-side-offset: max(12px, env(safe-area-inset-right));
-    --ctcw-mobile-left-offset: max(12px, env(safe-area-inset-left));
+    --ctcw-mobile-vertical-offset: 12px;
+    --ctcw-mobile-horizontal-offset: 12px;
     --ctcw-popup-gap: 12px;
 }
 
@@ -95,23 +94,23 @@ html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-left {
 }
 
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-bottom.is-mobile-right {
-    bottom: var(--ctcw-mobile-offset);
-    right: var(--ctcw-mobile-side-offset);
+    bottom: var(--ctcw-mobile-vertical-offset);
+    right: var(--ctcw-mobile-horizontal-offset);
 }
 
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-bottom.is-mobile-left {
-    bottom: var(--ctcw-mobile-offset);
-    left: var(--ctcw-mobile-left-offset);
+    bottom: var(--ctcw-mobile-vertical-offset);
+    left: var(--ctcw-mobile-horizontal-offset);
 }
 
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-right {
-    top: max(12px, env(safe-area-inset-top));
-    right: var(--ctcw-mobile-side-offset);
+    top: var(--ctcw-mobile-vertical-offset);
+    right: var(--ctcw-mobile-horizontal-offset);
 }
 
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
-    top: max(12px, env(safe-area-inset-top));
-    left: var(--ctcw-mobile-left-offset);
+    top: var(--ctcw-mobile-vertical-offset);
+    left: var(--ctcw-mobile-horizontal-offset);
 }
 
 .ctcw-container.is-hidden {
