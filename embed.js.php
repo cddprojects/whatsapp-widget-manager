@@ -110,9 +110,9 @@ $config = [
 
         if (isMobile() && (state === 'button' || state === 'hover')) {
             if (requestedWidth >= 150) {
-                requestedWidth = 180; // long button
+                requestedWidth = 180; // long button style
             } else {
-                requestedWidth = 116; // short button
+                requestedWidth = 116; // short button style
             }
         }
 
@@ -188,7 +188,7 @@ function applySize(width, height, state) {
         iframe.style.pointerEvents = 'auto';
         iframe.style.boxShadow = 'none';
         iframe.style.maxWidth = 'calc(100vw - ' + viewportMargins() + 'px)';
-        iframe.style.maxHeight = isMobile() ? 'calc(100dvh - ' + viewportMargins() + 'px)' : 'calc(100vh - ' + viewportMargins() + 'px)';
+        iframe.style.maxHeight = isMobile() ? 'calc(100svh - ' + viewportMargins() + 'px)' : 'calc(100vh - ' + viewportMargins() + 'px)';
         iframe.style.transition = 'none';
         applyPosition();
         var initial = isMobile() ? mobileDefaultSize : defaultSize;
