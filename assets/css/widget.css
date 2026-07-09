@@ -5,6 +5,7 @@
     --ctcw-shadow: none;
     --ctcw-mobile-vertical-offset: 12px;
     --ctcw-mobile-horizontal-offset: 12px;
+    --ctcw-viewport-width: 100vw;
     --ctcw-popup-gap: 12px;
 }
 
@@ -607,28 +608,48 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
         padding: 0 17px;
     }
 
-    html.ctcw-mobile .style-9-left-hover .ctcw-widget,
-    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-widget {
+    html.ctcw-mobile .style-9-left-hover .ctcw-widget {
         gap: 10px;
-        max-width: calc(100vw - 24px);
+        max-width: none;
         white-space: nowrap;
     }
 
-    html.ctcw-mobile .style-9-left-hover .ctcw-text,
-    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-text {
+    html.ctcw-mobile .style-9-left-hover:not(.is-style-9-mobile-expanded):not(.is-hovering) .ctcw-text,
+    html.ctcw-mobile .style-9-left-hover:not(.is-style-9-mobile-expanded):not(.is-hovering) .ctcw-cta-label,
+    html.ctcw-mobile .style-9-left-hover:not(.is-style-9-mobile-expanded):not(.is-hovering) .ctcw-style-9-label {
         display: inline-flex;
-        align-items: center;
-        max-width: min(240px, calc(100vw - 96px));
+        width: 0;
+        min-width: 0;
+        max-width: 0;
+        padding-left: 0;
+        padding-right: 0;
+        opacity: 0;
         overflow: hidden;
-        text-overflow: ellipsis;
-        opacity: 1;
-        padding: 0 18px;
-        transform: none;
-        width: auto;
+        pointer-events: none;
     }
 
-    html.ctcw-mobile .style-9-left-hover .ctcw-icon,
-    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-icon {
+    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-text,
+    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-cta-label,
+    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-style-9-label,
+    html.ctcw-mobile .style-9-left-hover.is-hovering .ctcw-text,
+    html.ctcw-mobile .style-9-left-hover.is-hovering .ctcw-cta-label,
+    html.ctcw-mobile .style-9-left-hover.is-hovering .ctcw-style-9-label {
+        display: inline-flex;
+        align-items: center;
+        width: auto;
+        min-width: 116px;
+        max-width: min(240px, calc(var(--ctcw-viewport-width, 100vw) - 96px));
+        padding-left: 16px;
+        padding-right: 16px;
+        opacity: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        pointer-events: auto;
+        transform: none;
+    }
+
+    html.ctcw-mobile .style-9-left-hover .ctcw-icon {
         flex: 0 0 auto;
     }
 

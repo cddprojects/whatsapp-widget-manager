@@ -103,6 +103,39 @@
         return currentStyle === 'style-9-left-hover';
     }
 
+    function isStyle9MobileExpanded() {
+        return isMobile()
+            && isStyle9LeftHover()
+            && (container.classList.contains('is-style-9-mobile-expanded')
+                || container.classList.contains('is-hovering'));
+    }
+
+    function isStyle9MobileCollapsed() {
+        return isMobile() && isStyle9LeftHover() && !isStyle9MobileExpanded();
+    }
+
+    function updateViewportCssVars() {
+        var viewportWidth = parentViewportWidth || window.innerWidth || 320;
+        document.documentElement.style.setProperty('--ctcw-viewport-width', viewportWidth + 'px');
+    }
+
+    function collapseStyle9Mobile() {
+        container.classList.remove('is-style-9-mobile-expanded');
+        if (isMobile() && isStyle9LeftHover()) {
+            container.classList.remove('is-hovering');
+        }
+    }
+
+    function expandStyle9Mobile() {
+        if (!isMobile() || !isStyle9LeftHover()) {
+            return;
+        }
+        container.classList.add('is-style-9-mobile-expanded');
+        container.classList.add('is-hovering');
+        currentState = 'hover';
+        requestWidgetResize();
+    }
+
     function isIconOnlyStyle() {
         if (isMobile() && mobileCollapsedIconStyles.indexOf(currentStyle) !== -1) {
             return true;
@@ -112,6 +145,10 @@
     }
 
     function isCollapsedIconOnlyStyle() {
+        if (isStyle9MobileCollapsed()) {
+            return true;
+        }
+
         return isIconOnlyStyle();
     }
 
@@ -165,6 +202,7 @@
 
     function renderCollapsedTrigger() {
         container.classList.remove('is-hovering');
+        container.classList.remove('is-style-9-mobile-expanded');
         container.classList.toggle('ctcw-greeting-open', false);
         container.classList.toggle('ctcw-greeting-closed', !!greeting);
 
@@ -173,7 +211,6 @@
         }
 
         currentState = isCollapsedIconOnlyStyle() ? 'icon' : 'button';
-        container.classList.toggle('is-style-9-mobile-expanded', isMobile() && isStyle9LeftHover());
     }
 
     function requestWidgetResize() {
@@ -191,7 +228,10 @@
             return 'greeting';
         }
         if (currentState === 'hover') {
-            return isIconOnlyStyle() ? 'icon' : 'button';
+            return isIconOnlyStyle() && !isStyle9MobileExpanded() ? 'icon' : 'button';
+        }
+        if (isStyle9MobileExpanded()) {
+            return 'hover';
         }
         if (isIconOnlyStyle()) {
             return 'icon';
@@ -309,7 +349,7 @@
         });
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
-        container.classList.toggle('is-style-9-mobile-expanded', mobile && isStyle9LeftHover());
+        updateViewportCssVars();
         if (mobile) {
             container.style.maxWidth = getMobileViewportLimit() + 'px';
         } else {
@@ -807,6 +847,12 @@
         if (isOpening) {
             return;
         }
+
+        if (isStyle9MobileCollapsed()) {
+            expandStyle9Mobile();
+            return;
+        }
+
         isOpening = true;
         window.setTimeout(function () {
             isOpening = false;
@@ -882,7 +928,13 @@
     }
 
     function startHover() {
-        if (isMobile() || isGreetingVisible()) {
+        if (isGreetingVisible()) {
+            return;
+        }
+        if (isMobile()) {
+            if (isStyle9LeftHover() && isStyle9MobileCollapsed()) {
+                expandStyle9Mobile();
+            }
             return;
         }
         window.clearTimeout(hoverTimer);
@@ -895,7 +947,10 @@
     }
 
     function endHover() {
-        if (isMobile() || isGreetingVisible()) {
+        if (isGreetingVisible()) {
+            return;
+        }
+        if (isMobile()) {
             return;
         }
         window.clearTimeout(hoverTimer);
