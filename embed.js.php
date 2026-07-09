@@ -86,7 +86,7 @@ $config = [
                 return { width: 310, height: 240 };
             }
             if (state === 'button' || state === 'hover') {
-                return { width: 98, height: 72 };
+                return { width: 110, height: 72 };
             }
             return { width: 78, height: 78 };
         }
