@@ -198,13 +198,24 @@ function widget_styles(): array
         'style-3' => 'Style-3: Icon',
         'style-3-large' => 'Style-3 Extend: Large Icon',
         'style-4' => 'Style-4: Chip Cylindrical',
-        'style-5' => 'Style-5: Image on Hover Content Box',
         'style-6' => 'Style-6: Plain Text',
         'style-7' => 'Style-7: Icon with Padding',
         'style-7-extend' => 'Style-7 Extend: Icon on Hover Extend',
         'style-8' => 'Style-8: Button',
         'style-9-left-hover' => 'Style-9: Left Hover Text',
     ];
+}
+
+function normalize_widget_style(string $style): string
+{
+    return $style === 'style-5' ? 'style-8' : $style;
+}
+
+function sanitize_widget_style(string $style, string $default = 'style-1'): string
+{
+    $style = normalize_widget_style(trim($style));
+
+    return enum_value($style, array_keys(widget_styles()), $default);
 }
 
 function country_code_options(): array
@@ -1030,8 +1041,8 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         'random_numbers_json' => (string) ($phoneUpdate['random_numbers_json'] ?? '[]'),
         'prefilled_message' => trim((string) ($post['prefilled_message'] ?? $defaults['prefilled_message'])),
         'call_to_action' => trim((string) ($post['call_to_action'] ?? $defaults['call_to_action'])),
-        'desktop_style' => enum_value((string) ($post['desktop_style'] ?? 'style-1'), array_keys(widget_styles()), 'style-1'),
-        'mobile_style' => enum_value((string) ($post['mobile_style'] ?? 'style-1'), array_keys(widget_styles()), 'style-1'),
+        'desktop_style' => sanitize_widget_style((string) ($post['desktop_style'] ?? 'style-1')),
+        'mobile_style' => sanitize_widget_style((string) ($post['mobile_style'] ?? 'style-1')),
         'desktop_position_type' => enum_value((string) ($post['desktop_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed'),
         'mobile_position_type' => enum_value((string) ($post['mobile_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed'),
         'desktop_vertical_position_type' => enum_value((string) ($post['desktop_vertical_position_type'] ?? 'bottom'), ['top', 'bottom'], 'bottom'),
@@ -1414,12 +1425,13 @@ function enabled_label($value, string $enabled = 'Enabled', string $disabled = '
 
 function widget_style_frame_size(string $style): array
 {
+    $style = normalize_widget_style($style);
+
     return match ($style) {
         'style-1' => ['width' => 280, 'height' => 110],
         'style-2', 'style-3' => ['width' => 120, 'height' => 120],
         'style-3-large', 'style-3-extend' => ['width' => 150, 'height' => 150],
         'style-4', 'style-8' => ['width' => 300, 'height' => 110],
-        'style-5' => ['width' => 420, 'height' => 260],
         'style-6' => ['width' => 260, 'height' => 90],
         'style-7' => ['width' => 130, 'height' => 130],
         'style-7-extend', 'style-9-left-hover' => ['width' => 420, 'height' => 160],
@@ -1433,11 +1445,12 @@ function widget_style_expanded_frame_size(string $style, bool $greetingEnabled):
         return ['width' => 380, 'height' => 280];
     }
 
+    $style = normalize_widget_style($style);
+
     return match ($style) {
         'style-1', 'style-4', 'style-8' => ['width' => 320, 'height' => 130],
         'style-2', 'style-3' => ['width' => 130, 'height' => 130],
         'style-3-large', 'style-3-extend' => ['width' => 160, 'height' => 160],
-        'style-5' => ['width' => 420, 'height' => 260],
         'style-6' => ['width' => 280, 'height' => 100],
         'style-7' => ['width' => 140, 'height' => 140],
         'style-7-extend', 'style-9-left-hover' => ['width' => 420, 'height' => 160],

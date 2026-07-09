@@ -459,7 +459,6 @@ return [
     'widget_style.style-3' => 'Style-3: Icon',
     'widget_style.style-3-large' => 'Style-3 Extend: Large Icon',
     'widget_style.style-4' => 'Style-4: Chip Cylindrical',
-    'widget_style.style-5' => 'Style-5: Image on Hover Content Box',
     'widget_style.style-6' => 'Style-6: Plain Text',
     'widget_style.style-7' => 'Style-7: Icon with Padding',
     'widget_style.style-7-extend' => 'Style-7 Extend: Icon on Hover Extend',

@@ -134,6 +134,7 @@ function translate_day(string $day): string
 
 function translate_widget_style(string $styleKey): string
 {
+    $styleKey = normalize_widget_style($styleKey);
     $key = 'widget_style.' . $styleKey;
     $translated = t($key);
 

@@ -79,8 +79,8 @@ $widgetConfig = [
     'saveLeadUrl' => SYSTEM_BASE_URL . '/save-widget-lead.php',
 ];
 
-$desktopStyle = (string) ($widget['desktop_style'] ?? 'style-1');
-$mobileStyle = (string) ($widget['mobile_style'] ?? 'style-1');
+$desktopStyle = normalize_widget_style((string) ($widget['desktop_style'] ?? 'style-1'));
+$mobileStyle = normalize_widget_style((string) ($widget['mobile_style'] ?? 'style-1'));
 $desktopPositionType = (string) ($widget['desktop_position_type'] ?? 'fixed');
 $mobilePositionType = (string) ($widget['mobile_position_type'] ?? 'fixed');
 $desktopVerticalSide = (string) ($widget['desktop_vertical_position_type'] ?? 'bottom');
@@ -102,7 +102,6 @@ $callToActionText = $isOnline
     : (string) ($widget['offline_message'] ?? '');
 $phoneSubmitButtonText = (string) ($widget['greeting_submit_text'] ?? 'Continue to WhatsApp');
 $successMessage = (string) ($widget['greeting_lead_success_message'] ?? 'Redirecting to WhatsApp...');
-$styleFiveHoverText = $callToActionText;
 ?>
 <!doctype html>
 <html lang="en">
@@ -186,9 +185,6 @@ $styleFiveHoverText = $callToActionText;
         <button class="ctcw-widget ctcw-launcher" type="button" data-widget-button aria-label="<?= e($callToActionText) ?>">
             <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
             <span class="ctcw-text"><?= e($callToActionText) ?></span>
-            <?php if ($desktopStyle === 'style-5' || $mobileStyle === 'style-5'): ?>
-                <span class="ctcw-hover-box"><?= e($styleFiveHoverText) ?></span>
-            <?php endif; ?>
         </button>
     </div>
     <script>

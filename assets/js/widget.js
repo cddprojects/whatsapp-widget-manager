@@ -10,7 +10,7 @@
     var phoneInput = document.querySelector('[data-greeting-phone]');
     var phoneError = document.querySelector('[data-greeting-phone-error]');
     var greetingSuccess = document.querySelector('[data-greeting-success]');
-    var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-5', 'style-6', 'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover'];
+    var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-6', 'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover'];
     var isOpening = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
     var currentState = 'button';
@@ -24,7 +24,7 @@
         url: '/',
         urlFull: ''
     };
-    var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-5', 'style-7'];
+    var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-7'];
     var stateMinimums = {
         icon: { width: 110, height: 110 },
         button: { width: 260, height: 110 },
@@ -92,6 +92,10 @@
         }
         submitButton.disabled = false;
         submitButton.classList.remove('is-loading');
+    }
+
+    function normalizeWidgetStyle(style) {
+        return style === 'style-5' ? 'style-8' : style;
     }
 
     function isIconOnlyStyle() {
@@ -218,7 +222,7 @@
 
     function applyResponsiveState() {
         var mobile = isMobile();
-        var activeStyle = mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle;
+        var activeStyle = normalizeWidgetStyle(mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle);
         currentStyle = activeStyle || 'style-1';
 
         document.documentElement.classList.toggle('ctcw-mobile', mobile);

@@ -453,45 +453,6 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     padding: 14px 22px;
 }
 
-.style-5 .ctcw-widget {
-    position: relative;
-    width: 54px;
-    height: 54px;
-    min-height: 54px;
-    padding: 0;
-    border-radius: 50%;
-}
-
-.style-5 .ctcw-text {
-    display: none;
-}
-
-.style-5 .ctcw-hover-box {
-    position: absolute;
-    right: 68px;
-    bottom: 0;
-    display: block;
-    width: 220px;
-    padding: 14px 16px;
-    border-radius: 16px;
-    background: #ffffff;
-    color: var(--ctcw-text);
-    box-shadow: none !important;
-    line-height: 1.4;
-    text-align: left;
-    white-space: normal;
-    opacity: 0;
-    transform: translateY(8px);
-    pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.style-5.is-hovering .ctcw-hover-box {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-}
-
 .style-6 .ctcw-widget {
     min-height: auto;
     padding: 0;
@@ -626,8 +587,7 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     }
 
     .style-2 .ctcw-widget,
-    .style-3 .ctcw-widget,
-    .style-5 .ctcw-widget {
+    .style-3 .ctcw-widget {
         width: 56px;
         height: 56px;
         min-width: 56px;
@@ -639,16 +599,6 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
         height: 64px;
         min-width: 64px;
         min-height: 64px;
-    }
-
-    .style-5 .ctcw-hover-box {
-        right: 0;
-        bottom: calc(100% + var(--ctcw-popup-gap));
-    }
-
-    .ctcw-widget-anchor.is-mobile-left .style-5 .ctcw-hover-box {
-        right: auto;
-        left: 0;
     }
 
     .ctcw-phone-row {

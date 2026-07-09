@@ -1441,6 +1441,10 @@ function initAdminLivePreview() {
     var previewToggle = document.querySelector('[data-role="admin-live-preview-toggle"], [data-live-preview-toggle]');
     var previewDebugEnabled = new URLSearchParams(window.location.search).get('preview_debug') === '1';
 
+    function normalizeWidgetStyle(style) {
+        return style === 'style-5' ? 'style-8' : style;
+    }
+
     function previewDebugLog() {
         if (!previewDebugEnabled) {
             return;
@@ -1561,7 +1565,7 @@ function initAdminLivePreview() {
         var horizontal = getFieldValue('desktop_horizontal_position_type') || 'right';
 
         return {
-            desktopStyle: getFieldValue('desktop_style') || 'style-1',
+            desktopStyle: normalizeWidgetStyle(getFieldValue('desktop_style') || 'style-1'),
             desktopVerticalPosition: vertical === 'top' ? 'top' : 'bottom',
             desktopHorizontalPosition: horizontal === 'left' ? 'left' : 'right',
             callToAction: getFieldValue('call_to_action') || window.ctcwI18n('preview.default_cta'),
@@ -1624,9 +1628,6 @@ function initAdminLivePreview() {
     function buildAdminPreviewMarkup(formState) {
         var style = escapeHtml(formState.desktopStyle);
         var cta = escapeHtml(formState.callToAction);
-        var hoverBox = formState.desktopStyle === 'style-5'
-            ? '<span class="ctcw-hover-box">' + cta + '</span>'
-            : '';
 
         return '<div class="ctcw-admin-live-preview-inner">'
             + '<span class="ctcw-preview-badge">' + escapeHtml(window.ctcwI18n('preview.label')) + '</span>'
@@ -1635,7 +1636,6 @@ function initAdminLivePreview() {
             + '<button type="button" class="ctcw-widget" tabindex="-1" aria-label="Widget preview" data-preview-destination="' + escapeHtml(formState.previewDestination) + '">'
             + '<span class="ctcw-icon">' + whatsappIcon + '</span>'
             + '<span class="ctcw-text">' + cta + '</span>'
-            + hoverBox
             + '</button>'
             + '</div>'
             + '</div>';
