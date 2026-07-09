@@ -1942,6 +1942,21 @@ function client_destination_status_label(array $widget): string
     return t('distribution.client_random', ['count' => (string) $count]);
 }
 
+function client_active_numbers_label(array $widget): string
+{
+    $numbers = widget_phone_list($widget);
+    if ($numbers === []) {
+        return t('widget_status.no_destination');
+    }
+
+    $count = count($numbers);
+    if ($count === 1) {
+        return t('distribution.one_number');
+    }
+
+    return t('distribution.summary_multiple', ['count' => (string) $count]);
+}
+
 function save_widget_phone_numbers(int $widgetId, array $numbers): bool
 {
     $widget = find_widget_by_id($widgetId);
