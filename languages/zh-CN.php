@@ -459,7 +459,6 @@ return [
     'widget_style.style-3' => '样式 3：图标',
     'widget_style.style-3-large' => '样式 3 扩展：大图标',
     'widget_style.style-4' => '样式 4：圆角胶囊',
-    'widget_style.style-5' => '样式 5：悬停显示内容框的图片',
     'widget_style.style-6' => '样式 6：纯文字',
     'widget_style.style-7' => '样式 7：带内边距的图标',
     'widget_style.style-7-extend' => '样式 7 扩展：悬停扩展图标',

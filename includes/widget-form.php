@@ -205,7 +205,7 @@ $settingsSections = [
                 <span><?= e(t('label.desktop_style')) ?></span>
                 <select name="desktop_style" data-style-select>
                     <?php foreach (widget_styles() as $key => $label): ?>
-                        <option value="<?= e($key) ?>"<?= selected((string) $widget['desktop_style'], $key) ?>><?= e(translate_widget_style($key)) ?></option>
+                        <option value="<?= e($key) ?>"<?= selected(normalize_widget_style((string) $widget['desktop_style']), $key) ?>><?= e(translate_widget_style($key)) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
@@ -213,7 +213,7 @@ $settingsSections = [
                 <span><?= e(t('label.mobile_style')) ?></span>
                 <select name="mobile_style" data-style-select>
                     <?php foreach (widget_styles() as $key => $label): ?>
-                        <option value="<?= e($key) ?>"<?= selected((string) $widget['mobile_style'], $key) ?>><?= e(translate_widget_style($key)) ?></option>
+                        <option value="<?= e($key) ?>"<?= selected(normalize_widget_style((string) $widget['mobile_style']), $key) ?>><?= e(translate_widget_style($key)) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
