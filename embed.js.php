@@ -86,7 +86,7 @@ $config = [
                 return { width: 310, height: 240 };
             }
             if (state === 'button' || state === 'hover') {
-                return { width: 116, height: 72 };
+                return { width: 150, height: 72 };
             }
             return { width: 78, height: 78 };
         }
@@ -106,18 +106,9 @@ $config = [
     function clampSize(width, height, state) {
         var minimum = minimumForState(state || lastState || 'icon');
         var margin = viewportMargins();
-        var requestedWidth = parseInt(width, 10) || minimum.width;
-
-        if (isMobile() && (state === 'button' || state === 'hover')) {
-            if (requestedWidth >= 150) {
-                requestedWidth = 180; // long button style
-            } else {
-                requestedWidth = 116; // short button style
-            }
-        }
 
         return {
-            width: Math.min(window.innerWidth - margin, Math.max(minimum.width, requestedWidth)),
+            width: Math.min(window.innerWidth - margin, Math.max(minimum.width, parseInt(width, 10) || minimum.width)),
             height: Math.min(window.innerHeight - margin, Math.max(minimum.height, parseInt(height, 10) || minimum.height))
         };
     }
@@ -134,9 +125,9 @@ $config = [
 
         if (isMobile()) {
             if (position.verticalSide === 'bottom') {
-                iframe.style.bottom = 'max(12px, env(safe-area-inset-bottom))';
+                iframe.style.bottom = 'calc(max(16px, env(safe-area-inset-bottom)) + 8px)';
             } else {
-                iframe.style.top = 'max(12px, env(safe-area-inset-top))';
+                iframe.style.top = 'max(16px, env(safe-area-inset-top))';
             }
 
             if (position.horizontalSide === 'right') {
@@ -170,11 +161,18 @@ function applySize(width, height, state) {
         return;
     }
 
+    var stateChanged = lastState !== nextState;
     lastSize = size;
     lastState = nextState;
 
     iframe.style.width = size.width + 'px';
     iframe.style.height = size.height + 'px';
+
+    if (stateChanged && isMobile() && (nextState === 'button' || nextState === 'icon')) {
+        window.setTimeout(function () {
+            sendViewport();
+        }, 80);
+    }
 }
 
     function applyBaseStyles() {
