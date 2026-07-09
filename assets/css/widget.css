@@ -593,6 +593,13 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
         text-overflow: ellipsis;
     }
 
+    html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-text {
+        display: none;
+        max-width: 0;
+        opacity: 0;
+        padding: 0;
+    }
+
     html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-widget {
         width: 58px;
         min-width: 58px;
@@ -600,19 +607,29 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
         padding: 0 17px;
     }
 
-    html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-text,
-    html.ctcw-mobile .style-9-left-hover:not(.is-hovering) .ctcw-text {
-        display: none;
-        max-width: 0;
-        opacity: 0;
-        padding: 0;
+    html.ctcw-mobile .style-9-left-hover .ctcw-widget,
+    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-widget {
+        gap: 10px;
+        max-width: calc(100vw - 24px);
+        white-space: nowrap;
     }
 
-    html.ctcw-mobile .style-9-left-hover:not(.is-hovering) .ctcw-widget {
+    html.ctcw-mobile .style-9-left-hover .ctcw-text,
+    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-text {
+        display: inline-flex;
+        align-items: center;
+        max-width: min(240px, calc(100vw - 96px));
+        overflow: hidden;
+        text-overflow: ellipsis;
+        opacity: 1;
+        padding: 0 18px;
+        transform: none;
         width: auto;
-        min-width: 0;
-        max-width: none;
-        gap: 0;
+    }
+
+    html.ctcw-mobile .style-9-left-hover .ctcw-icon,
+    html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-icon {
+        flex: 0 0 auto;
     }
 
     .ctcw-greeting,

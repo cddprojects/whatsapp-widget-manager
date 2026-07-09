@@ -39,7 +39,7 @@
         greeting: { width: 320, height: 260 },
         'greeting-phone': { width: 336, height: 290 }
     };
-    var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend', 'style-9-left-hover'];
+    var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend'];
 
     function getMeasureSelectors() {
         if (isGreetingVisible()) {
@@ -97,6 +97,10 @@
 
     function normalizeWidgetStyle(style) {
         return style === 'style-5' ? 'style-8' : style;
+    }
+
+    function isStyle9LeftHover() {
+        return currentStyle === 'style-9-left-hover';
     }
 
     function isIconOnlyStyle() {
@@ -169,6 +173,7 @@
         }
 
         currentState = isCollapsedIconOnlyStyle() ? 'icon' : 'button';
+        container.classList.toggle('is-style-9-mobile-expanded', isMobile() && isStyle9LeftHover());
     }
 
     function requestWidgetResize() {
@@ -304,6 +309,7 @@
         });
         container.classList.add(activeStyle || 'style-1');
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
+        container.classList.toggle('is-style-9-mobile-expanded', mobile && isStyle9LeftHover());
         if (mobile) {
             container.style.maxWidth = getMobileViewportLimit() + 'px';
         } else {
