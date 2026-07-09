@@ -106,8 +106,18 @@ $config = [
     function clampSize(width, height, state) {
         var minimum = minimumForState(state || lastState || 'icon');
         var margin = viewportMargins();
+        var requestedWidth = parseInt(width, 10) || minimum.width;
+
+        if (isMobile() && (state === 'button' || state === 'hover')) {
+            if (requestedWidth >= 150) {
+                requestedWidth = 180; // long button
+            } else {
+                requestedWidth = 116; // short button
+            }
+        }
+
         return {
-            width: Math.min(window.innerWidth - margin, Math.max(minimum.width, parseInt(width, 10) || minimum.width)),
+            width: Math.min(window.innerWidth - margin, Math.max(minimum.width, requestedWidth)),
             height: Math.min(window.innerHeight - margin, Math.max(minimum.height, parseInt(height, 10) || minimum.height))
         };
     }
