@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/i18n.php';
+require_once __DIR__ . '/urls.php';
 
 const WIDGET_STATUS_SETUP_REQUIRED = 'setup_required';
 const WIDGET_STATUS_ACTIVE = 'active';
@@ -17,7 +18,7 @@ function e(?string $value): string
 
 function redirect(string $path): void
 {
-    header('Location: ' . $path);
+    header('Location: ' . app_path($path));
     exit;
 }
 
@@ -2581,12 +2582,12 @@ function feature_status_pill($value): string
 
 function nav_is_active(string $page): bool
 {
-    return basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) === $page;
+    return current_app_page() === $page;
 }
 
 function nav_link_class(string $page, array $relatedPages = []): string
 {
-    $current = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $current = current_app_page();
     $active = $current === $page || in_array($current, $relatedPages, true);
 
     return $active ? 'topnav-link is-active' : 'topnav-link';
@@ -2599,14 +2600,14 @@ function render_widget_action_menu(array $widget, array $options = []): void
     $deleteClientId = (int) ($options['delete_client_id'] ?? 0);
     ?>
     <div class="row-actions">
-        <a class="btn btn-small btn-primary" href="edit-widget.php?id=<?= $widgetId ?>"><?= e(t('button.manage')) ?></a>
-        <a class="btn btn-small btn-light" href="widget-preview.php?id=<?= $widgetId ?>"><?= e(t('button.preview')) ?></a>
+        <a class="btn btn-small btn-primary" href="<?= e(app_url('edit-widget.php', ['id' => $widgetId])) ?>"><?= e(t('button.manage')) ?></a>
+        <a class="btn btn-small btn-light" href="<?= e(app_url('widget-preview.php', ['id' => $widgetId])) ?>"><?= e(t('button.preview')) ?></a>
         <div class="action-menu" data-action-menu>
             <button type="button" class="btn btn-small btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="<?= e(t('action.more_actions')) ?>">⋯</button>
             <div class="action-menu-panel" role="menu">
-                <a role="menuitem" href="edit-widget-phone.php?id=<?= $widgetId ?>"><?= e(t('action.phone_number')) ?></a>
-                <a role="menuitem" href="admin-client-leads.php?client_id=<?= (int) $widget['user_id'] ?>&widget_id=<?= $widgetId ?>"><?= e(t('action.leads')) ?></a>
-                <a role="menuitem" href="embed-code.php?id=<?= $widgetId ?>"><?= e(t('action.embed_code')) ?></a>
+                <a role="menuitem" href="<?= e(app_url('edit-widget-phone.php', ['id' => $widgetId])) ?>"><?= e(t('action.phone_number')) ?></a>
+                <a role="menuitem" href="<?= e(app_url('admin-client-leads.php', ['client_id' => (int) $widget['user_id'], 'widget_id' => $widgetId])) ?>"><?= e(t('action.leads')) ?></a>
+                <a role="menuitem" href="<?= e(app_url('embed-code.php', ['id' => $widgetId])) ?>"><?= e(t('action.embed_code')) ?></a>
                 <?php if ($showDelete): ?>
                     <form method="post" data-confirm="<?= e(t('widget.delete_confirm')) ?>">
                         <?= csrf_field() ?>

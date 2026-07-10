@@ -3,7 +3,7 @@ $pageTitle = $pageTitle ?? APP_NAME;
 $user = current_user();
 $isSuperAdmin = is_superadmin();
 $isClient = is_client();
-$currentPage = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+$currentPage = current_app_page();
 $currentLocale = current_locale();
 ?>
 <!doctype html>
@@ -20,7 +20,7 @@ $currentLocale = current_locale();
 <body class="app-shell">
 <header class="topbar">
     <div class="topbar-left">
-        <a class="brand" href="<?= $isSuperAdmin ? 'dashboard.php' : 'client-dashboard.php' ?>">
+        <a class="brand" href="<?= e(app_url($isSuperAdmin ? 'dashboard.php' : 'client-dashboard.php')) ?>">
             <span class="brand-mark">C</span>
             <span><?= e(APP_NAME) ?></span>
         </a>
@@ -29,20 +29,20 @@ $currentLocale = current_locale();
     <?php if ($user): ?>
         <?php if ($isSuperAdmin): ?>
             <nav class="topnav-main" aria-label="<?= e(t('nav.main')) ?>">
-                <a class="<?= nav_link_class('dashboard.php') ?>" href="dashboard.php"><?= e(t('nav.dashboard')) ?></a>
-                <a class="<?= nav_link_class('admin-clients.php', ['admin-client-create.php', 'admin-client-detail.php', 'admin-client-edit.php', 'admin-client-reset-password.php', 'admin-client-delete.php', 'admin-client-leads.php']) ?>" href="admin-clients.php"><?= e(t('nav.clients')) ?></a>
-                <a class="<?= nav_link_class('all-leads.php') ?>" href="all-leads.php"><?= e(t('nav.all_leads')) ?></a>
-                <a class="<?= nav_link_class('lead-recycle-bin.php') ?>" href="lead-recycle-bin.php"><?= e(t('nav.lead_recycle_bin')) ?></a>
+                <a class="<?= nav_link_class('dashboard.php') ?>" href="<?= e(app_url('dashboard.php')) ?>"><?= e(t('nav.dashboard')) ?></a>
+                <a class="<?= nav_link_class('admin-clients.php', ['admin-client-create.php', 'admin-client-detail.php', 'admin-client-edit.php', 'admin-client-reset-password.php', 'admin-client-delete.php', 'admin-client-leads.php']) ?>" href="<?= e(app_url('admin-clients.php')) ?>"><?= e(t('nav.clients')) ?></a>
+                <a class="<?= nav_link_class('all-leads.php') ?>" href="<?= e(app_url('all-leads.php')) ?>"><?= e(t('nav.all_leads')) ?></a>
+                <a class="<?= nav_link_class('lead-recycle-bin.php') ?>" href="<?= e(app_url('lead-recycle-bin.php')) ?>"><?= e(t('nav.lead_recycle_bin')) ?></a>
             </nav>
         <?php elseif ($isClient): ?>
             <nav class="topnav-main" aria-label="<?= e(t('nav.main')) ?>">
-                <a class="<?= nav_link_class('client-dashboard.php') ?>" href="client-dashboard.php"><?= e(t('nav.my_whatsapp_number')) ?></a>
-                <a class="<?= nav_link_class('client-leads.php') ?>" href="client-leads.php"><?= e(t('nav.my_leads')) ?></a>
+                <a class="<?= nav_link_class('client-dashboard.php') ?>" href="<?= e(app_url('client-dashboard.php')) ?>"><?= e(t('nav.my_whatsapp_number')) ?></a>
+                <a class="<?= nav_link_class('client-leads.php') ?>" href="<?= e(app_url('client-leads.php')) ?>"><?= e(t('nav.my_leads')) ?></a>
             </nav>
         <?php endif; ?>
 
         <div class="topbar-right">
-            <form method="post" action="set-language.php" class="language-switcher">
+            <form method="post" action="<?= e(app_url('set-language.php')) ?>" class="language-switcher">
                 <?= csrf_field() ?>
                 <input type="hidden" name="redirect" value="<?= e(current_request_path()) ?>">
                 <label class="sr-only" for="language-select"><?= e(t('nav.language')) ?></label>
@@ -59,11 +59,11 @@ $currentLocale = current_locale();
                 </button>
                 <div class="dropdown-menu" role="menu">
                     <?php if ($isSuperAdmin): ?>
-                        <a role="menuitem" href="admin-settings.php"><?= e(t('nav.account_settings')) ?></a>
+                        <a role="menuitem" href="<?= e(app_url('admin-settings.php')) ?>"><?= e(t('nav.account_settings')) ?></a>
                     <?php else: ?>
-                        <a role="menuitem" href="client-dashboard.php"><?= e(t('nav.account_settings')) ?></a>
+                        <a role="menuitem" href="<?= e(app_url('client-dashboard.php')) ?>"><?= e(t('nav.account_settings')) ?></a>
                     <?php endif; ?>
-                    <a role="menuitem" class="dropdown-danger" href="logout.php"><?= e(t('nav.logout')) ?></a>
+                    <a role="menuitem" class="dropdown-danger" href="<?= e(app_url('logout.php')) ?>"><?= e(t('nav.logout')) ?></a>
                 </div>
             </div>
 
@@ -71,7 +71,7 @@ $currentLocale = current_locale();
         </div>
     <?php else: ?>
         <div class="topbar-right">
-            <form method="post" action="set-language.php" class="language-switcher">
+            <form method="post" action="<?= e(app_url('set-language.php')) ?>" class="language-switcher">
                 <?= csrf_field() ?>
                 <input type="hidden" name="redirect" value="<?= e(current_request_path()) ?>">
                 <label class="sr-only" for="language-select-guest"><?= e(t('nav.language')) ?></label>

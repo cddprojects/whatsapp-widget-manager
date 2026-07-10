@@ -40,7 +40,7 @@ require __DIR__ . '/includes/header.php';
 
 <?php
 $leadPageMode = 'recycle_bin';
-$formAction = 'lead-recycle-bin.php';
+$formAction = app_url('lead-recycle-bin.php');
 $showClientOwnerColumn = false;
 $showClientColumn = true;
 $showRecycleMeta = true;

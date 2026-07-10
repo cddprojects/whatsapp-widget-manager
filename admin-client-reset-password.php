@@ -47,7 +47,7 @@ require __DIR__ . '/includes/header.php';
             <code><?= e($generatedPassword) ?></code>
         </div>
         <div class="form-actions">
-            <a class="btn btn-primary" href="admin-client-detail.php?id=<?= (int) $clientId ?>"><?= e(t('button.back_to_client')) ?></a>
+            <a class="btn btn-primary" href="<?= e(app_url('admin-client-detail.php', ['id' => (int) $clientId])) ?>"><?= e(t('button.back_to_client')) ?></a>
         </div>
     <?php else: ?>
         <p><?= e(t('desc.reset_password_confirm')) ?></p>
@@ -55,7 +55,7 @@ require __DIR__ . '/includes/header.php';
             <?= csrf_field() ?>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><?= e(t('button.generate_temporary_password')) ?></button>
-                <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $clientId ?>"><?= e(t('button.cancel')) ?></a>
+                <a class="btn btn-light" href="<?= e(app_url('admin-client-detail.php', ['id' => (int) $clientId])) ?>"><?= e(t('button.cancel')) ?></a>
             </div>
         </form>
     <?php endif; ?>

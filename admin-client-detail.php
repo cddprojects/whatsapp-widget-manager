@@ -53,8 +53,8 @@ require __DIR__ . '/includes/header.php';
         <h1><?= e($client['name']) ?></h1>
         <p><?= e(t('desc.client_profile')) ?></p>
     </div>
-    <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>"><?= e(t('button.create_widget_for_client')) ?></a>
-    <a class="btn btn-light" href="admin-client-leads.php?client_id=<?= (int) $client['id'] ?>"><?= e(t('button.view_leads')) ?></a>
+    <a class="btn btn-primary" href="<?= e(app_url('create-widget.php', ['user_id' => (int) $client['id']])) ?>"><?= e(t('button.create_widget_for_client')) ?></a>
+    <a class="btn btn-light" href="<?= e(app_url('admin-client-leads.php', ['client_id' => (int) $client['id']])) ?>"><?= e(t('button.view_leads')) ?></a>
 </section>
 
 <?php if ($createdPassword !== null): ?>
@@ -81,7 +81,7 @@ require __DIR__ . '/includes/header.php';
             <p><?= e(t('desc.client_profile_overview')) ?></p>
         </div>
         <div class="action-list">
-            <a class="btn btn-light" href="admin-client-edit.php?id=<?= (int) $client['id'] ?>"><?= e(t('button.edit_client')) ?></a>
+            <a class="btn btn-light" href="<?= e(app_url('admin-client-edit.php', ['id' => (int) $client['id']])) ?>"><?= e(t('button.edit_client')) ?></a>
             <form method="post">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="toggle_status">
@@ -89,7 +89,7 @@ require __DIR__ . '/includes/header.php';
                     <?= e((string) $client['status'] === USER_STATUS_ACTIVE ? t('button.disable_client') : t('button.enable_client')) ?>
                 </button>
             </form>
-            <a class="btn btn-primary-soft" href="admin-client-reset-password.php?id=<?= (int) $client['id'] ?>"><?= e(t('button.reset_password')) ?></a>
+            <a class="btn btn-primary-soft" href="<?= e(app_url('admin-client-reset-password.php', ['id' => (int) $client['id']])) ?>"><?= e(t('button.reset_password')) ?></a>
         </div>
     </div>
     <div class="profile-grid">
@@ -112,7 +112,7 @@ require __DIR__ . '/includes/header.php';
     <?php if (!$widgets): ?>
         <div class="empty-state compact-empty">
             <p><?= e(t('empty.client_no_widgets')) ?></p>
-            <a class="btn btn-primary" href="create-widget.php?user_id=<?= (int) $client['id'] ?>"><?= e(t('button.create_widget_for_client')) ?></a>
+            <a class="btn btn-primary" href="<?= e(app_url('create-widget.php', ['user_id' => (int) $client['id']])) ?>"><?= e(t('button.create_widget_for_client')) ?></a>
         </div>
     <?php else: ?>
         <div class="table-wrap">
@@ -156,11 +156,11 @@ require __DIR__ . '/includes/header.php';
 <section class="settings-card danger-zone-card">
     <h2><?= e(t('heading.danger_zone')) ?></h2>
     <p class="danger-zone-copy"><?= e(t('desc.danger_zone')) ?></p>
-    <a class="btn btn-danger-soft" href="admin-client-delete.php?id=<?= (int) $client['id'] ?>"><?= e(t('button.delete_client')) ?></a>
+    <a class="btn btn-danger-soft" href="<?= e(app_url('admin-client-delete.php', ['id' => (int) $client['id']])) ?>"><?= e(t('button.delete_client')) ?></a>
 </section>
 
 <div class="form-actions">
-    <a class="btn btn-light" href="admin-clients.php"><?= e(t('button.back_to_clients')) ?></a>
+    <a class="btn btn-light" href="<?= e(app_url('admin-clients.php')) ?>"><?= e(t('button.back_to_clients')) ?></a>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

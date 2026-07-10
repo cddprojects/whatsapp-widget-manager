@@ -74,7 +74,7 @@ $settingsSections = [
                         <span class="ctcw-toggle-text"><?= e(t('save_bar.enable_live_preview')) ?></span>
                     </label>
                 <?php endif; ?>
-                <a class="btn btn-light" href="dashboard.php"><?= e(t('button.back')) ?></a>
+                <a class="btn btn-light" href="<?= e(app_url('dashboard.php')) ?>"><?= e(t('button.back')) ?></a>
                 <button type="submit" class="btn btn-primary"><?= e(t('button.save_widget')) ?></button>
             </div>
         </div>
@@ -661,7 +661,7 @@ $settingsSections = [
                     <li><?= e(t('embed.install_step_save')) ?></li>
                     <li><?= e(t('embed.install_step_preview')) ?></li>
                 </ol>
-                <a class="btn btn-light btn-small" href="widget-preview.php?id=<?= (int) $widget['id'] ?>" target="_blank" rel="noopener noreferrer"><?= e(t('button.open_saved_widget_preview')) ?></a>
+                <a class="btn btn-light btn-small" href="<?= e(app_url('widget-preview.php', ['id' => (int) $widget['id']])) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('button.open_saved_widget_preview')) ?></a>
             </div>
         <?php else: ?>
             <div class="notice-box"><?= e(t('embed.save_to_generate')) ?></div>

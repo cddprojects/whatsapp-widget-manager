@@ -30,11 +30,14 @@ $result = search_client_leads([
 $page = (int) $result['page'];
 $perPage = (int) $result['per_page'];
 
-$exportUrl = 'export-leads.php?scope=admin&client_id=' . (int) $clientId
-    . '&widget_id=' . (int) $widgetFilterId
-    . '&q=' . urlencode($query)
-    . '&date_from=' . urlencode($dateFrom)
-    . '&date_to=' . urlencode($dateTo);
+$exportUrl = app_url('export-leads.php', [
+    'scope' => 'admin',
+    'client_id' => (int) $clientId,
+    'widget_id' => (int) $widgetFilterId,
+    'q' => $query,
+    'date_from' => $dateFrom,
+    'date_to' => $dateTo,
+]);
 
 $pageTitle = t('page.client_leads');
 $pageScripts = ['assets/js/leads.js'];
@@ -67,7 +70,7 @@ $leadPageMode = 'superadmin';
 $clientFilterId = $clientId;
 $widgetOptions = widgets_for_client_filter($clientId);
 $clientOptions = [];
-$formAction = 'admin-client-leads.php';
+$formAction = app_url('admin-client-leads.php');
 $showClientOwnerColumn = false;
 $showClientColumn = false;
 $showRecycleMeta = false;
@@ -79,8 +82,8 @@ require __DIR__ . '/includes/leads-page.php';
 ?>
 
 <div class="form-actions">
-    <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $clientId ?>"><?= e(t('button.back_to_client')) ?></a>
-    <a class="btn btn-light" href="lead-recycle-bin.php"><?= e(t('nav.lead_recycle_bin')) ?></a>
+    <a class="btn btn-light" href="<?= e(app_url('admin-client-detail.php', ['id' => (int) $clientId])) ?>"><?= e(t('button.back_to_client')) ?></a>
+    <a class="btn btn-light" href="<?= e(app_url('lead-recycle-bin.php')) ?>"><?= e(t('nav.lead_recycle_bin')) ?></a>
 </div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

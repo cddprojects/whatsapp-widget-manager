@@ -16,8 +16,8 @@ require __DIR__ . '/includes/header.php';
         <p><?= e(t('desc.dashboard')) ?></p>
     </div>
     <div class="hero-actions">
-        <a class="btn btn-light" href="admin-client-create.php"><?= e(t('button.add_client')) ?></a>
-        <a class="btn btn-primary" href="create-widget.php"><?= e(t('button.create_widget')) ?></a>
+        <a class="btn btn-light" href="<?= e(app_url('admin-client-create.php')) ?>"><?= e(t('button.add_client')) ?></a>
+        <a class="btn btn-primary" href="<?= e(app_url('create-widget.php')) ?>"><?= e(t('button.create_widget')) ?></a>
     </div>
 </section>
 

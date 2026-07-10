@@ -133,7 +133,7 @@ require __DIR__ . '/includes/header.php';
         </label>
         <div class="form-actions span-full">
             <button type="submit" class="btn btn-primary"><?= e(t('button.create_client')) ?></button>
-            <a class="btn btn-light" href="admin-clients.php"><?= e(t('button.cancel')) ?></a>
+            <a class="btn btn-light" href="<?= e(app_url('admin-clients.php')) ?>"><?= e(t('button.cancel')) ?></a>
         </div>
     </form>
 </section>

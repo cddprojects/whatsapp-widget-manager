@@ -24,10 +24,13 @@ $result = search_client_leads([
 $page = (int) $result['page'];
 $perPage = (int) $result['per_page'];
 
-$exportUrl = 'export-leads.php?scope=client&widget_id=' . (int) $widgetFilterId
-    . '&q=' . urlencode($query)
-    . '&date_from=' . urlencode($dateFrom)
-    . '&date_to=' . urlencode($dateTo);
+$exportUrl = app_url('export-leads.php', [
+    'scope' => 'client',
+    'widget_id' => (int) $widgetFilterId,
+    'q' => $query,
+    'date_from' => $dateFrom,
+    'date_to' => $dateTo,
+]);
 
 $pageTitle = t('page.my_leads');
 $pageScripts = ['assets/js/leads.js'];
@@ -60,7 +63,7 @@ $leadPageMode = 'client';
 $clientFilterId = $clientId;
 $widgetOptions = widgets_for_client_filter($clientId);
 $clientOptions = [];
-$formAction = 'client-leads.php';
+$formAction = app_url('client-leads.php');
 $showClientOwnerColumn = false;
 $showClientColumn = false;
 $showRecycleMeta = false;
