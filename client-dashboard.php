@@ -50,7 +50,7 @@ require __DIR__ . '/includes/header.php';
 <p class="lead-timezone-note dashboard-timezone-note"><?= e(t('lead.times_timezone_note')) ?></p>
 
 <div class="form-actions page-inline-actions">
-    <a class="btn btn-light" href="client-leads.php"><?= e(t('nav.my_leads')) ?></a>
+    <a class="btn btn-light" href="<?= e(app_url('client-leads.php')) ?>"><?= e(t('nav.my_leads')) ?></a>
 </div>
 <?php endif; ?>
 
@@ -75,7 +75,7 @@ require __DIR__ . '/includes/header.php';
             <h2><?= e(t('client_setup.title')) ?></h2>
             <p><?= e(t('client_setup.description')) ?></p>
             <div class="form-actions">
-                <a class="btn btn-primary" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=manual"><?= e(t('client_setup.add_number')) ?></a>
+                <a class="btn btn-primary" href="<?= e(app_url('client-dashboard.php', ['widget_id' => (int) $selectedWidgetId, 'tab' => 'manual'])) ?>"><?= e(t('client_setup.add_number')) ?></a>
             </div>
         </section>
     <?php endif; ?>
@@ -107,12 +107,12 @@ require __DIR__ . '/includes/header.php';
 
     <section class="settings-card client-phone-card">
         <div class="tab-bar">
-            <a class="tab-link<?= $activeTab === 'manual' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=manual"><?= e(t('tab.phone_numbers')) ?></a>
-            <a class="tab-link<?= $activeTab === 'upload' ? ' is-active' : '' ?>" href="client-dashboard.php?widget_id=<?= (int) $selectedWidgetId ?>&tab=upload"><?= e(t('tab.upload_numbers')) ?></a>
+            <a class="tab-link<?= $activeTab === 'manual' ? ' is-active' : '' ?>" href="<?= e(app_url('client-dashboard.php', ['widget_id' => (int) $selectedWidgetId, 'tab' => 'manual'])) ?>"><?= e(t('tab.phone_numbers')) ?></a>
+            <a class="tab-link<?= $activeTab === 'upload' ? ' is-active' : '' ?>" href="<?= e(app_url('client-dashboard.php', ['widget_id' => (int) $selectedWidgetId, 'tab' => 'upload'])) ?>"><?= e(t('tab.upload_numbers')) ?></a>
         </div>
 
         <?php if ($activeTab === 'upload'): ?>
-            <form class="settings-form client-upload-form" method="post" action="upload-phone-numbers.php" enctype="multipart/form-data">
+            <form class="settings-form client-upload-form" method="post" action="<?= e(app_url('upload-phone-numbers.php')) ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
                 <label>
@@ -139,7 +139,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
             </form>
         <?php else: ?>
-            <form class="settings-form client-manual-form" method="post" action="update-phone-numbers.php" data-client-manual-form data-allow-empty-phones="1">
+            <form class="settings-form client-manual-form" method="post" action="<?= e(app_url('update-phone-numbers.php')) ?>" data-client-manual-form data-allow-empty-phones="1">
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">
 

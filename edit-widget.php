@@ -76,7 +76,7 @@ require __DIR__ . '/includes/header.php';
         </label>
         <div class="form-actions">
             <button type="submit" class="btn btn-light"><?= e(t('button.reassign_owner')) ?></button>
-            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>"><?= e(t('button.view_client')) ?></a>
+            <a class="btn btn-light" href="<?= e(app_url('admin-client-detail.php', ['id' => (int) $widget['user_id']])) ?>"><?= e(t('button.view_client')) ?></a>
         </div>
     </form>
 </section>

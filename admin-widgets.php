@@ -32,7 +32,7 @@ require __DIR__ . '/includes/header.php';
         <h1><?= e(t('heading.all_widgets')) ?></h1>
         <p><?= e(t('desc.all_widgets')) ?></p>
     </div>
-    <a class="btn btn-primary" href="create-widget.php"><?= e(t('button.create_widget')) ?></a>
+    <a class="btn btn-primary" href="<?= e(app_url('create-widget.php')) ?>"><?= e(t('button.create_widget')) ?></a>
 </section>
 
 <section class="settings-card table-card">
@@ -50,7 +50,7 @@ require __DIR__ . '/includes/header.php';
         </label>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary"><?= e(t('button.search')) ?></button>
-            <a class="btn btn-light" href="admin-widgets.php"><?= e(t('button.reset')) ?></a>
+            <a class="btn btn-light" href="<?= e(app_url('admin-widgets.php')) ?>"><?= e(t('button.reset')) ?></a>
         </div>
     </form>
 

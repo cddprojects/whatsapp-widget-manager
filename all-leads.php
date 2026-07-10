@@ -33,13 +33,15 @@ $perPage = (int) $result['per_page'];
 
 $clientOptions = db()->query("SELECT id, name, email FROM users WHERE role = '" . ROLE_CLIENT . "' ORDER BY name ASC")->fetchAll() ?: [];
 
-$exportUrl = 'export-leads.php?scope=all'
-    . '&client_id=' . (int) $clientFilterId
-    . '&widget_id=' . (int) $widgetFilterId
-    . '&sort=' . urlencode($sort)
-    . '&q=' . urlencode($query)
-    . '&date_from=' . urlencode($dateFrom)
-    . '&date_to=' . urlencode($dateTo);
+$exportUrl = app_url('export-leads.php', [
+    'scope' => 'all',
+    'client_id' => (int) $clientFilterId,
+    'widget_id' => (int) $widgetFilterId,
+    'sort' => $sort,
+    'q' => $query,
+    'date_from' => $dateFrom,
+    'date_to' => $dateTo,
+]);
 
 $pageTitle = t('page.all_leads');
 $pageScripts = ['assets/js/leads.js'];
@@ -54,7 +56,7 @@ require __DIR__ . '/includes/header.php';
 
 <?php
 $leadPageMode = 'all_leads';
-$formAction = 'all-leads.php';
+$formAction = app_url('all-leads.php');
 $showClientOwnerColumn = false;
 $showClientColumn = true;
 $showRecycleMeta = false;

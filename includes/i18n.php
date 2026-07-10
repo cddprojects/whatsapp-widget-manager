@@ -97,18 +97,18 @@ function safe_redirect_path(?string $path, string $fallback): string
 {
     $path = trim((string) $path);
     if ($path === '' || str_contains($path, '://') || str_starts_with($path, '//')) {
-        return $fallback;
+        return app_path($fallback);
     }
 
-    return $path;
+    return app_path($path);
 }
 
 function current_request_path(): string
 {
-    $path = basename((string) ($_SERVER['SCRIPT_NAME'] ?? 'dashboard.php'));
+    $slug = app_slug_from_php(current_app_page());
     $query = (string) ($_SERVER['QUERY_STRING'] ?? '');
 
-    return $query !== '' ? $path . '?' . $query : $path;
+    return $query !== '' ? $slug . '?' . $query : $slug;
 }
 
 function translate_user_status(string $status): string

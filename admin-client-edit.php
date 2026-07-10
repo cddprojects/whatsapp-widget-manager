@@ -95,7 +95,7 @@ require __DIR__ . '/includes/header.php';
         </label>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary"><?= e(t('button.save_changes')) ?></button>
-            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $clientId ?>"><?= e(t('button.cancel')) ?></a>
+            <a class="btn btn-light" href="<?= e(app_url('admin-client-detail.php', ['id' => (int) $clientId])) ?>"><?= e(t('button.cancel')) ?></a>
         </div>
     </form>
 </section>

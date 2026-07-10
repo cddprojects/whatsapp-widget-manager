@@ -27,7 +27,7 @@ require __DIR__ . '/includes/header.php';
         <h1><?= e(t('heading.clients')) ?></h1>
         <p><?= e(t('desc.clients')) ?></p>
     </div>
-    <a class="btn btn-primary" href="admin-client-create.php"><?= e(t('button.add_client')) ?></a>
+    <a class="btn btn-primary" href="<?= e(app_url('admin-client-create.php')) ?>"><?= e(t('button.add_client')) ?></a>
 </section>
 
 <section class="settings-card table-card">
@@ -67,7 +67,7 @@ require __DIR__ . '/includes/header.php';
         </label>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary"><?= e(t('button.apply')) ?></button>
-            <a class="btn btn-light" href="admin-clients.php"><?= e(t('button.reset')) ?></a>
+            <a class="btn btn-light" href="<?= e(app_url('admin-clients.php')) ?>"><?= e(t('button.reset')) ?></a>
         </div>
     </form>
 
@@ -105,8 +105,8 @@ require __DIR__ . '/includes/header.php';
                             <td class="col-metric" data-label="<?= e(t('table.total_widgets')) ?>"><?= (int) $client['widget_count'] ?></td>
                             <td class="col-actions" data-label="<?= e(t('table.actions')) ?>">
                                 <div class="clients-table-actions">
-                                    <a class="btn btn-small btn-light" href="admin-client-leads.php?client_id=<?= (int) $client['id'] ?>"><?= e(t('button.view_leads')) ?></a>
-                                    <a class="btn btn-small btn-primary" href="admin-client-detail.php?id=<?= (int) $client['id'] ?>"><?= e(t('button.manage')) ?></a>
+                                    <a class="btn btn-small btn-light" href="<?= e(app_url('admin-client-leads.php', ['client_id' => (int) $client['id']])) ?>"><?= e(t('button.view_leads')) ?></a>
+                                    <a class="btn btn-small btn-primary" href="<?= e(app_url('admin-client-detail.php', ['id' => (int) $client['id']])) ?>"><?= e(t('button.manage')) ?></a>
                                 </div>
                             </td>
                         </tr>

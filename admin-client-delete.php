@@ -110,7 +110,7 @@ require __DIR__ . '/includes/header.php';
         </label>
 
         <div class="form-actions">
-            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $clientId ?>"><?= e(t('button.cancel')) ?></a>
+            <a class="btn btn-light" href="<?= e(app_url('admin-client-detail.php', ['id' => (int) $clientId])) ?>"><?= e(t('button.cancel')) ?></a>
             <button type="submit" class="btn btn-danger-soft"><?= e(t('button.delete_client_permanently')) ?></button>
         </div>
     </form>

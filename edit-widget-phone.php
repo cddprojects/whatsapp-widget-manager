@@ -47,7 +47,7 @@ require __DIR__ . '/includes/header.php';
         ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary"><?= e(t('button.save_numbers')) ?></button>
-            <a class="btn btn-light" href="admin-client-detail.php?id=<?= (int) $widget['user_id'] ?>"><?= e(t('button.back_to_client')) ?></a>
+            <a class="btn btn-light" href="<?= e(app_url('admin-client-detail.php', ['id' => (int) $widget['user_id']])) ?>"><?= e(t('button.back_to_client')) ?></a>
         </div>
     </form>
 </section>

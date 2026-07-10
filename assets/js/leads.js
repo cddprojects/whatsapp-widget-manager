@@ -443,7 +443,7 @@
                 }
 
                 setModalLoading(singleModal, true);
-                postLeadAction('delete-lead.php', root, { lead_id: pendingLeadId })
+                postLeadAction('/delete-lead', root, { lead_id: pendingLeadId })
                     .then(function (result) {
                         if (result.data && result.data.success) {
                             removeLeadRows(root, [pendingLeadId]);
@@ -473,7 +473,7 @@
                 }
 
                 setModalLoading(bulkModal, true);
-                postLeadAction('bulk-delete-leads.php', root, { lead_ids: selectedIds })
+                postLeadAction('/bulk-delete-leads', root, { lead_ids: selectedIds })
                     .then(function (result) {
                         if (result.data && result.data.success) {
                             var deletedIds = Array.isArray(result.data.deleted_ids) ? result.data.deleted_ids : selectedIds;
@@ -509,7 +509,7 @@
         var restoreConfirm = root.querySelector('[data-lead-restore-modal-confirm]');
         if (restoreConfirm) {
             restoreConfirm.addEventListener('click', function () {
-                var url = pendingBulkAction === 'restore-bulk' ? 'bulk-restore-leads.php' : 'restore-lead.php';
+                var url = pendingBulkAction === 'restore-bulk' ? '/bulk-restore-leads' : '/restore-lead';
                 var payload = pendingBulkAction === 'restore-bulk'
                     ? { lead_ids: getSelectedLeadIds(root) }
                     : { lead_id: pendingLeadId };
@@ -556,8 +556,8 @@
         if (permanentConfirm) {
             permanentConfirm.addEventListener('click', function () {
                 var permanentUrl = pendingBulkAction === 'permanent-bulk'
-                    ? 'bulk-permanently-delete-leads.php'
-                    : 'permanently-delete-lead.php';
+                    ? '/bulk-permanently-delete-leads'
+                    : '/permanently-delete-lead';
                 var permanentPayload = pendingBulkAction === 'permanent-bulk'
                     ? { lead_ids: getSelectedLeadIds(root) }
                     : { lead_id: pendingLeadId };
