@@ -923,7 +923,7 @@ function default_widget_data(): array
         'website_name' => '',
         'allow_www' => 1,
         'allow_subdomains' => 0,
-        'domain_lock_enabled' => 1,
+        'domain_lock_enabled' => 0,
         'strict_domain_check' => 0,
         'whatsapp_country_code' => '+60',
         'whatsapp_number' => '',
