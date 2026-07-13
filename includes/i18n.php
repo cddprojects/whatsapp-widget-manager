@@ -105,10 +105,10 @@ function safe_redirect_path(?string $path, string $fallback): string
 
 function current_request_path(): string
 {
-    $slug = app_slug_from_php(current_app_page());
+    $path = ltrim(current_app_route(), '/');
     $query = (string) ($_SERVER['QUERY_STRING'] ?? '');
 
-    return $query !== '' ? $slug . '?' . $query : $slug;
+    return $query !== '' ? $path . '?' . $query : $path;
 }
 
 function translate_user_status(string $status): string
