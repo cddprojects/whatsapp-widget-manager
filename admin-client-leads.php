@@ -52,14 +52,14 @@ require __DIR__ . '/includes/header.php';
 
 <section class="summary-grid lead-summary-grid">
     <article class="summary-card">
-        <span class="summary-label"><?= e(t('lead.today_title')) ?></span>
-        <strong><?= (int) count_active_leads($clientId, true) ?></strong>
-        <small><?= e(t('lead.today_scope_client')) ?></small>
+        <span class="summary-label"><?= e(t('lead.yesterday_title')) ?></span>
+        <strong><?= (int) count_yesterday_active_leads($clientId) ?></strong>
+        <small><?= e(t('lead.scope_admin_client_widgets')) ?></small>
     </article>
     <article class="summary-card">
-        <span class="summary-label"><?= e(t('lead.total_active_title')) ?></span>
-        <strong><?= (int) count_active_leads($clientId, false) ?></strong>
-        <small><?= e(t('lead.total_scope_client')) ?></small>
+        <span class="summary-label"><?= e(t('lead.today_title')) ?></span>
+        <strong><?= (int) count_active_leads($clientId, true) ?></strong>
+        <small><?= e(t('lead.scope_admin_client_widgets')) ?></small>
     </article>
 </section>
 

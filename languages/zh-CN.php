@@ -560,6 +560,7 @@ return [
     'lead.yesterday_title' => '昨日线索',
     'lead.total_active_title' => '有效线索总数',
     'lead.today_scope_client' => '来自您的全部小组件',
+    'lead.scope_admin_client_widgets' => '来自该客户的全部小组件',
     'lead.total_scope_client' => '来自您的全部小组件',
     'lead.today_scope_all' => '来自全部客户',
     'lead.yesterday_scope_all' => '来自全部客户',
