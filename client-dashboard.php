@@ -36,13 +36,13 @@ require __DIR__ . '/includes/header.php';
 <?php if ($widgets): ?>
 <section class="summary-grid lead-summary-grid">
     <article class="summary-card">
-        <span class="summary-label"><?= e(t('lead.today_title')) ?></span>
-        <strong><?= (int) count_active_leads((int) $user['id'], true) ?></strong>
+        <span class="summary-label"><?= e(t('lead.yesterday_title')) ?></span>
+        <strong><?= (int) count_yesterday_active_leads((int) $user['id']) ?></strong>
         <small><?= e(t('lead.today_scope_client')) ?></small>
     </article>
     <article class="summary-card">
-        <span class="summary-label"><?= e(t('lead.yesterday_title')) ?></span>
-        <strong><?= (int) count_yesterday_active_leads((int) $user['id']) ?></strong>
+        <span class="summary-label"><?= e(t('lead.today_title')) ?></span>
+        <strong><?= (int) count_active_leads((int) $user['id'], true) ?></strong>
         <small><?= e(t('lead.today_scope_client')) ?></small>
     </article>
 </section>
