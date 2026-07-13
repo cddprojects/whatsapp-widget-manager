@@ -24,6 +24,23 @@ function app_routes(): array
     return $routes;
 }
 
+function advertised_route_methods(array $allowedMethods): array
+{
+    $advertised = $allowedMethods;
+
+    if (in_array('GET', $allowedMethods, true) && !in_array('HEAD', $advertised, true)) {
+        $getIndex = array_search('GET', $advertised, true);
+        array_splice($advertised, $getIndex + 1, 0, ['HEAD']);
+    }
+
+    return $advertised;
+}
+
+function build_route_allow_header(array $allowedMethods): string
+{
+    return implode(', ', advertised_route_methods($allowedMethods));
+}
+
 function dispatch_app_request(): void
 {
     $routes = app_routes();
@@ -45,10 +62,11 @@ function dispatch_app_request(): void
     }
 
     $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    $methodForValidation = $method === 'HEAD' ? 'GET' : $method;
     $allowedMethods = $route['methods'] ?? ['GET'];
 
-    if (!in_array($method, $allowedMethods, true)) {
-        header('Allow: ' . implode(', ', $allowedMethods));
+    if (!in_array($methodForValidation, $allowedMethods, true)) {
+        header('Allow: ' . build_route_allow_header($allowedMethods));
         http_response_code(405);
         exit('Method Not Allowed');
     }
@@ -79,5 +97,14 @@ function dispatch_app_request(): void
         define('CTC_APP_FILE', $file);
     }
 
+    $isHeadRequest = $method === 'HEAD';
+    if ($isHeadRequest) {
+        ob_start();
+    }
+
     require $target;
+
+    if ($isHeadRequest) {
+        ob_end_clean();
+    }
 }
