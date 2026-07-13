@@ -562,6 +562,7 @@ return [
     'lead.yesterday_title' => 'Yesterday\'s Leads',
     'lead.total_active_title' => 'Total Active Leads',
     'lead.today_scope_client' => 'Across all of your widgets',
+    'lead.scope_admin_client_widgets' => 'Across all of this client\'s widgets',
     'lead.total_scope_client' => 'Across all of your widgets',
     'lead.today_scope_all' => 'Across all clients',
     'lead.yesterday_scope_all' => 'Across all clients',
