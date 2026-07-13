@@ -1,13 +1,7 @@
 <?php
 declare(strict_types=1);
 
-function app_route_map(): array
-{
-    return [
-        'admin-clients.php' => 'clients',
-        'admin-client-detail.php' => 'manage-client',
-    ];
-}
+require_once __DIR__ . '/router.php';
 
 function app_public_endpoints(): array
 {
@@ -19,82 +13,52 @@ function app_public_endpoints(): array
     ];
 }
 
-function app_pages(): array
-{
-    return [
-        'login.php',
-        'logout.php',
-        'register.php',
-        'dashboard.php',
-        'admin-clients.php',
-        'admin-client-create.php',
-        'admin-client-detail.php',
-        'admin-client-edit.php',
-        'admin-client-delete.php',
-        'admin-client-reset-password.php',
-        'admin-client-leads.php',
-        'admin-settings.php',
-        'admin-widgets.php',
-        'all-leads.php',
-        'lead-recycle-bin.php',
-        'client-dashboard.php',
-        'client-leads.php',
-        'create-widget.php',
-        'edit-widget.php',
-        'edit-widget-phone.php',
-        'embed-code.php',
-        'widget-preview.php',
-        'set-language.php',
-        'upload-phone-numbers.php',
-        'update-phone-numbers.php',
-        'delete-lead.php',
-        'restore-lead.php',
-        'permanently-delete-lead.php',
-        'bulk-delete-leads.php',
-        'bulk-restore-leads.php',
-        'bulk-permanently-delete-leads.php',
-        'export-leads.php',
-        'export-widget-leads.php',
-    ];
-}
-
-function app_slug_from_php(string $phpFile): string
+function app_route_path_by_file(string $phpFile): ?string
 {
     $basename = basename($phpFile);
-    $map = app_route_map();
 
-    if (isset($map[$basename])) {
-        return $map[$basename];
+    foreach (app_routes() as $path => $route) {
+        if (($route['file'] ?? '') === $basename) {
+            return $path;
+        }
     }
 
-    if (str_ends_with($basename, '.php')) {
-        return substr($basename, 0, -4);
-    }
-
-    return ltrim($basename, '/');
+    return null;
 }
 
-function app_php_from_slug(string $slug): string
+function app_route_file_by_path(string $path): ?string
 {
-    $reverse = array_flip(app_route_map());
+    $path = normalize_request_path($path);
+    $routes = app_routes();
 
-    if (isset($reverse[$slug])) {
-        return (string) $reverse[$slug];
+    if (!isset($routes[$path]['file'])) {
+        return null;
     }
 
-    return $slug . '.php';
+    $file = $routes[$path]['file'];
+
+    return is_string($file) ? $file : null;
 }
 
-function app_url(string $phpFile, array $query = []): string
+function normalize_route_target(string $target): string
 {
-    $slug = app_slug_from_php($phpFile);
-    $url = '/' . $slug;
+    $target = trim($target);
 
-    if ($query !== []) {
-        $url .= '?' . http_build_query($query);
+    if ($target === '') {
+        return '/';
     }
 
-    return $url;
+    if (str_starts_with($target, '/')) {
+        return normalize_request_path($target);
+    }
+
+    if (str_contains($target, '.php')) {
+        $mapped = app_route_path_by_file($target);
+
+        return $mapped ?? normalize_request_path('/' . substr(basename($target), 0, -4));
+    }
+
+    return normalize_request_path('/' . $target);
 }
 
 function app_path(string $path): string
@@ -105,45 +69,146 @@ function app_path(string $path): string
         return '/';
     }
 
-    if (!str_contains($path, '.php')) {
-        return str_starts_with($path, '/') ? $path : '/' . $path;
-    }
-
     $parts = explode('?', $path, 2);
+    $routePath = normalize_route_target($parts[0]);
     $query = [];
 
     if (isset($parts[1]) && $parts[1] !== '') {
         parse_str($parts[1], $query);
     }
 
-    return app_url($parts[0], $query);
+    return app_url(ltrim($routePath, '/'), $query);
+}
+
+function app_url(string $target, array $query = []): string
+{
+    if ($query === [] && str_contains($target, '?')) {
+        $parts = explode('?', $target, 2);
+        $target = $parts[0];
+        if (isset($parts[1]) && $parts[1] !== '') {
+            parse_str($parts[1], $query);
+        }
+    }
+
+    $routePath = normalize_route_target($target);
+    $url = $routePath;
+
+    if ($query !== []) {
+        $url .= '?' . http_build_query($query);
+    }
+
+    return $url;
+}
+
+function route_url(string $target, array $query = []): string
+{
+    return rtrim(SYSTEM_BASE_URL, '/') . app_url($target, $query);
+}
+
+function current_app_route(): string
+{
+    if (defined('CTC_APP_ROUTE') && is_string(CTC_APP_ROUTE) && CTC_APP_ROUTE !== '') {
+        return CTC_APP_ROUTE;
+    }
+
+    $uri = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '/';
+
+    return normalize_request_path($uri);
+}
+
+function current_app_path(): string
+{
+    return current_app_route();
 }
 
 function current_app_page(): string
 {
-    $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (defined('CTC_APP_FILE') && is_string(CTC_APP_FILE) && CTC_APP_FILE !== '') {
+        return CTC_APP_FILE;
+    }
 
+    $mapped = app_route_file_by_path(current_app_route());
+    if ($mapped !== null) {
+        return $mapped;
+    }
+
+    $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     if ($script !== '' && str_ends_with($script, '.php')) {
         return $script;
     }
 
-    $uri = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '';
-    $slug = trim((string) $uri, '/');
-
-    if ($slug === '') {
-        return 'dashboard.php';
-    }
-
-    return app_php_from_slug($slug);
+    return 'dashboard.php';
 }
 
-function app_clean_redirect_slugs(): array
+function app_slug_from_php(string $phpFile): string
 {
-    $slugs = [];
-
-    foreach (app_pages() as $page) {
-        $slugs[] = app_slug_from_php($page);
+    $mapped = app_route_path_by_file($phpFile);
+    if ($mapped !== null) {
+        return ltrim($mapped, '/');
     }
 
-    return array_values(array_unique($slugs));
+    $basename = basename($phpFile);
+    if (str_ends_with($basename, '.php')) {
+        return substr($basename, 0, -4);
+    }
+
+    return ltrim($basename, '/');
+}
+
+function redirect_legacy_php_request(string $phpFile): void
+{
+    maybe_redirect_legacy_php_request($phpFile);
+}
+
+function maybe_redirect_legacy_php_request(?string $phpFile = null): void
+{
+    if (PHP_SAPI === 'cli') {
+        return;
+    }
+
+    if (defined('CTC_FRONT_CONTROLLER') && CTC_FRONT_CONTROLLER) {
+        return;
+    }
+
+    $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    if ($method !== 'GET' && $method !== 'HEAD') {
+        return;
+    }
+
+    if ($phpFile === null) {
+        $phpFile = basename((string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
+    } else {
+        $phpFile = basename($phpFile);
+    }
+
+    if ($phpFile === '' || !str_ends_with($phpFile, '.php')) {
+        return;
+    }
+
+    if (in_array($phpFile, app_public_endpoints(), true)) {
+        return;
+    }
+
+    $routePath = app_route_path_by_file($phpFile);
+    if ($routePath === null) {
+        return;
+    }
+
+    $routes = app_routes();
+    $route = $routes[$routePath] ?? null;
+    $allowedMethods = $route['methods'] ?? ['GET'];
+
+    if ($method === 'GET' && !in_array('GET', $allowedMethods, true)) {
+        return;
+    }
+
+    if ($method === 'HEAD' && !in_array('HEAD', $allowedMethods, true) && !in_array('GET', $allowedMethods, true)) {
+        return;
+    }
+
+    $query = (string) ($_SERVER['QUERY_STRING'] ?? '');
+    $target = $routePath . ($query !== '' ? '?' . $query : '');
+
+    header('Location: ' . $target, true, 301);
+    exit;
 }

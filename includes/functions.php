@@ -2866,3 +2866,5 @@ try {
 } catch (Throwable $exception) {
     // Leave connection errors to the calling page; schema ensure runs when DB is available.
 }
+
+maybe_redirect_legacy_php_request();
