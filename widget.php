@@ -186,7 +186,7 @@ $successMessage = (string) ($widget['greeting_lead_success_message'] ?? 'Redirec
                             </div>
                             <span class="ctcw-phone-error" id="<?= e($phoneErrorId) ?>" data-greeting-phone-error hidden></span>
                         </div>
-                        <span class="ctcw-greeting-success" data-greeting-success hidden><?= e($successMessage) ?></span>
+                        <span class="ctcw-greeting-success" id="ctcw-greeting-success-gtm" data-greeting-success hidden><?= e($successMessage) ?></span>
                     </div>
                 <?php else: ?>
                     <p class="ctcw-greeting-message"><?= e($greetingMessage) ?></p>
