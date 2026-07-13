@@ -92,15 +92,15 @@ $config = [
         }
 
         if (state === 'greeting-phone') {
-            return { width: 500, height: 500 };
+            return { width: 390, height: 240 };
         }
         if (state === 'greeting') {
-            return { width: 500, height: 500 };
+            return { width: 380, height: 240 };
         }
         if (state === 'button' || state === 'hover') {
-            return { width: 500, height: 500 };
+            return { width: 260, height: 110 };
         }
-        return { width: 500, height: 500 };
+        return { width: 110, height: 110 };
     }
 
     function clampSize(width, height, state) {
