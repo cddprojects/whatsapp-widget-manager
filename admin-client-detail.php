@@ -44,15 +44,31 @@ $createdPassword = $_SESSION['created_client_password'] ?? null;
 $createdClientEmail = $_SESSION['created_client_email'] ?? null;
 unset($_SESSION['created_client_password'], $_SESSION['created_client_email']);
 
-$clientApiCredential = find_api_credential(API_CREDENTIAL_OWNER_CLIENT, $clientId, API_CREDENTIAL_TYPE_CLIENT);
-$clientApiView = api_credential_public_view($clientApiCredential);
-
+$apiCredentialsSchemaReady = api_credentials_schema_ready();
+$clientApiView = [
+    'exists' => false,
+    'status' => 'missing',
+    'masked_key' => '',
+    'created_at' => null,
+    'last_used_at' => null,
+    'is_active' => false,
+];
 $widgetApiViews = [];
-foreach ($widgets as $widgetRow) {
-    $widgetId = (int) $widgetRow['id'];
-    $widgetApiViews[$widgetId] = api_credential_public_view(
-        find_api_credential(API_CREDENTIAL_OWNER_WIDGET, $widgetId, API_CREDENTIAL_TYPE_WIDGET)
-    );
+
+if ($apiCredentialsSchemaReady) {
+    $clientApiCredential = find_api_credential(API_CREDENTIAL_OWNER_CLIENT, $clientId, API_CREDENTIAL_TYPE_CLIENT);
+    $clientApiView = api_credential_public_view($clientApiCredential);
+
+    foreach ($widgets as $widgetRow) {
+        $widgetId = (int) $widgetRow['id'];
+        $widgetApiViews[$widgetId] = api_credential_public_view(
+            find_api_credential(API_CREDENTIAL_OWNER_WIDGET, $widgetId, API_CREDENTIAL_TYPE_WIDGET)
+        );
+    }
+} else {
+    foreach ($widgets as $widgetRow) {
+        $widgetApiViews[(int) $widgetRow['id']] = $clientApiView;
+    }
 }
 
 $pageTitle = t('page.client_profile');
@@ -202,6 +218,7 @@ require __DIR__ . '/includes/header.php';
     hidden
     data-manage-url="<?= e(app_url('api-credentials-manage.php')) ?>"
     data-csrf-token="<?= e(csrf_token()) ?>"
+    data-schema-ready="<?= $apiCredentialsSchemaReady ? '1' : '0' ?>"
     data-crypto-ready="<?= api_credentials_crypto_ready() ? '1' : '0' ?>"
 >
     <div class="ctcw-api-key-modal-backdrop" data-api-key-modal-close></div>
@@ -279,6 +296,7 @@ require __DIR__ . '/includes/header.php';
         'regenerate_confirm' => t('api_key.regenerate_confirm'),
         'disable_confirm' => t('api_key.disable_confirm'),
         'crypto_missing' => t('api_key.crypto_missing'),
+        'schema_missing' => t('api_key.schema_missing'),
         'copy_failed' => t('api_key.copy_failed'),
         'operation_failed' => t('api_key.operation_failed'),
     ],

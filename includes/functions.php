@@ -2883,7 +2883,6 @@ try {
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     ensure_lead_recycle_schema();
-    ensure_api_credentials_schema();
 } catch (Throwable $exception) {
     // Leave connection errors to the calling page; schema ensure runs when DB is available.
 }

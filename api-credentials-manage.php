@@ -17,7 +17,10 @@ if ($user === null || !is_superadmin_user($user)) {
 }
 
 verify_lead_post_csrf();
-ensure_api_credentials_schema();
+
+if (!api_credentials_schema_ready()) {
+    json_response(['success' => false, 'message' => t('api_key.schema_missing')], 503);
+}
 
 $action = trim((string) ($_POST['action'] ?? ''));
 $ownerType = trim((string) ($_POST['owner_type'] ?? ''));

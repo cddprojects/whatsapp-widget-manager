@@ -521,6 +521,7 @@ return [
     'api_key.regenerate_confirm' => '重新生成此 API 密钥？当前密钥将立即失效。任何使用它的外部集成都必须更新为新密钥。',
     'api_key.disable_confirm' => '停用此 API 密钥？使用该密钥的外部系统将无法再访问 API。',
     'api_key.crypto_missing' => '未配置 API 密钥加密。请在服务器 .env 中设置 API_KEY_PEPPER 和 API_KEY_ENCRYPTION_KEY。',
+    'api_key.schema_missing' => '尚未配置 API 凭据。请先运行 php migrate.php 执行迁移 016，然后重新加载此页面。',
     'api_key.copy_failed' => '无法复制 API 密钥。',
     'api_key.operation_failed' => '无法完成此 API 密钥操作。',
     'api_key.invalid_request' => '无效的 API 密钥请求。',
