@@ -3409,3 +3409,151 @@ code {
         justify-content: center;
     }
 }
+
+.client-settings-menu .action-menu-panel {
+    min-width: 220px;
+    z-index: 80;
+}
+
+.action-menu-divider {
+    height: 1px;
+    margin: 4px 6px;
+    background: var(--line);
+}
+
+.action-menu-button {
+    width: 100%;
+    border: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.action-menu-button:hover {
+    background: #f8fafc;
+}
+
+.action-menu-panel form .action-menu-button {
+    display: block;
+}
+
+.ctcw-api-key-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.ctcw-api-key-modal[hidden] {
+    display: none !important;
+}
+
+.ctcw-api-key-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.ctcw-api-key-modal-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 100%);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.ctcw-api-key-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px 0;
+}
+
+.ctcw-api-key-modal-header h2 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.ctcw-api-key-modal-close {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.ctcw-api-key-modal-body {
+    padding: 16px 20px 20px;
+}
+
+.ctcw-api-key-meta {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.ctcw-api-key-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.ctcw-api-key-grid code {
+    display: block;
+    margin-top: 4px;
+    word-break: break-all;
+    font-size: 13px;
+}
+
+.ctcw-api-key-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ctcw-api-key-feedback {
+    margin: 12px 0 0;
+    color: var(--success);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ctcw-api-key-feedback.is-error,
+.ctcw-api-key-error {
+    color: var(--danger);
+}
+
+.ctcw-api-key-error {
+    margin: 12px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-pill.status-disabled {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+@media (max-width: 720px) {
+    .ctcw-api-key-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ctcw-api-key-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

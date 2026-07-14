@@ -2598,16 +2598,30 @@ function render_widget_action_menu(array $widget, array $options = []): void
     $widgetId = (int) $widget['id'];
     $showDelete = !empty($options['show_delete']);
     $deleteClientId = (int) ($options['delete_client_id'] ?? 0);
+    $showApiKey = !empty($options['show_api_key']);
+    $clientName = (string) ($options['client_name'] ?? '');
     ?>
     <div class="row-actions">
         <a class="btn btn-small btn-primary" href="<?= e(app_url('edit-widget.php', ['id' => $widgetId])) ?>"><?= e(t('button.manage')) ?></a>
         <a class="btn btn-small btn-light" href="<?= e(app_url('widget-preview.php', ['id' => $widgetId])) ?>"><?= e(t('button.preview')) ?></a>
         <div class="action-menu" data-action-menu>
-            <button type="button" class="btn btn-small btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="<?= e(t('action.more_actions')) ?>">⋯</button>
+            <button type="button" class="btn btn-small btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="<?= e(t('action.more_actions')) ?>"><?= e('⋯') ?></button>
             <div class="action-menu-panel" role="menu">
                 <a role="menuitem" href="<?= e(app_url('edit-widget-phone.php', ['id' => $widgetId])) ?>"><?= e(t('action.phone_number')) ?></a>
                 <a role="menuitem" href="<?= e(app_url('admin-client-leads.php', ['client_id' => (int) $widget['user_id'], 'widget_id' => $widgetId])) ?>"><?= e(t('action.leads')) ?></a>
                 <a role="menuitem" href="<?= e(app_url('embed-code.php', ['id' => $widgetId])) ?>"><?= e(t('action.embed_code')) ?></a>
+                <?php if ($showApiKey): ?>
+                    <button
+                        type="button"
+                        role="menuitem"
+                        class="action-menu-button"
+                        data-open-api-key-modal
+                        data-owner-type="widget"
+                        data-owner-id="<?= $widgetId ?>"
+                        data-owner-label="<?= e((string) ($widget['widget_name'] ?? '')) ?>"
+                        data-client-label="<?= e($clientName) ?>"
+                    ><?= e(t('action.widget_api_key')) ?></button>
+                <?php endif; ?>
                 <?php if ($showDelete): ?>
                     <form method="post" data-confirm="<?= e(t('widget.delete_confirm')) ?>">
                         <?= csrf_field() ?>
@@ -2823,6 +2837,7 @@ function json_response(array $payload, int $status = 200): void
 
 require_once __DIR__ . '/lead-management.php';
 require_once __DIR__ . '/lead-pagination.php';
+require_once __DIR__ . '/api-credentials.php';
 
 function ensure_widget_activation_schema(): void
 {
@@ -2868,6 +2883,7 @@ try {
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
     ensure_lead_recycle_schema();
+    ensure_api_credentials_schema();
 } catch (Throwable $exception) {
     // Leave connection errors to the calling page; schema ensure runs when DB is available.
 }

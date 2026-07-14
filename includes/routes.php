@@ -136,4 +136,13 @@ return [
         'file' => 'export-widget-leads.php',
         'methods' => ['GET'],
     ],
+    '/api/v1/leads/summary' => [
+        'file' => 'api-v1-leads-summary.php',
+        'methods' => ['GET'],
+        'public' => true,
+    ],
+    '/api-credentials/manage' => [
+        'file' => 'api-credentials-manage.php',
+        'methods' => ['POST'],
+    ],
 ];
