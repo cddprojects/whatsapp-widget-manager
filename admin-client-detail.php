@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/api-credentials.php';
 require_superadmin();
 
 $clientId = (int) ($_GET['id'] ?? 0);
@@ -43,7 +44,19 @@ $createdPassword = $_SESSION['created_client_password'] ?? null;
 $createdClientEmail = $_SESSION['created_client_email'] ?? null;
 unset($_SESSION['created_client_password'], $_SESSION['created_client_email']);
 
+$clientApiCredential = find_api_credential(API_CREDENTIAL_OWNER_CLIENT, $clientId, API_CREDENTIAL_TYPE_CLIENT);
+$clientApiView = api_credential_public_view($clientApiCredential);
+
+$widgetApiViews = [];
+foreach ($widgets as $widgetRow) {
+    $widgetId = (int) $widgetRow['id'];
+    $widgetApiViews[$widgetId] = api_credential_public_view(
+        find_api_credential(API_CREDENTIAL_OWNER_WIDGET, $widgetId, API_CREDENTIAL_TYPE_WIDGET)
+    );
+}
+
 $pageTitle = t('page.client_profile');
+$pageScripts = ['assets/js/api-credentials.js'];
 require __DIR__ . '/includes/header.php';
 ?>
 
@@ -81,15 +94,33 @@ require __DIR__ . '/includes/header.php';
             <p><?= e(t('desc.client_profile_overview')) ?></p>
         </div>
         <div class="action-list">
-            <a class="btn btn-light" href="<?= e(app_url('admin-client-edit.php', ['id' => (int) $client['id']])) ?>"><?= e(t('button.edit_client')) ?></a>
-            <form method="post">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="toggle_status">
-                <button type="submit" class="btn btn-light">
-                    <?= e((string) $client['status'] === USER_STATUS_ACTIVE ? t('button.disable_client') : t('button.enable_client')) ?>
+            <div class="action-menu client-settings-menu" data-action-menu>
+                <button type="button" class="btn btn-light action-menu-toggle" aria-haspopup="true" aria-expanded="false">
+                    <?= e(t('button.client_settings')) ?> <span class="user-menu-caret" aria-hidden="true">▾</span>
                 </button>
-            </form>
-            <a class="btn btn-primary-soft" href="<?= e(app_url('admin-client-reset-password.php', ['id' => (int) $client['id']])) ?>"><?= e(t('button.reset_password')) ?></a>
+                <div class="action-menu-panel" role="menu">
+                    <a role="menuitem" href="<?= e(app_url('admin-client-edit.php', ['id' => (int) $client['id']])) ?>"><?= e(t('button.edit_client')) ?></a>
+                    <form method="post">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="toggle_status">
+                        <button type="submit" class="action-menu-button" role="menuitem">
+                            <?= e((string) $client['status'] === USER_STATUS_ACTIVE ? t('button.disable_client') : t('button.enable_client')) ?>
+                        </button>
+                    </form>
+                    <a role="menuitem" href="<?= e(app_url('admin-client-reset-password.php', ['id' => (int) $client['id']])) ?>"><?= e(t('button.reset_password')) ?></a>
+                    <div class="action-menu-divider" role="separator"></div>
+                    <button
+                        type="button"
+                        role="menuitem"
+                        class="action-menu-button"
+                        data-open-api-key-modal
+                        data-owner-type="client"
+                        data-owner-id="<?= (int) $client['id'] ?>"
+                        data-owner-label="<?= e((string) $client['name']) ?>"
+                        data-client-label="<?= e((string) $client['name']) ?>"
+                    ><?= e(t('action.client_api_key')) ?></button>
+                </div>
+            </div>
         </div>
     </div>
     <div class="profile-grid">
@@ -143,6 +174,8 @@ require __DIR__ . '/includes/header.php';
                                 <?php render_widget_action_menu($widget, [
                                     'show_delete' => true,
                                     'delete_client_id' => $clientId,
+                                    'show_api_key' => true,
+                                    'client_name' => (string) $client['name'],
                                 ]); ?>
                             </td>
                         </tr>
@@ -162,5 +195,93 @@ require __DIR__ . '/includes/header.php';
 <div class="form-actions">
     <a class="btn btn-light" href="<?= e(app_url('admin-clients.php')) ?>"><?= e(t('button.back_to_clients')) ?></a>
 </div>
+
+<div
+    id="api-key-modal"
+    class="ctcw-api-key-modal"
+    hidden
+    data-manage-url="<?= e(app_url('api-credentials-manage.php')) ?>"
+    data-csrf-token="<?= e(csrf_token()) ?>"
+    data-crypto-ready="<?= api_credentials_crypto_ready() ? '1' : '0' ?>"
+>
+    <div class="ctcw-api-key-modal-backdrop" data-api-key-modal-close></div>
+    <div class="ctcw-api-key-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
+        <div class="ctcw-api-key-modal-header">
+            <h2 id="api-key-modal-title"><?= e(t('api_key.modal_title_client')) ?></h2>
+            <button type="button" class="ctcw-api-key-modal-close" data-api-key-modal-close aria-label="<?= e(t('button.cancel')) ?>">×</button>
+        </div>
+        <div class="ctcw-api-key-modal-body">
+            <p class="ctcw-api-key-meta" data-api-key-context></p>
+            <div class="ctcw-api-key-empty" data-api-key-empty hidden>
+                <p><?= e(t('api_key.none_generated')) ?></p>
+                <button type="button" class="btn btn-primary" data-api-key-generate><?= e(t('api_key.generate')) ?></button>
+            </div>
+            <div class="ctcw-api-key-details" data-api-key-details hidden>
+                <div class="ctcw-api-key-grid">
+                    <div>
+                        <span class="meta-label"><?= e(t('meta.status')) ?></span>
+                        <strong><span class="status-pill status-active" data-api-key-status-pill><?= e(t('api_key.status_active')) ?></span></strong>
+                    </div>
+                    <div>
+                        <span class="meta-label"><?= e(t('api_key.key_label')) ?></span>
+                        <code data-api-key-masked></code>
+                    </div>
+                    <div>
+                        <span class="meta-label"><?= e(t('meta.created')) ?></span>
+                        <strong data-api-key-created></strong>
+                    </div>
+                    <div>
+                        <span class="meta-label"><?= e(t('api_key.last_used')) ?></span>
+                        <strong data-api-key-last-used></strong>
+                    </div>
+                </div>
+                <div class="ctcw-api-key-actions">
+                    <button type="button" class="btn btn-primary" data-api-key-copy><?= e(t('api_key.copy')) ?></button>
+                    <button type="button" class="btn btn-light" data-api-key-regenerate><?= e(t('api_key.regenerate')) ?></button>
+                    <button type="button" class="btn btn-light" data-api-key-toggle><?= e(t('api_key.disable')) ?></button>
+                </div>
+                <p class="ctcw-api-key-feedback" data-api-key-feedback hidden></p>
+            </div>
+            <p class="ctcw-api-key-error" data-api-key-error hidden></p>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="api-key-bootstrap"><?= json_for_html([
+    'client' => array_merge($clientApiView, [
+        'created_label' => format_api_credential_datetime($clientApiView['created_at'] ?? null),
+        'last_used_label' => format_api_credential_datetime($clientApiView['last_used_at'] ?? null),
+        'status_label' => !empty($clientApiView['is_active']) ? t('api_key.status_active') : t('api_key.status_disabled'),
+    ]),
+    'widgets' => array_map(static function (array $view): array {
+        return array_merge($view, [
+            'created_label' => format_api_credential_datetime($view['created_at'] ?? null),
+            'last_used_label' => format_api_credential_datetime($view['last_used_at'] ?? null),
+            'status_label' => !empty($view['is_active']) ? t('api_key.status_active') : t('api_key.status_disabled'),
+        ]);
+    }, $widgetApiViews),
+    'i18n' => [
+        'client_title' => t('api_key.modal_title_client'),
+        'widget_title' => t('api_key.modal_title_widget'),
+        'client_label' => t('api_key.client_label'),
+        'widget_label' => t('api_key.widget_label'),
+        'none_client' => t('api_key.none_generated_client'),
+        'none_widget' => t('api_key.none_generated_widget'),
+        'generate_client' => t('api_key.generate_client'),
+        'generate_widget' => t('api_key.generate_widget'),
+        'copy' => t('api_key.copy'),
+        'copied' => t('api_key.copied'),
+        'regenerate' => t('api_key.regenerate'),
+        'disable' => t('api_key.disable'),
+        'enable' => t('api_key.enable'),
+        'status_active' => t('api_key.status_active'),
+        'status_disabled' => t('api_key.status_disabled'),
+        'regenerate_confirm' => t('api_key.regenerate_confirm'),
+        'disable_confirm' => t('api_key.disable_confirm'),
+        'crypto_missing' => t('api_key.crypto_missing'),
+        'copy_failed' => t('api_key.copy_failed'),
+        'operation_failed' => t('api_key.operation_failed'),
+    ],
+]) ?></script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
