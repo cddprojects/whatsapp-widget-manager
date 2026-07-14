@@ -2804,8 +2804,13 @@ function search_widget_leads(int $widgetId, array $options): array
 
 function widget_leads_for_export(int $widgetId, array $options): array
 {
-    $result = search_widget_leads($widgetId, array_merge($options, ['page' => 1, 'per_page' => 10000]));
-    return $result['rows'];
+    $clientId = (int) ($options['client_id'] ?? 0);
+
+    return client_leads_for_export(array_merge($options, [
+        'widget_id' => $widgetId,
+        'client_id' => $clientId > 0 ? $clientId : 0,
+        'recycle_bin' => false,
+    ]));
 }
 
 function json_response(array $payload, int $status = 200): void
