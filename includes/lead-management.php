@@ -483,9 +483,29 @@ function search_client_leads(array $options): array
 
 function client_leads_for_export(array $options): array
 {
-    $result = search_client_leads(array_merge($options, ['page' => 1, 'per_page' => 10000]));
+    // Export must use the same filters as the table, but never page/per_page LIMIT/OFFSET.
+    unset($options['page'], $options['per_page']);
 
-    return $result['rows'];
+    $params = [];
+    $whereSql = build_client_leads_where($options, $params);
+    $retentionDays = lead_recycle_retention_days();
+
+    $sql = 'SELECT wl.*, w.widget_name, u.name AS owner_name, u.email AS owner_email,
+                   deleted_user.name AS deleted_by_name,
+                   CASE
+                       WHEN wl.deleted_at IS NULL THEN NULL
+                       ELSE GREATEST(0, ' . (int) $retentionDays . ' - TIMESTAMPDIFF(DAY, wl.deleted_at, UTC_TIMESTAMP()))
+                   END AS days_remaining
+            FROM widget_leads wl
+            INNER JOIN widgets w ON w.id = wl.widget_id
+            LEFT JOIN users u ON u.id = wl.client_id
+            LEFT JOIN users deleted_user ON deleted_user.id = wl.deleted_by_user_id
+            WHERE ' . $whereSql . '
+            ORDER BY ' . client_leads_order_sql($options);
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll() ?: [];
 }
 
 function count_active_leads(?int $clientId = null, bool $todayOnly = false): int
