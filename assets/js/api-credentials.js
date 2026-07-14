@@ -57,6 +57,10 @@
         return modal.getAttribute('data-crypto-ready') === '1';
     }
 
+    function schemaReady() {
+        return modal.getAttribute('data-schema-ready') === '1';
+    }
+
     function setFeedback(message, isError) {
         if (!elements.feedback) {
             return;
@@ -166,6 +170,13 @@
         state.ownerId = parseInt(trigger.getAttribute('data-owner-id') || '0', 10);
         state.ownerLabel = trigger.getAttribute('data-owner-label') || '';
         state.clientLabel = trigger.getAttribute('data-client-label') || '';
+
+        if (!schemaReady()) {
+            renderCredential({ exists: false });
+            setError(t('schema_missing'));
+            modal.hidden = false;
+            return;
+        }
 
         if (!cryptoReady()) {
             renderCredential({ exists: false });

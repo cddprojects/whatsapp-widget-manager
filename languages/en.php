@@ -521,6 +521,7 @@ return [
     'api_key.regenerate_confirm' => 'Regenerate this API key? The current key will stop working immediately. Any external integration using it must be updated with the new key.',
     'api_key.disable_confirm' => 'Disable this API key? External systems using this key will no longer be able to access the API.',
     'api_key.crypto_missing' => 'API key encryption is not configured. Set API_KEY_PEPPER and API_KEY_ENCRYPTION_KEY in the server .env file.',
+    'api_key.schema_missing' => 'API credentials are not configured yet. Run migration 016 with php migrate.php, then reload this page.',
     'api_key.copy_failed' => 'Unable to copy the API key.',
     'api_key.operation_failed' => 'Unable to complete this API key action.',
     'api_key.invalid_request' => 'Invalid API key request.',

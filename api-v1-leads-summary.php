@@ -12,7 +12,10 @@ if ($method !== 'GET' && $method !== 'HEAD') {
 }
 
 try {
-    ensure_api_credentials_schema();
+    if (!api_credentials_schema_ready()) {
+        api_json_error('api_not_configured', 'The API is temporarily unavailable.', 503);
+    }
+
     $auth = authenticate_api_key_pair();
     $client = $auth['client'];
     $widget = $auth['widget'];
@@ -60,6 +63,10 @@ try {
         'lead_count' => $leadCount,
     ]);
 } catch (Throwable $exception) {
+    if (!api_credentials_schema_ready()) {
+        api_json_error('api_not_configured', 'The API is temporarily unavailable.', 503);
+    }
+
     log_api_request(
         null,
         null,
