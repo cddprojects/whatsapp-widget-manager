@@ -44,13 +44,34 @@ if (session_status() === PHP_SESSION_NONE) {
 
 function db(): PDO
 {
-    static $pdo = null;
+        static $pdo = null;
 
     if ($pdo instanceof PDO) {
         return $pdo;
     }
 
-    $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
+    $dsn = 'mysql:host=' . DB_HOST;
+
+    // Optional database port.
+    // Local Docker can use DB_PORT=3307.
+    // Production behavior remains unchanged when DB_PORT is not defined.
+    $dbPort = trim((string) (getenv('DB_PORT') ?: ''));
+
+    if ($dbPort !== '') {
+        if (
+            !ctype_digit($dbPort)
+            || (int) $dbPort < 1
+            || (int) $dbPort > 65535
+        ) {
+            throw new RuntimeException('DB_PORT must be a valid TCP port number.');
+        }
+
+        $dsn .= ';port=' . (int) $dbPort;
+    }
+
+    $dsn .= ';dbname=' . DB_NAME;
+    $dsn .= ';charset=' . DB_CHARSET;
+
     $pdo = new PDO($dsn, DB_USER, DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
