@@ -38,6 +38,14 @@ $phoneSubmitButtonId = resolve_greeting_phone_submit_button_id($widget);
 $phoneErrorId = 'ctcw-phone-error-' . (int) $widget['id'];
 $allowPhonePlus = !empty($widget['greeting_allow_phone_plus']);
 
+$channelConfig = get_widget_channel_config((int) $widget['id'], $widget);
+$enabledChannels = enabled_widget_channels((int) $widget['id'], $widget);
+$channelMode = (string) ($channelConfig['modes'] ?? 'whatsapp_only');
+$consentText = '';
+if (in_array($channelMode, ['telegram_only', 'both'], true) && !empty($widget['greeting_capture_phone'])) {
+    $consentText = t('widget.consent.channel_neutral');
+}
+
 $widgetConfig = [
     'widgetId' => (int) $widget['id'],
     'initialMode' => in_array((string) ($_GET['mode'] ?? ''), ['desktop', 'mobile'], true) ? (string) $_GET['mode'] : '',
@@ -77,6 +85,19 @@ $widgetConfig = [
     ],
     'publicKey' => (string) $widget['public_key'],
     'saveLeadUrl' => SYSTEM_BASE_URL . '/save-widget-lead.php',
+    'channelMode' => $channelMode,
+    'enabledChannels' => $enabledChannels,
+    'defaultChannel' => (string) ($channelConfig['default'] ?? WIDGET_CHANNEL_WHATSAPP),
+    'i18n' => [
+        'chooseChannel' => t('widget.choose_channel'),
+        'continueWhatsapp' => t('widget.continue_whatsapp'),
+        'continueTelegram' => t('widget.continue_telegram'),
+        'openTelegram' => t('widget.open_telegram'),
+        'copyUsername' => t('widget.copy_telegram_username'),
+        'copiedUsername' => t('widget.copied_telegram_username'),
+        'telegramUnavailable' => t('widget.telegram_unavailable'),
+        'consent' => $consentText,
+    ],
 ];
 
 $desktopStyle = normalize_widget_style((string) ($widget['desktop_style'] ?? 'style-1'));
@@ -186,10 +207,65 @@ $successMessage = (string) ($widget['greeting_lead_success_message'] ?? 'Redirec
                             </div>
                             <span class="ctcw-phone-error" id="<?= e($phoneErrorId) ?>" data-greeting-phone-error hidden></span>
                         </div>
+                        <?php if ($consentText !== ''): ?>
+                            <p class="ctcw-consent-text"><?= e($consentText) ?></p>
+                        <?php endif; ?>
                         <span class="ctcw-greeting-success" id="ctcw-greeting-success-gtm" data-greeting-success hidden><?= e($successMessage) ?></span>
+                    </div>
+                    <div class="ctcw-channel-picker" data-channel-picker hidden>
+                        <p class="ctcw-channel-picker-title"><?= e(t('widget.choose_channel')) ?></p>
+                        <div class="ctcw-channel-actions">
+                            <?php if (in_array(WIDGET_CHANNEL_WHATSAPP, $enabledChannels, true)): ?>
+                                <button type="button" class="ctcw-channel-btn ctcw-channel-btn--whatsapp" data-select-channel="whatsapp">
+                                    <?= e(t('widget.continue_whatsapp')) ?>
+                                </button>
+                            <?php endif; ?>
+                            <?php if (in_array(WIDGET_CHANNEL_TELEGRAM, $enabledChannels, true)): ?>
+                                <button type="button" class="ctcw-channel-btn ctcw-channel-btn--telegram" data-select-channel="telegram">
+                                    <?= e(t('widget.continue_telegram')) ?>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="ctcw-telegram-fallback" data-telegram-fallback hidden>
+                        <p class="ctcw-telegram-fallback-text" data-telegram-fallback-text></p>
+                        <div class="ctcw-channel-actions">
+                            <button type="button" class="ctcw-channel-btn ctcw-channel-btn--telegram" data-telegram-open>
+                                <?= e(t('widget.open_telegram')) ?>
+                            </button>
+                            <button type="button" class="ctcw-channel-btn ctcw-channel-btn--secondary" data-telegram-copy hidden>
+                                <?= e(t('widget.copy_telegram_username')) ?>
+                            </button>
+                        </div>
                     </div>
                 <?php else: ?>
                     <p class="ctcw-greeting-message"><?= e($greetingMessage) ?></p>
+                    <div class="ctcw-channel-picker" data-channel-picker hidden>
+                        <p class="ctcw-channel-picker-title"><?= e(t('widget.choose_channel')) ?></p>
+                        <div class="ctcw-channel-actions">
+                            <?php if (in_array(WIDGET_CHANNEL_WHATSAPP, $enabledChannels, true)): ?>
+                                <button type="button" class="ctcw-channel-btn ctcw-channel-btn--whatsapp" data-select-channel="whatsapp">
+                                    <?= e(t('widget.continue_whatsapp')) ?>
+                                </button>
+                            <?php endif; ?>
+                            <?php if (in_array(WIDGET_CHANNEL_TELEGRAM, $enabledChannels, true)): ?>
+                                <button type="button" class="ctcw-channel-btn ctcw-channel-btn--telegram" data-select-channel="telegram">
+                                    <?= e(t('widget.continue_telegram')) ?>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="ctcw-telegram-fallback" data-telegram-fallback hidden>
+                        <p class="ctcw-telegram-fallback-text" data-telegram-fallback-text></p>
+                        <div class="ctcw-channel-actions">
+                            <button type="button" class="ctcw-channel-btn ctcw-channel-btn--telegram" data-telegram-open>
+                                <?= e(t('widget.open_telegram')) ?>
+                            </button>
+                            <button type="button" class="ctcw-channel-btn ctcw-channel-btn--secondary" data-telegram-copy hidden>
+                                <?= e(t('widget.copy_telegram_username')) ?>
+                            </button>
+                        </div>
+                    </div>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

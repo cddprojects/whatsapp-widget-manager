@@ -737,3 +737,61 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
         transform: scale(1.04);
     }
 }
+
+.ctcw-consent-text {
+    margin: 8px 0 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: rgba(15, 23, 42, 0.68);
+}
+
+.ctcw-channel-picker,
+.ctcw-telegram-fallback {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.ctcw-channel-picker-title,
+.ctcw-telegram-fallback-text {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.ctcw-channel-actions {
+    display: grid;
+    gap: 8px;
+}
+
+.ctcw-channel-btn {
+    appearance: none;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+}
+
+.ctcw-channel-btn:focus-visible {
+    outline: 2px solid #0f766e;
+    outline-offset: 2px;
+}
+
+.ctcw-channel-btn--whatsapp {
+    background: #25d366;
+    color: #fff;
+}
+
+.ctcw-channel-btn--telegram {
+    background: #229ed9;
+    color: #fff;
+}
+
+.ctcw-channel-btn--secondary {
+    background: #e2e8f0;
+    color: #0f172a;
+}
