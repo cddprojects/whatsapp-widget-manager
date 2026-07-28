@@ -1171,6 +1171,13 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         $data['use_random_numbers'] = 1;
     }
 
+    $channelMode = enum_value(
+        (string) ($post['channel_mode'] ?? 'whatsapp_only'),
+        ['whatsapp_only', 'telegram_only', 'both'],
+        'whatsapp_only'
+    );
+    $data['channel_mode'] = $channelMode;
+
     return $data;
 }
 
@@ -1179,7 +1186,7 @@ function strip_php_tags(string $code): string
     return str_ireplace(['<?php', '<?=', '<?', '?>'], '', $code);
 }
 
-function validate_widget_data(array $data): array
+function validate_widget_data(array $data, ?int $widgetId = null): array
 {
     $errors = [];
 
@@ -1198,6 +1205,21 @@ function validate_widget_data(array $data): array
         }
     }
 
+    $channelMode = (string) ($data['channel_mode'] ?? 'whatsapp_only');
+    if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
+        $errors[] = t('channel.error.invalid_mode');
+    }
+
+    $telegramNeeded = in_array($channelMode, ['telegram_only', 'both'], true);
+    if ($telegramNeeded && $widgetId !== null && channel_schema_ready()) {
+        if (count_active_channel_destinations($widgetId, WIDGET_CHANNEL_TELEGRAM) < 1) {
+            $errors[] = t('channel.error.telegram_requires_destination');
+        }
+    } elseif ($telegramNeeded && $widgetId === null) {
+        // Creating a brand-new widget cannot enable Telegram until destinations exist.
+        $errors[] = t('channel.error.telegram_requires_destination');
+    }
+
     return $errors;
 }
 
@@ -1206,9 +1228,10 @@ function insert_widget(int $userId, array $data): int
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
+    $channelMode = (string) ($data['channel_mode'] ?? 'whatsapp_only');
+    unset($data['channel_mode'], $data['widget_status']);
     $data['user_id'] = $userId;
     $data['public_key'] = generate_public_key();
-    unset($data['widget_status']);
     $data = filter_widget_data_for_existing_columns($data);
 
     $columns = array_keys($data);
@@ -1218,6 +1241,17 @@ function insert_widget(int $userId, array $data): int
     $stmt->execute($data);
 
     $widgetId = (int) db()->lastInsertId();
+    ensure_widget_channel_rows($widgetId);
+    if (channel_schema_ready()) {
+        sync_whatsapp_destinations_from_legacy($widgetId);
+        // New widgets start WhatsApp-only unless explicitly configured after destinations exist.
+        if (in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
+            $result = save_widget_channel_config($widgetId, ['mode' => $channelMode]);
+            if (!$result['ok'] && $channelMode !== 'whatsapp_only') {
+                save_widget_channel_config($widgetId, ['mode' => 'whatsapp_only']);
+            }
+        }
+    }
     refresh_widget_destination_status($widgetId);
 
     return $widgetId;
@@ -1270,16 +1304,44 @@ function build_empty_phone_widget_update(?array $existingWidget = null): array
 
 function widget_channel_types(): array
 {
-    return [WIDGET_CHANNEL_WHATSAPP];
+    return supported_widget_channels();
 }
 
-function widget_has_valid_destinations(array $widget, string $channel = WIDGET_CHANNEL_WHATSAPP): bool
+function widget_has_valid_destinations(array $widget, ?string $channel = null): bool
 {
-    if ($channel === WIDGET_CHANNEL_WHATSAPP) {
-        return count(widget_phone_list($widget)) >= 1;
+    $widgetId = (int) ($widget['id'] ?? 0);
+
+    if ($channel !== null) {
+        $normalized = normalize_widget_channel($channel);
+        if ($normalized === null) {
+            return false;
+        }
+        if ($normalized === WIDGET_CHANNEL_WHATSAPP) {
+            return count(widget_phone_list($widget)) >= 1;
+        }
+        if ($normalized === WIDGET_CHANNEL_TELEGRAM) {
+            return $widgetId > 0 && count_active_channel_destinations($widgetId, WIDGET_CHANNEL_TELEGRAM) >= 1;
+        }
+
+        return false;
     }
 
-    return false;
+    // No channel argument: require every enabled channel to have destinations.
+    if ($widgetId > 0 && channel_schema_ready()) {
+        $enabled = enabled_widget_channels($widgetId, $widget);
+        if ($enabled === []) {
+            return count(widget_phone_list($widget)) >= 1;
+        }
+        foreach ($enabled as $enabledChannel) {
+            if (!widget_has_valid_destinations($widget, $enabledChannel)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    return count(widget_phone_list($widget)) >= 1;
 }
 
 function widget_is_admin_disabled(array $widget): bool
@@ -1817,14 +1879,31 @@ function normalize_widget_destination_state(int $widgetId, ?string $requestedMet
     $stmt->execute($filtered);
 }
 
-function resolve_widget_destination(int $widgetId, string $publicKey, ?string $referrer = null): array
-{
+function resolve_widget_destination(
+    int $widgetId,
+    string $publicKey,
+    ?string $referrer = null,
+    string $channel = WIDGET_CHANNEL_WHATSAPP
+): array {
+    $normalizedChannel = normalize_widget_channel($channel) ?? WIDGET_CHANNEL_WHATSAPP;
+
+    if ($normalizedChannel === WIDGET_CHANNEL_TELEGRAM) {
+        return resolve_telegram_destination($widgetId, $publicKey, $referrer);
+    }
+
     $pdo = db();
 
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare('SELECT * FROM widgets WHERE id = :id AND public_key = :public_key LIMIT 1 FOR UPDATE');
+        $stmt = $pdo->prepare(
+            'SELECT w.*, u.status AS owner_status
+             FROM widgets w
+             INNER JOIN users u ON u.id = w.user_id
+             WHERE w.id = :id AND w.public_key = :public_key
+             LIMIT 1
+             FOR UPDATE'
+        );
         $stmt->execute([
             'id' => $widgetId,
             'public_key' => $publicKey,
@@ -1835,6 +1914,12 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
             $pdo->rollBack();
 
             return ['success' => false, 'message' => 'Widget not found'];
+        }
+
+        if (($widget['owner_status'] ?? '') !== USER_STATUS_ACTIVE) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Widget not available'];
         }
 
         if (!domain_matches_referrer($widget, $referrer !== '' ? $referrer : null)) {
@@ -1853,6 +1938,12 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
             $pdo->rollBack();
 
             return ['success' => false, 'message' => 'Widget not available'];
+        }
+
+        if (channel_schema_ready() && !widget_channel_is_enabled($widgetId, WIDGET_CHANNEL_WHATSAPP, $widget)) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'WhatsApp is currently unavailable'];
         }
 
         if (!is_widget_online($widget)) {
@@ -1886,6 +1977,10 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
                 'round_robin_next_index' => $nextIndex,
                 'id' => $widgetId,
             ]);
+
+            if (channel_schema_ready()) {
+                update_widget_channel_selection_method($widgetId, WIDGET_CHANNEL_WHATSAPP, 'round_robin', $nextIndex);
+            }
         } else {
             $selected = $numbers[array_rand($numbers)];
         }
@@ -1906,6 +2001,7 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
 
         return [
             'success' => true,
+            'channel' => WIDGET_CHANNEL_WHATSAPP,
             'country_code' => (string) ($selected['country_code'] ?? ''),
             'number' => (string) ($selected['number'] ?? ''),
             'full_number' => $fullNumber,
@@ -2015,6 +2111,10 @@ function update_widget_phone_fields(int $widgetId, array $data): void
     $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
     $stmt = db()->prepare($sql);
     $stmt->execute($filtered);
+
+    if (channel_schema_ready()) {
+        sync_whatsapp_destinations_from_legacy($widgetId);
+    }
 
     refresh_widget_destination_status($widgetId);
 }
@@ -2155,13 +2255,24 @@ function update_widget_admin(int $widgetId, array $data): void
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
-    unset($data['widget_status']);
+    $channelMode = (string) ($data['channel_mode'] ?? '');
+    unset($data['channel_mode'], $data['widget_status']);
     $data = filter_widget_data_for_existing_columns($data);
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
     $data['id'] = $widgetId;
     $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
     $stmt = db()->prepare($sql);
     $stmt->execute($data);
+
+    if (channel_schema_ready()) {
+        sync_whatsapp_destinations_from_legacy($widgetId);
+        if (in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
+            $result = save_widget_channel_config($widgetId, ['mode' => $channelMode]);
+            if (!$result['ok']) {
+                throw new InvalidArgumentException(implode(' ', $result['errors']));
+            }
+        }
+    }
 
     refresh_widget_destination_status($widgetId);
 }
@@ -2759,6 +2870,24 @@ function resolve_greeting_phone_submit_button_id(array $widget): string
     return 'ctcw-phone-submit-' . (int) ($widget['id'] ?? 0);
 }
 
+function find_recent_widget_lead_id(int $widgetId, string $fullPhone): ?int
+{
+    $sql = 'SELECT id FROM widget_leads
+            WHERE widget_id = :widget_id
+              AND visitor_full_phone = :phone
+              AND created_at >= (UTC_TIMESTAMP() - INTERVAL 1 MINUTE)';
+    if (table_has_column('widget_leads', 'deleted_at')) {
+        $sql .= ' AND deleted_at IS NULL';
+    }
+    $sql .= ' ORDER BY id DESC LIMIT 1';
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute(['widget_id' => $widgetId, 'phone' => $fullPhone]);
+    $id = $stmt->fetchColumn();
+
+    return $id !== false ? (int) $id : null;
+}
+
 function lead_recently_saved(int $widgetId, string $fullPhone): bool
 {
     $stmt = db()->prepare(
@@ -2797,12 +2926,93 @@ function insert_widget_lead(array $widget, array $lead): int
         $values['client_id'] = $clientId;
     }
 
+    $channelFields = [
+        'channel',
+        'channel_destination_id',
+        'destination_type',
+        'destination_name',
+        'destination_snapshot',
+        'channel_selected_at',
+        'destination_resolved_at',
+        'redirect_attempted_at',
+        'fallback_type',
+    ];
+    foreach ($channelFields as $field) {
+        if (!table_has_column('widget_leads', $field) || !array_key_exists($field, $lead)) {
+            continue;
+        }
+        $columns[] = $field;
+        $values[$field] = $lead[$field];
+    }
+
     $placeholders = array_map(static fn ($column) => ':' . $column, $columns);
     $sql = 'INSERT INTO widget_leads (' . implode(', ', $columns) . ', created_at) VALUES (' . implode(', ', $placeholders) . ', UTC_TIMESTAMP())';
     $stmt = db()->prepare($sql);
     $stmt->execute($values);
 
     return (int) db()->lastInsertId();
+}
+
+/**
+ * Update channel/destination metadata on an existing lead (multi-channel flow).
+ *
+ * @param array<string, mixed> $fields
+ */
+function update_widget_lead_channel_events(int $leadId, int $widgetId, array $fields): bool
+{
+    if ($leadId <= 0 || $widgetId <= 0 || !table_has_column('widget_leads', 'channel')) {
+        return false;
+    }
+
+    $allowed = [
+        'channel' => true,
+        'channel_destination_id' => true,
+        'destination_type' => true,
+        'destination_name' => true,
+        'destination_snapshot' => true,
+        'channel_selected_at' => true,
+        'destination_resolved_at' => true,
+        'redirect_attempted_at' => true,
+        'fallback_type' => true,
+        'whatsapp_redirect_url' => true,
+    ];
+    $filtered = array_intersect_key($fields, $allowed);
+    if ($filtered === []) {
+        return false;
+    }
+
+    $assignments = [];
+    foreach (array_keys($filtered) as $column) {
+        if ($column === 'channel_selected_at' && $filtered[$column] === 'now') {
+            $assignments[] = 'channel_selected_at = UTC_TIMESTAMP()';
+            unset($filtered[$column]);
+            continue;
+        }
+        if ($column === 'destination_resolved_at' && $filtered[$column] === 'now') {
+            $assignments[] = 'destination_resolved_at = UTC_TIMESTAMP()';
+            unset($filtered[$column]);
+            continue;
+        }
+        if ($column === 'redirect_attempted_at' && $filtered[$column] === 'now') {
+            $assignments[] = 'redirect_attempted_at = UTC_TIMESTAMP()';
+            unset($filtered[$column]);
+            continue;
+        }
+        $assignments[] = $column . ' = :' . $column;
+    }
+
+    if ($assignments === []) {
+        return false;
+    }
+
+    $filtered['id'] = $leadId;
+    $filtered['widget_id'] = $widgetId;
+    $sql = 'UPDATE widget_leads SET ' . implode(', ', $assignments)
+        . ' WHERE id = :id AND widget_id = :widget_id AND deleted_at IS NULL';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($filtered);
+
+    return $stmt->rowCount() > 0;
 }
 
 function search_widget_leads(int $widgetId, array $options): array
@@ -2835,6 +3045,9 @@ function json_response(array $payload, int $status = 200): void
     exit;
 }
 
+require_once __DIR__ . '/channels.php';
+require_once __DIR__ . '/telegram.php';
+require_once __DIR__ . '/channel-destinations.php';
 require_once __DIR__ . '/lead-management.php';
 require_once __DIR__ . '/lead-pagination.php';
 require_once __DIR__ . '/api-credentials.php';
