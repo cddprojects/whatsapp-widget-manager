@@ -49,6 +49,8 @@ if (empty($result['success'])) {
     json_response([
         'success' => false,
         'message' => (string) ($result['message'] ?? 'Unable to resolve destination'),
+        'error' => (string) ($result['error'] ?? 'unable_to_continue'),
+        'channel' => $channel,
     ], 422);
 }
 

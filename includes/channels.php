@@ -208,12 +208,12 @@ function save_widget_channel_config(int $widgetId, array $config, ?array $widget
     }
 
     if ($telegram && count_active_channel_destinations($widgetId, WIDGET_CHANNEL_TELEGRAM) < 1) {
-        return ['ok' => false, 'errors' => [t('channel.error.telegram_requires_destination')]];
+        // Allow saving Telegram as enabled/intent before destinations exist.
+        // Public launchers only appear for channels that are ready.
     }
 
     if ($whatsapp && count(widget_phone_list($widget ?? find_widget_by_id($widgetId) ?? [])) < 1 && $mode === 'whatsapp_only') {
-        // Match existing allow-empty-phones setup flow: WhatsApp-only without phones is allowed
-        // and lands in setup_required via refresh_widget_destination_status().
+        // Match existing allow-empty-phones setup flow.
     }
 
     $default = normalize_widget_channel((string) ($config['default'] ?? ''));

@@ -1210,15 +1210,8 @@ function validate_widget_data(array $data, ?int $widgetId = null): array
         $errors[] = t('channel.error.invalid_mode');
     }
 
-    $telegramNeeded = in_array($channelMode, ['telegram_only', 'both'], true);
-    if ($telegramNeeded && $widgetId !== null && channel_schema_ready()) {
-        if (count_active_channel_destinations($widgetId, WIDGET_CHANNEL_TELEGRAM) < 1) {
-            $errors[] = t('channel.error.telegram_requires_destination');
-        }
-    } elseif ($telegramNeeded && $widgetId === null) {
-        // Creating a brand-new widget cannot enable Telegram until destinations exist.
-        $errors[] = t('channel.error.telegram_requires_destination');
-    }
+    // Widgets may be saved before destinations exist. Readiness is shown in the UI
+    // and unready channels are not published publicly.
 
     return $errors;
 }
@@ -1326,19 +1319,9 @@ function widget_has_valid_destinations(array $widget, ?string $channel = null): 
         return false;
     }
 
-    // No channel argument: require every enabled channel to have destinations.
+    // No channel argument: widget is usable if at least one enabled channel is ready.
     if ($widgetId > 0 && channel_schema_ready()) {
-        $enabled = enabled_widget_channels($widgetId, $widget);
-        if ($enabled === []) {
-            return count(widget_phone_list($widget)) >= 1;
-        }
-        foreach ($enabled as $enabledChannel) {
-            if (!widget_has_valid_destinations($widget, $enabledChannel)) {
-                return false;
-            }
-        }
-
-        return true;
+        return publicly_ready_widget_channels($widgetId, $widget) !== [];
     }
 
     return count(widget_phone_list($widget)) >= 1;
@@ -1594,6 +1577,110 @@ function is_widget_online(array $widget): bool
 function whatsapp_icon_svg(): string
 {
     return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.04 3.2c-7.02 0-12.72 5.68-12.72 12.68 0 2.24.6 4.43 1.72 6.35L3.2 28.8l6.74-1.77a12.76 12.76 0 0 0 6.1 1.55h.01c7.01 0 12.72-5.68 12.72-12.68S23.06 3.2 16.04 3.2Zm0 23.24h-.01c-1.94 0-3.85-.52-5.52-1.5l-.4-.24-4 .96 1.07-3.9-.26-.4a10.48 10.48 0 0 1-1.6-5.48c0-5.82 4.8-10.55 10.72-10.55 2.86 0 5.56 1.1 7.58 3.1a10.45 10.45 0 0 1 3.15 7.47c0 5.82-4.8 10.54-10.73 10.54Zm5.88-7.9c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.52-.16-.74.16-.22.32-.85 1.05-1.04 1.27-.19.22-.38.24-.7.08-.32-.16-1.36-.5-2.6-1.6-.96-.85-1.6-1.9-1.79-2.22-.19-.32-.02-.5.14-.66.15-.15.32-.38.48-.56.16-.19.22-.32.32-.54.11-.22.05-.4-.03-.56-.08-.16-.74-1.78-1.02-2.44-.27-.64-.54-.55-.74-.56h-.63c-.22 0-.56.08-.85.4-.3.32-1.12 1.1-1.12 2.68s1.15 3.1 1.31 3.31c.16.22 2.27 3.45 5.5 4.84.77.33 1.37.53 1.84.68.77.24 1.47.2 2.03.12.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.13-.3-.21-.62-.37Z"/></svg>';
+}
+
+function telegram_icon_svg(): string
+{
+    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M27.6 6.4 4.9 15.2c-1.62.63-1.6 1.5-.3 1.9l5.8 1.8 2.24 6.84c.3.82.15 1.15.98 1.15.64 0 .93-.3 1.3-.64l3.12-3.03 6.48 4.78c1.19.66 2.04.32 2.34-1.1l4.24-19.98c.43-1.73-.66-2.5-1.8-2.02ZM12.7 19.5l-.3 4.2c-.04.62.27.76.6.46l2.3-2.14 4.78 3.53c.55.3 1.05.14 1.2-.5l3.9-16.84c.2-.84-.32-1.22-.9-.97L7.1 16.1c-.8.3-.79.74.14.95l5.46 1.7 12.64-7.98c.6-.36 1.14-.17.69.23L12.7 19.5Z"/></svg>';
+}
+
+/**
+ * Channels that are enabled and have at least one active destination.
+ *
+ * @return list<string>
+ */
+function publicly_ready_widget_channels(int $widgetId, ?array $widget = null): array
+{
+    $widget = $widget ?? find_widget_by_id($widgetId);
+    if ($widget === null) {
+        return [];
+    }
+
+    $ready = [];
+    foreach (enabled_widget_channels($widgetId, $widget) as $channel) {
+        if (widget_has_valid_destinations($widget, $channel)) {
+            $ready[] = $channel;
+        }
+    }
+
+    return $ready;
+}
+
+/**
+ * @return array{status: string, whatsapp: string, telegram: string, label: string}
+ */
+function widget_channel_readiness(int $widgetId, ?array $widget = null): array
+{
+    $widget = $widget ?? find_widget_by_id($widgetId);
+    $config = get_widget_channel_config($widgetId, $widget);
+    $waReady = !empty($config['whatsapp']) && widget_has_valid_destinations($widget ?? [], WIDGET_CHANNEL_WHATSAPP);
+    $tgReady = !empty($config['telegram']) && widget_has_valid_destinations($widget ?? [], WIDGET_CHANNEL_TELEGRAM);
+
+    $whatsappState = empty($config['whatsapp'])
+        ? 'disabled'
+        : ($waReady ? 'ready' : 'missing');
+    $telegramState = empty($config['telegram'])
+        ? 'disabled'
+        : ($tgReady ? 'ready' : 'missing');
+
+    $enabledCount = (int) !empty($config['whatsapp']) + (int) !empty($config['telegram']);
+    $readyCount = (int) $waReady + (int) $tgReady;
+
+    if ($readyCount === 0) {
+        $status = 'setup_incomplete';
+        $label = t('channel.readiness.setup_incomplete');
+    } elseif ($readyCount < $enabledCount) {
+        $status = 'partially_ready';
+        $label = t('channel.readiness.partially_ready');
+    } else {
+        $status = 'ready';
+        $label = t('channel.readiness.ready');
+    }
+
+    return [
+        'status' => $status,
+        'whatsapp' => $whatsappState,
+        'telegram' => $telegramState,
+        'label' => $label,
+    ];
+}
+
+function channel_launcher_label(string $channel, bool $online = true, ?array $widget = null): string
+{
+    if (!$online && is_array($widget)) {
+        return (string) ($widget['offline_message'] ?? t('widget.unavailable_generic'));
+    }
+
+    if ($channel === WIDGET_CHANNEL_TELEGRAM) {
+        return t('channel.launcher.telegram');
+    }
+
+    if (is_array($widget) && trim((string) ($widget['call_to_action'] ?? '')) !== '') {
+        return (string) $widget['call_to_action'];
+    }
+
+    return t('channel.launcher.whatsapp');
+}
+
+function channel_continue_label(string $channel): string
+{
+    return $channel === WIDGET_CHANNEL_TELEGRAM
+        ? t('widget.continue_telegram')
+        : t('widget.continue_whatsapp');
+}
+
+function channel_success_label(string $channel): string
+{
+    return $channel === WIDGET_CHANNEL_TELEGRAM
+        ? t('widget.redirecting_telegram')
+        : t('widget.redirecting_whatsapp');
+}
+
+function channel_force_phone_label(string $channel): string
+{
+    return $channel === WIDGET_CHANNEL_TELEGRAM
+        ? t('preview.phone_required_telegram')
+        : t('preview.phone_required');
 }
 
 function normalize_phone_number(string $countryCode, string $phone): ?array
@@ -1943,20 +2030,28 @@ function resolve_widget_destination(
         if (channel_schema_ready() && !widget_channel_is_enabled($widgetId, WIDGET_CHANNEL_WHATSAPP, $widget)) {
             $pdo->rollBack();
 
-            return ['success' => false, 'message' => 'WhatsApp is currently unavailable'];
+            return [
+                'success' => false,
+                'message' => 'WhatsApp is currently unavailable',
+                'error' => 'channel_disabled',
+            ];
         }
 
         if (!is_widget_online($widget)) {
             $pdo->rollBack();
 
-            return ['success' => false, 'message' => 'Widget offline'];
+            return ['success' => false, 'message' => 'Widget offline', 'error' => 'channel_unavailable'];
         }
 
         $numbers = widget_phone_list($widget);
         if ($numbers === []) {
             $pdo->rollBack();
 
-            return ['success' => false, 'message' => 'No active destination'];
+            return [
+                'success' => false,
+                'message' => 'No active WhatsApp destination is configured',
+                'error' => 'no_active_destination',
+            ];
         }
 
         $method = effective_destination_selection_method($widget, count($numbers));

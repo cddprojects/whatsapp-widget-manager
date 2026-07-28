@@ -13,14 +13,32 @@ $destinationsContext = ($destinationsContext ?? 'admin') === 'client' ? 'client'
 $destinationsTelegramOnly = !empty($destinationsTelegramOnly);
 $widgetId = (int) ($widget['id'] ?? 0);
 $channelConfig = $widgetId > 0 ? get_widget_channel_config($widgetId, $widget) : widget_channel_mode_defaults() + ['rows' => []];
+$channelMode = (string) ($widget['channel_mode'] ?? $channelConfig['modes'] ?? 'whatsapp_only');
 $whatsappCount = count(widget_phone_list($widget));
 $telegramDestinations = $widgetId > 0 ? list_channel_destinations($widgetId, WIDGET_CHANNEL_TELEGRAM, true, false) : [];
 $telegramCount = count($telegramDestinations);
-$telegramEnabled = !empty($channelConfig['telegram']);
+$whatsappEnabled = !empty($channelConfig['whatsapp']) || $channelMode === 'whatsapp_only' || $channelMode === 'both';
+$telegramEnabled = !empty($channelConfig['telegram']) || $channelMode === 'telegram_only' || $channelMode === 'both';
+if ($channelMode === 'whatsapp_only') {
+    $telegramEnabled = false;
+    $whatsappEnabled = true;
+} elseif ($channelMode === 'telegram_only') {
+    $whatsappEnabled = false;
+    $telegramEnabled = true;
+} elseif ($channelMode === 'both') {
+    $whatsappEnabled = true;
+    $telegramEnabled = true;
+}
 $activeDestTab = $destinationsTelegramOnly
     ? 'telegram'
-    : (string) ($_GET['dest_tab'] ?? ($telegramEnabled && $whatsappCount === 0 ? 'telegram' : 'whatsapp'));
+    : (string) ($_GET['dest_tab'] ?? (!$whatsappEnabled && $telegramEnabled ? 'telegram' : 'whatsapp'));
 if (!in_array($activeDestTab, ['whatsapp', 'telegram'], true)) {
+    $activeDestTab = 'whatsapp';
+}
+if (!$whatsappEnabled && $telegramEnabled) {
+    $activeDestTab = 'telegram';
+}
+if ($whatsappEnabled && !$telegramEnabled) {
     $activeDestTab = 'whatsapp';
 }
 $saveUrl = app_url('telegram-destination-save.php');
@@ -38,18 +56,30 @@ $panelClass = $destinationsTelegramOnly ? 'client-telegram-panel' : 'settings-ca
             </div>
         </div>
 
-        <div class="tab-bar channel-dest-tabs" role="tablist">
-            <button type="button" class="tab-link<?= $activeDestTab === 'whatsapp' ? ' is-active' : '' ?>" data-dest-tab-target="whatsapp" role="tab">
+        <div class="tab-bar channel-dest-tabs" role="tablist" data-channel-dest-tabs data-channel-mode="<?= e($channelMode) ?>">
+            <button
+                type="button"
+                class="tab-link<?= $activeDestTab === 'whatsapp' ? ' is-active' : '' ?><?= !$whatsappEnabled ? ' is-channel-disabled' : '' ?>"
+                data-dest-tab-target="whatsapp"
+                role="tab"
+                <?= !$whatsappEnabled ? 'hidden' : '' ?>
+            >
                 <?= e(t('channel.whatsapp')) ?> (<?= (int) $whatsappCount ?>)
             </button>
             <?php if ($telegramEnabled || $destinationsContext === 'admin'): ?>
-                <button type="button" class="tab-link<?= $activeDestTab === 'telegram' ? ' is-active' : '' ?>" data-dest-tab-target="telegram" role="tab">
+                <button
+                    type="button"
+                    class="tab-link<?= $activeDestTab === 'telegram' ? ' is-active' : '' ?><?= !$telegramEnabled ? ' is-channel-disabled' : '' ?>"
+                    data-dest-tab-target="telegram"
+                    role="tab"
+                    <?= !$telegramEnabled ? 'hidden' : '' ?>
+                >
                     <?= e(t('channel.telegram')) ?> (<?= (int) $telegramCount ?>)
                 </button>
             <?php endif; ?>
         </div>
 
-        <div class="dest-tab-panel<?= $activeDestTab === 'whatsapp' ? ' is-active' : '' ?>" data-dest-tab-panel="whatsapp">
+        <div class="dest-tab-panel<?= $activeDestTab === 'whatsapp' ? ' is-active' : '' ?><?= !$whatsappEnabled ? ' is-channel-disabled' : '' ?>" data-dest-tab-panel="whatsapp">
             <?php if ($destinationsContext === 'admin'): ?>
                 <?php
                 $allowEmptyPhones = true;
@@ -75,8 +105,8 @@ $panelClass = $destinationsTelegramOnly ? 'client-telegram-panel' : 'settings-ca
         </div>
     <?php endif; ?>
 
-    <div class="dest-tab-panel<?= ($activeDestTab === 'telegram' || $destinationsTelegramOnly) ? ' is-active' : '' ?>" data-dest-tab-panel="telegram">
-        <?php if (!$telegramEnabled): ?>
+    <div class="dest-tab-panel<?= ($activeDestTab === 'telegram' || $destinationsTelegramOnly) ? ' is-active' : '' ?><?= (!$telegramEnabled && !$destinationsTelegramOnly) ? ' is-channel-disabled' : '' ?>" data-dest-tab-panel="telegram">
+        <?php if (!$telegramEnabled && !$destinationsTelegramOnly): ?>
             <div class="empty-state">
                 <h3><?= e(t('telegram.disabled_title')) ?></h3>
                 <p><?= e(t('telegram.disabled_by_admin')) ?></p>

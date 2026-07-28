@@ -93,6 +93,29 @@ assert_eq('whatsapp', normalize_lead_channel(null), 'Null lead channel treated a
 assert_eq('telegram', normalize_lead_channel('telegram'), 'Telegram lead channel preserved');
 assert_eq(null, normalize_widget_channel('sms'), 'Unsupported channel rejected');
 
+echo "\n=== Channel readiness / launcher labels ===\n";
+assert_eq('WhatsApp us', channel_launcher_label('whatsapp', true), 'WhatsApp launcher label');
+assert_eq('Telegram us', channel_launcher_label('telegram', true), 'Telegram launcher label');
+assert_eq('Continue on Telegram', channel_continue_label('telegram'), 'Telegram continue label');
+assert_eq('Opening Telegram...', channel_success_label('telegram'), 'Telegram success label');
+assert_eq('Phone required before Telegram', channel_force_phone_label('telegram'), 'Telegram force-phone label');
+
+$emptyWidgetErrors = validate_widget_data([
+    'website_domain' => 'example.com',
+    'custom_url' => '',
+    'greeting_capture_phone' => 0,
+    'channel_mode' => 'telegram_only',
+]);
+assert_true($emptyWidgetErrors === [], 'Telegram-only widget validates without destinations');
+
+$bothModeErrors = validate_widget_data([
+    'website_domain' => 'example.com',
+    'custom_url' => '',
+    'greeting_capture_phone' => 0,
+    'channel_mode' => 'both',
+]);
+assert_true($bothModeErrors === [], 'Both-channel widget validates without destinations');
+
 echo "\n=== Migration runner smoke (no DB required for help) ===\n";
 $migrateHelp = [];
 exec('php ' . escapeshellarg(dirname(__DIR__) . '/migrate.php') . ' --help 2>&1', $migrateHelp, $helpCode);

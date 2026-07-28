@@ -149,14 +149,38 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
                         value="<?= e($modeValue) ?>"
                         <?= $channelMode === $modeValue ? 'checked' : '' ?>
                         data-channel-mode-input
+                        aria-label="<?= e($modeMeta['title']) ?>"
                     >
-                    <span class="channel-mode-icon channel-mode-icon--<?= e($modeMeta['icon']) ?>" aria-hidden="true"></span>
+                    <span class="channel-mode-icon channel-mode-icon--<?= e($modeMeta['icon']) ?>" aria-hidden="true">
+                        <?php if ($modeMeta['icon'] === 'whatsapp'): ?>
+                            <?= whatsapp_icon_svg() ?>
+                        <?php elseif ($modeMeta['icon'] === 'telegram'): ?>
+                            <?= telegram_icon_svg() ?>
+                        <?php else: ?>
+                            <span class="channel-mode-icon-wa"><?= whatsapp_icon_svg() ?></span>
+                            <span class="channel-mode-icon-tg"><?= telegram_icon_svg() ?></span>
+                        <?php endif; ?>
+                    </span>
                     <strong><?= e($modeMeta['title']) ?></strong>
-                    <span><?= e($modeMeta['description']) ?></span>
+                    <span class="channel-mode-desc"><?= e($modeMeta['description']) ?></span>
                 </label>
             <?php endforeach; ?>
         </div>
         <p class="helper-text"><?= e(t('channel.embed_unchanged_help')) ?></p>
+        <?php
+        $readiness = widget_channel_readiness((int) ($widget['id'] ?? 0), $widget);
+        ?>
+        <div class="channel-readiness" data-channel-readiness>
+            <span class="channel-readiness-badge is-<?= e($readiness['status']) ?>" data-readiness-overall>
+                <?= e($readiness['label']) ?>
+            </span>
+            <?php if ($readiness['whatsapp'] === 'missing'): ?>
+                <span class="channel-readiness-badge is-missing"><?= e(t('channel.readiness.no_whatsapp')) ?></span>
+            <?php endif; ?>
+            <?php if ($readiness['telegram'] === 'missing'): ?>
+                <span class="channel-readiness-badge is-missing"><?= e(t('channel.readiness.no_telegram')) ?></span>
+            <?php endif; ?>
+        </div>
         <?php if (!empty($channelConfig['telegram']) && count_active_channel_destinations((int) ($widget['id'] ?? 0), WIDGET_CHANNEL_TELEGRAM) < 1): ?>
             <div class="alert alert-warning">
                 <?= e(t('channel.warning.telegram_incomplete')) ?>

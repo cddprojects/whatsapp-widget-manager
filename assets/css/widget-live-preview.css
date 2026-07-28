@@ -5,8 +5,9 @@
     z-index: 999999;
     pointer-events: none;
     display: none;
-    max-width: calc(100vw - 24px);
-    max-height: calc(100vh - 24px);
+    max-width: min(420px, calc(100% - 24px));
+    max-height: calc(100% - 24px);
+    width: max-content;
     background: transparent !important;
     border: 0 !important;
     outline: 0 !important;
@@ -64,7 +65,7 @@
     display: flex;
     flex-direction: column;
     width: max-content;
-    max-width: calc(100vw - 32px);
+    max-width: min(420px, calc(100% - 32px));
 }
 
 .ctcw-admin-live-preview .ctcw-preview-badge {
@@ -147,7 +148,7 @@
     position: relative;
     display: none;
     width: 280px;
-    max-width: min(320px, calc(100vw - 48px));
+    max-width: min(320px, calc(100% - 24px));
     padding: 16px 18px;
     border: 1px solid #e5e7eb;
     border-radius: 16px;
@@ -157,8 +158,38 @@
 }
 
 .ctcw-admin-live-preview .ctcw-greeting.has-capture {
-    width: min(320px, calc(100vw - 48px));
+    width: min(320px, calc(100% - 24px));
     padding: 16px;
+}
+
+.ctcw-admin-live-preview .ctcw-launcher-stack {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+    max-width: 100%;
+    pointer-events: auto;
+}
+
+.ctcw-admin-live-preview.is-anchor-left .ctcw-launcher-stack {
+    align-items: flex-start;
+}
+
+.ctcw-admin-live-preview .ctcw-launcher-stack.widget-mode-single {
+    flex-direction: row;
+}
+
+.ctcw-admin-live-preview .ctcw-widget.channel-whatsapp {
+    background: var(--ctcw-green, #25d366);
+}
+
+.ctcw-admin-live-preview .ctcw-widget.channel-telegram {
+    background: #229ed9;
+}
+
+.ctcw-admin-live-preview .ctcw-widget[data-preview-channel] {
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .ctcw-admin-live-preview .ctcw-greeting.is-visible {

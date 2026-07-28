@@ -89,6 +89,7 @@ require __DIR__ . '/includes/header.php';
 
 <?php if (!empty($showLivePreview)): ?>
     <script type="application/json" id="ctcw-preview-icon"><?= json_for_html(whatsapp_icon_svg()) ?></script>
+    <script type="application/json" id="ctcw-preview-icon-telegram"><?= json_for_html(telegram_icon_svg()) ?></script>
 <?php endif; ?>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

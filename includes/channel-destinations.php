@@ -437,7 +437,11 @@ function resolve_telegram_destination(int $widgetId, string $publicKey, ?string 
 
         if (!widget_channel_is_enabled($widgetId, WIDGET_CHANNEL_TELEGRAM, $widget)) {
             $pdo->rollBack();
-            return ['success' => false, 'message' => 'Telegram is currently unavailable'];
+            return [
+                'success' => false,
+                'message' => 'Telegram is currently unavailable',
+                'error' => 'channel_disabled',
+            ];
         }
 
         $channelStmt = $pdo->prepare(
@@ -453,7 +457,11 @@ function resolve_telegram_destination(int $widgetId, string $publicKey, ?string 
         $channelRow = $channelStmt->fetch();
         if (!$channelRow || empty($channelRow['is_enabled'])) {
             $pdo->rollBack();
-            return ['success' => false, 'message' => 'Telegram is currently unavailable'];
+            return [
+                'success' => false,
+                'message' => 'Telegram is currently unavailable',
+                'error' => 'channel_disabled',
+            ];
         }
 
         $destStmt = $pdo->prepare(
@@ -472,7 +480,11 @@ function resolve_telegram_destination(int $widgetId, string $publicKey, ?string 
         $destinations = $destStmt->fetchAll() ?: [];
         if ($destinations === []) {
             $pdo->rollBack();
-            return ['success' => false, 'message' => 'No active Telegram destination'];
+            return [
+                'success' => false,
+                'message' => 'No active Telegram destination is configured',
+                'error' => 'no_active_destination',
+            ];
         }
 
         $count = count($destinations);
