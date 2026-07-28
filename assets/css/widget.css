@@ -154,6 +154,17 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     pointer-events: auto;
 }
 
+.ctcw-channel-shell,
+.floating-channel-launcher {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    pointer-events: auto;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
 .ctcw-launcher-stack.widget-mode-single {
     flex-direction: row;
 }
@@ -251,12 +262,20 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     color: var(--ctcw-text);
     box-shadow: none !important;
     pointer-events: auto;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .ctcw-greeting.has-capture {
     width: 340px;
     max-width: 340px;
+}
+
+.ctcw-greeting.has-capture:not(.has-consent) {
+    overflow: visible;
+}
+
+.ctcw-greeting.has-consent {
+    overflow-y: auto;
 }
 
 .ctcw-greeting-header {
@@ -746,9 +765,20 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
         width: min(384px, calc(100vw - 24px));
         max-width: calc(100vw - 24px);
         min-width: 0;
+    }
+
+    .ctcw-greeting.has-consent,
+    .ctcw-greeting.has-capture.has-consent,
+    .ctcw-widget-popup.has-consent {
         max-height: min(70dvh, 520px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+    }
+
+    .ctcw-greeting:not(.has-consent),
+    .ctcw-greeting.has-capture:not(.has-consent) {
+        max-height: none;
+        overflow: visible;
     }
 
     .ctcw-greeting-form {
@@ -825,11 +855,58 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     }
 }
 
+/* Telegram must never inherit WhatsApp Style 9's left-hover rectangular shell. */
+.floating-channel-launcher--telegram.style-9-left-hover,
+.ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover {
+    /* Fallback if a stale style class is present: treat as clean pill. */
+}
+
+.floating-channel-launcher--telegram.style-9-left-hover .ctcw-widget,
+.ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-widget {
+    min-height: 48px;
+    padding: 13px 18px;
+    gap: 10px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    color: #ffffff;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.floating-channel-launcher--telegram.style-9-left-hover .ctcw-icon,
+.ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-icon {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.floating-channel-launcher--telegram.style-9-left-hover .ctcw-text,
+.ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-text {
+    display: inline-block;
+    height: auto;
+    max-width: none;
+    overflow: visible;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    opacity: 1;
+}
+
 .ctcw-consent-text {
     margin: 8px 0 0;
     font-size: 11px;
     line-height: 1.4;
     color: rgba(15, 23, 42, 0.68);
+}
+
+.ctcw-greeting:not(.has-consent) .ctcw-consent-text {
+    display: none;
+    margin: 0;
+    padding: 0;
+    height: 0;
+    overflow: hidden;
 }
 
 .ctcw-channel-picker,

@@ -34,6 +34,7 @@ If the new migrations already ran, code rollback alone is not enough — also re
 
 Rollback SQL files:
 
+- `migrations/rollback/020_consent_notice_and_telegram_styles_down.sql`
 - `migrations/rollback/019_widget_leads_channel_down.sql`
 - `migrations/rollback/018_channel_destinations_down.sql`
 - `migrations/rollback/017_widget_channels_down.sql`
@@ -41,6 +42,7 @@ Rollback SQL files:
 Run **in reverse order** only after a verified backup:
 
 ```bash
+mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < migrations/rollback/020_consent_notice_and_telegram_styles_down.sql
 mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < migrations/rollback/019_widget_leads_channel_down.sql
 mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < migrations/rollback/018_channel_destinations_down.sql
 mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < migrations/rollback/017_widget_channels_down.sql
@@ -51,6 +53,7 @@ Then remove those rows from `schema_migrations` if present:
 ```sql
 DELETE FROM schema_migrations
 WHERE filename IN (
+  '020_consent_notice_and_telegram_styles.sql',
   '019_widget_leads_channel.sql',
   '018_channel_destinations.sql',
   '017_widget_channels.sql'
@@ -62,10 +65,13 @@ WHERE filename IN (
 - Telegram destinations in `channel_destinations`
 - Widget Telegram enablement in `widget_channels`
 - Lead channel metadata columns (`channel`, destination snapshot, redirect/fallback timestamps)
+- Optional consent notice columns (`consent_notice_enabled`, `consent_notice_text`)
+- Independent Telegram launcher style columns (`telegram_desktop_style`, `telegram_mobile_style`)
 
 ### What must remain
 
 - `widgets.whatsapp_*` columns and `random_numbers_json`
+- Existing WhatsApp `desktop_style` / `mobile_style` values
 - Existing visitor phone fields on leads
 - `whatsapp_redirect_url`
 - API credentials and historical WhatsApp lead rows

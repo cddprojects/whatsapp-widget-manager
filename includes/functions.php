@@ -219,6 +219,35 @@ function sanitize_widget_style(string $style, string $default = 'style-1'): stri
     return enum_value($style, array_keys(widget_styles()), $default);
 }
 
+/**
+ * Telegram-safe launcher styles. Style 9 inherits a WhatsApp-specific
+ * left-hover layout that creates an unsuitable rectangular shell for Telegram.
+ *
+ * @return array<string, string>
+ */
+function telegram_widget_styles(): array
+{
+    $styles = widget_styles();
+    unset($styles['style-9-left-hover']);
+
+    return $styles;
+}
+
+function sanitize_telegram_widget_style(string $style, string $default = 'style-4'): string
+{
+    $style = normalize_widget_style(trim($style));
+    if ($style === 'style-9-left-hover') {
+        return $default;
+    }
+
+    return enum_value($style, array_keys(telegram_widget_styles()), $default);
+}
+
+function default_telegram_widget_style(): string
+{
+    return 'style-4';
+}
+
 function country_code_options(): array
 {
     $rows = [
@@ -936,6 +965,8 @@ function default_widget_data(): array
         'call_to_action' => 'WhatsApp us',
         'desktop_style' => 'style-1',
         'mobile_style' => 'style-1',
+        'telegram_desktop_style' => 'style-4',
+        'telegram_mobile_style' => 'style-4',
         'desktop_position_type' => 'fixed',
         'mobile_position_type' => 'fixed',
         'desktop_vertical_position_type' => 'bottom',
@@ -965,6 +996,8 @@ function default_widget_data(): array
         'greeting_delay_seconds' => 2,
         'greeting_open_behavior' => 'auto_delay',
         'greeting_capture_phone' => 0,
+        'consent_notice_enabled' => 0,
+        'consent_notice_text' => '',
         'greeting_phone_required' => 1,
         'greeting_allow_phone_plus' => 1,
         'greeting_force_phone_capture' => 0,
@@ -1044,6 +1077,14 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         'call_to_action' => trim((string) ($post['call_to_action'] ?? $defaults['call_to_action'])),
         'desktop_style' => sanitize_widget_style((string) ($post['desktop_style'] ?? 'style-1')),
         'mobile_style' => sanitize_widget_style((string) ($post['mobile_style'] ?? 'style-1')),
+        'telegram_desktop_style' => sanitize_telegram_widget_style(
+            (string) ($post['telegram_desktop_style'] ?? default_telegram_widget_style()),
+            default_telegram_widget_style()
+        ),
+        'telegram_mobile_style' => sanitize_telegram_widget_style(
+            (string) ($post['telegram_mobile_style'] ?? default_telegram_widget_style()),
+            default_telegram_widget_style()
+        ),
         'desktop_position_type' => enum_value((string) ($post['desktop_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed'),
         'mobile_position_type' => enum_value((string) ($post['mobile_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed'),
         'desktop_vertical_position_type' => enum_value((string) ($post['desktop_vertical_position_type'] ?? 'bottom'), ['top', 'bottom'], 'bottom'),
@@ -1072,6 +1113,8 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         'greeting_delay_seconds' => max(0, min(120, (int) ($post['greeting_delay_seconds'] ?? 2))),
         'greeting_open_behavior' => 'auto_delay',
         'greeting_capture_phone' => 0,
+        'consent_notice_enabled' => 0,
+        'consent_notice_text' => '',
         'greeting_phone_required' => 0,
         'greeting_allow_phone_plus' => 1,
         'greeting_force_phone_capture' => 0,
@@ -1117,6 +1160,12 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         $data['greeting_open_behavior'] = normalize_greeting_open_behavior(
             (string) ($post['greeting_open_behavior'] ?? ($existing['greeting_open_behavior'] ?? $defaults['greeting_open_behavior']))
         );
+        $data['consent_notice_enabled'] = post_checkbox('consent_notice_enabled');
+        $consentText = trim((string) ($post['consent_notice_text'] ?? ''));
+        if (mb_strlen($consentText) > 500) {
+            $consentText = mb_substr($consentText, 0, 500);
+        }
+        $data['consent_notice_text'] = $consentText !== '' ? $consentText : null;
 
         if ($greetingCapturePhone) {
             $greetingForcePhoneCapture = post_checkbox('greeting_force_phone_capture');
@@ -1139,6 +1188,8 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
             $data['greeting_phone_submit_button_id'] = (string) ($existing['greeting_phone_submit_button_id'] ?? '');
         }
     } else {
+        $data['consent_notice_enabled'] = (int) ($existing['consent_notice_enabled'] ?? 0);
+        $data['consent_notice_text'] = $existing['consent_notice_text'] ?? null;
         $data['greeting_capture_phone'] = (int) ($existing['greeting_capture_phone'] ?? 0);
         $data['greeting_force_phone_capture'] = (int) ($existing['greeting_force_phone_capture'] ?? 0);
         $data['greeting_phone_required'] = (int) ($existing['greeting_phone_required'] ?? 1);
@@ -1221,6 +1272,7 @@ function insert_widget(int $userId, array $data): int
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
+    ensure_consent_notice_and_telegram_styles_schema();
     $channelMode = (string) ($data['channel_mode'] ?? 'whatsapp_only');
     unset($data['channel_mode'], $data['widget_status']);
     $data['user_id'] = $userId;
@@ -1255,6 +1307,7 @@ function update_widget(int $widgetId, int $userId, array $data): void
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
+    ensure_consent_notice_and_telegram_styles_schema();
     $data = filter_widget_data_for_existing_columns($data);
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
     $data['id'] = $widgetId;
@@ -2331,6 +2384,64 @@ function ensure_greeting_phone_submit_button_id_schema(): void
     }
 }
 
+function ensure_consent_notice_and_telegram_styles_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (!database_table_exists('widgets')) {
+        return;
+    }
+
+    if (!table_has_column('widgets', 'consent_notice_enabled')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN consent_notice_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER greeting_capture_phone"
+        );
+    }
+
+    if (!table_has_column('widgets', 'consent_notice_text')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN consent_notice_text VARCHAR(500) NULL DEFAULT NULL AFTER consent_notice_enabled"
+        );
+    }
+
+    if (!table_has_column('widgets', 'telegram_desktop_style')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN telegram_desktop_style VARCHAR(40) NOT NULL DEFAULT 'style-4' AFTER mobile_style"
+        );
+    }
+
+    if (!table_has_column('widgets', 'telegram_mobile_style')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN telegram_mobile_style VARCHAR(40) NOT NULL DEFAULT 'style-4' AFTER telegram_desktop_style"
+        );
+    }
+}
+
+/**
+ * Resolve consent notice copy for a widget. Empty when the notice is disabled.
+ */
+function widget_consent_notice_text(array $widget, array $readyChannels = []): string
+{
+    if (empty($widget['consent_notice_enabled'])) {
+        return '';
+    }
+
+    $custom = trim((string) ($widget['consent_notice_text'] ?? ''));
+    if ($custom !== '') {
+        return $custom;
+    }
+
+    return t('widget.consent.channel_neutral');
+}
+
 function filter_widget_data_for_existing_columns(array $data): array
 {
     if (!database_table_exists('widgets')) {
@@ -2351,6 +2462,7 @@ function update_widget_admin(int $widgetId, array $data): void
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
+    ensure_consent_notice_and_telegram_styles_schema();
     $channelMode = (string) ($data['channel_mode'] ?? '');
     unset($data['channel_mode'], $data['widget_status']);
     $data = filter_widget_data_for_existing_columns($data);
@@ -3191,6 +3303,7 @@ try {
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
+    ensure_consent_notice_and_telegram_styles_schema();
     ensure_lead_recycle_schema();
 } catch (Throwable $exception) {
     // Leave connection errors to the calling page; schema ensure runs when DB is available.

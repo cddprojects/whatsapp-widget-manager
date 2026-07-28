@@ -114,6 +114,8 @@
         var optionalRequiredSettings = document.querySelector('[data-greeting-optional-required-settings]');
         var forceRequiredSettings = document.querySelector('[data-greeting-force-required-settings]');
         var requiredToggle = document.querySelector('[data-greeting-phone-required]');
+        var consentToggle = document.querySelector('[data-role="consent-notice-toggle"]');
+        var consentSettings = document.querySelector('[data-role="consent-notice-settings"]');
 
         if (!greetingToggle || !greetingSettings) {
             return;
@@ -127,6 +129,9 @@
             setGreetingSectionFieldsDisabled(greetingSettings, true);
             if (captureSettings) {
                 captureSettings.hidden = true;
+            }
+            if (consentSettings) {
+                consentSettings.hidden = true;
             }
             return;
         }
@@ -142,8 +147,17 @@
             captureSettings.hidden = !captureEnabled;
         }
 
+        var consentEnabled = !!(consentToggle && consentToggle.checked);
+        if (consentToggle) {
+            consentToggle.setAttribute('aria-expanded', consentEnabled ? 'true' : 'false');
+        }
+        if (consentSettings) {
+            consentSettings.hidden = !consentEnabled;
+        }
+
         if (!captureEnabled) {
             setGreetingSectionFieldsDisabled(captureSettings, true);
+            refreshGreetingOpenBehaviorFields();
             return;
         }
 
@@ -610,14 +624,16 @@
     }
 
     function refreshSelectedStyleCards() {
-        var selectedStyles = Array.from(document.querySelectorAll('[data-style-select]')).map(function (select) {
-            return select.value;
-        });
-
         document.querySelectorAll('[data-style-preview-card]').forEach(function (card) {
-            card.classList.toggle('is-selected', selectedStyles.indexOf(card.getAttribute('data-style-preview-card')) !== -1);
+            var channel = card.getAttribute('data-style-channel') || 'whatsapp';
+            var styleKey = card.getAttribute('data-style-preview-card');
+            var selected = Array.from(document.querySelectorAll('[data-style-select][data-style-channel="' + channel + '"]')).map(function (select) {
+                return select.value;
+            });
+            card.classList.toggle('is-selected', selected.indexOf(styleKey) !== -1);
         });
     }
+    window.refreshSelectedStyleCards = refreshSelectedStyleCards;
 
     document.addEventListener('click', function (event) {
         var copyButton = event.target.closest('[data-copy-target]');
@@ -720,6 +736,7 @@
     var greetingDialogToggle = document.querySelector('[data-role="greeting-dialog-toggle"]');
     var greetingCaptureToggle = document.querySelector('[data-role="phone-capture-toggle"]');
     var greetingForceToggle = document.querySelector('[data-role="force-phone-toggle"]');
+    var consentNoticeToggle = document.querySelector('[data-role="consent-notice-toggle"]');
     if (greetingDialogToggle) {
         greetingDialogToggle.addEventListener('change', refreshGreetingDialogSettings);
     }
@@ -728,6 +745,9 @@
     }
     if (greetingForceToggle) {
         greetingForceToggle.addEventListener('change', refreshGreetingDialogSettings);
+    }
+    if (consentNoticeToggle) {
+        consentNoticeToggle.addEventListener('change', refreshGreetingDialogSettings);
     }
     var greetingOpenBehaviorSelect = document.querySelector('[data-role="greeting-open-behavior"]');
     if (greetingOpenBehaviorSelect) {
@@ -1446,6 +1466,14 @@ function initAdminLivePreview() {
         return style === 'style-5' ? 'style-8' : style;
     }
 
+    function normalizeTelegramWidgetStyle(style) {
+        var normalized = normalizeWidgetStyle(style);
+        if (normalized === 'style-9-left-hover') {
+            return 'style-4';
+        }
+        return normalized || 'style-4';
+    }
+
     function previewDebugLog() {
         if (!previewDebugEnabled) {
             return;
@@ -1620,6 +1648,7 @@ function initAdminLivePreview() {
 
         return {
             desktopStyle: normalizeWidgetStyle(getFieldValue('desktop_style') || 'style-1'),
+            telegramDesktopStyle: normalizeTelegramWidgetStyle(getFieldValue('telegram_desktop_style') || 'style-4'),
             desktopVerticalPosition: vertical === 'top' ? 'top' : 'bottom',
             desktopHorizontalPosition: horizontal === 'left' ? 'left' : 'right',
             callToAction: getFieldValue('call_to_action') || window.ctcwI18n('preview.default_cta'),
@@ -1632,6 +1661,8 @@ function initAdminLivePreview() {
             greetingForcePhoneCapture: !!getFieldValue('greeting_force_phone_capture'),
             greetingPhonePlaceholder: getFieldValue('greeting_phone_placeholder') || window.ctcwI18n('widget.enter_phone_neutral') || 'Enter your phone number to continue',
             greetingSubmitText: getFieldValue('greeting_submit_text') || window.ctcwI18n('widget.continue_whatsapp') || 'Continue on WhatsApp',
+            consentNoticeEnabled: !!getFieldValue('consent_notice_enabled'),
+            consentNoticeText: getFieldValue('consent_notice_text') || window.ctcwI18n('widget.consent.channel_neutral') || 'I agree that my information may be used to contact me through my selected communication channel.',
             customCss: getFieldValue('custom_css') || '',
             previewDestination: previewPlaceholderDestination,
             channelMode: channelMode,
@@ -1656,6 +1687,10 @@ function initAdminLivePreview() {
         var forceNote = formState.greetingForcePhoneCapture
             ? '<small class="ctcw-preview-force-note">' + escapeHtml(previewForcePhoneNote(formState.activeChannel)) + '</small>'
             : '';
+        var consentHtml = '';
+        if (formState.greetingCapturePhone && formState.consentNoticeEnabled) {
+            consentHtml = '<p class="ctcw-consent-text">' + escapeHtml(formState.consentNoticeText) + '</p>';
+        }
 
         if (!formState.greetingCapturePhone) {
             return '<div class="ctcw-greeting" data-preview-greeting data-preview-active-channel="' + escapeHtml(formState.activeChannel) + '">'
@@ -1665,7 +1700,7 @@ function initAdminLivePreview() {
                 + '</div>';
         }
 
-        return '<div class="ctcw-greeting has-capture" data-preview-greeting data-preview-active-channel="' + escapeHtml(formState.activeChannel) + '">'
+        return '<div class="ctcw-greeting has-capture' + (consentHtml ? ' has-consent' : '') + '" data-preview-greeting data-preview-active-channel="' + escapeHtml(formState.activeChannel) + '">'
             + '<div class="ctcw-greeting-form">'
             + '<strong>' + title + '</strong>'
             + '<p>' + message + '</p>'
@@ -1678,6 +1713,7 @@ function initAdminLivePreview() {
             + '</button>'
             + '</div>'
             + '</div>'
+            + consentHtml
             + '</div>'
             + '</div>';
     }
@@ -1686,15 +1722,22 @@ function initAdminLivePreview() {
         var label = escapeHtml(previewChannelLabel(channel, formState));
         var icon = channel === 'telegram' ? telegramIcon : whatsappIcon;
         var channelClass = channel === 'telegram' ? 'channel-telegram' : 'channel-whatsapp';
+        var style = channel === 'telegram'
+            ? escapeHtml(formState.telegramDesktopStyle || 'style-4')
+            : escapeHtml(formState.desktopStyle || 'style-1');
+        var shellMod = channel === 'telegram'
+            ? 'floating-channel-launcher--telegram'
+            : 'floating-channel-launcher--whatsapp';
 
-        return '<button type="button" class="ctcw-widget ctcw-launcher ' + channelClass + '" tabindex="0" aria-label="' + label + '" data-preview-destination="' + escapeHtml(formState.previewDestination) + '" data-preview-channel="' + escapeHtml(channel) + '">'
+        return '<div class="ctcw-channel-shell floating-channel-launcher ' + shellMod + ' ' + style + '" data-channel-shell="' + escapeHtml(channel) + '">'
+            + '<button type="button" class="ctcw-widget ctcw-launcher ' + channelClass + '" tabindex="0" aria-label="' + label + '" data-preview-destination="' + escapeHtml(formState.previewDestination) + '" data-preview-channel="' + escapeHtml(channel) + '">'
             + '<span class="ctcw-icon">' + icon + '</span>'
             + '<span class="ctcw-text">' + label + '</span>'
-            + '</button>';
+            + '</button>'
+            + '</div>';
     }
 
     function buildAdminPreviewMarkup(formState) {
-        var style = escapeHtml(formState.desktopStyle);
         var channels = Array.isArray(formState.channels) ? formState.channels : ['whatsapp'];
         var modeClass = channels.length > 1 ? 'widget-mode-multiple' : 'widget-mode-single';
         var launchers = channels.map(function (channel) {
@@ -1703,7 +1746,7 @@ function initAdminLivePreview() {
 
         return '<div class="ctcw-admin-live-preview-inner">'
             + '<span class="ctcw-preview-badge">' + escapeHtml(window.ctcwI18n('preview.label')) + '</span>'
-            + '<div class="ctcw-container ' + style + ' is-online ' + modeClass + '" data-preview-channel-mode="' + escapeHtml(formState.channelMode) + '">'
+            + '<div class="ctcw-container is-online ' + modeClass + '" data-preview-channel-mode="' + escapeHtml(formState.channelMode) + '">'
             + buildGreetingHtml(formState)
             + '<div class="ctcw-launcher-stack ' + modeClass + '" data-preview-launcher-stack>'
             + launchers
@@ -1914,6 +1957,76 @@ function initChannelDestinationsUi() {
         });
     }
 
+    function syncStylePanelsForMode(mode) {
+        var whatsappEnabled = mode === 'whatsapp_only' || mode === 'both';
+        var telegramEnabled = mode === 'telegram_only' || mode === 'both';
+
+        document.querySelectorAll('[data-channel-style-panels]').forEach(function (panel) {
+            var tabs = panel.querySelector('[data-channel-style-tabs]');
+            var whatsappTab = panel.querySelector('[data-style-tab-target="whatsapp"]');
+            var telegramTab = panel.querySelector('[data-style-tab-target="telegram"]');
+            var whatsappPanel = panel.querySelector('[data-style-tab-panel="whatsapp"]');
+            var telegramPanel = panel.querySelector('[data-style-tab-panel="telegram"]');
+            var visibleCount = (whatsappEnabled ? 1 : 0) + (telegramEnabled ? 1 : 0);
+            var preferred = telegramEnabled && !whatsappEnabled
+                ? 'telegram'
+                : (whatsappEnabled ? 'whatsapp' : 'telegram');
+
+            if (whatsappTab) {
+                whatsappTab.classList.toggle('is-channel-disabled', !whatsappEnabled);
+                whatsappTab.hidden = !whatsappEnabled;
+            }
+            if (telegramTab) {
+                telegramTab.classList.toggle('is-channel-disabled', !telegramEnabled);
+                telegramTab.hidden = !telegramEnabled;
+            }
+            if (tabs) {
+                tabs.setAttribute('data-channel-mode', mode);
+                tabs.setAttribute('data-visible-count', String(visibleCount));
+                tabs.classList.toggle('is-single-channel', visibleCount < 2);
+                tabs.hidden = visibleCount < 2;
+            }
+
+            panel.setAttribute('data-channel-mode', mode);
+
+            if (whatsappPanel) {
+                whatsappPanel.classList.toggle('is-channel-disabled', !whatsappEnabled);
+            }
+            if (telegramPanel) {
+                telegramPanel.classList.toggle('is-channel-disabled', !telegramEnabled);
+            }
+
+            if (visibleCount < 2) {
+                if (whatsappPanel) {
+                    whatsappPanel.hidden = !whatsappEnabled;
+                    whatsappPanel.classList.toggle('is-active', whatsappEnabled);
+                }
+                if (telegramPanel) {
+                    telegramPanel.hidden = !telegramEnabled;
+                    telegramPanel.classList.toggle('is-active', telegramEnabled);
+                }
+            } else {
+                var activeTab = panel.querySelector('[data-style-tab-target].is-active:not(.is-channel-disabled)');
+                var activeName = activeTab && !activeTab.hidden
+                    ? activeTab.getAttribute('data-style-tab-target')
+                    : preferred;
+
+                panel.querySelectorAll('[data-style-tab-target]').forEach(function (tab) {
+                    tab.classList.toggle('is-active', tab.getAttribute('data-style-tab-target') === activeName);
+                });
+                panel.querySelectorAll('[data-style-tab-panel]').forEach(function (tabPanel) {
+                    var match = tabPanel.getAttribute('data-style-tab-panel') === activeName;
+                    tabPanel.classList.toggle('is-active', match);
+                    tabPanel.hidden = !match;
+                });
+            }
+        });
+
+        if (typeof window.refreshSelectedStyleCards === 'function') {
+            window.refreshSelectedStyleCards();
+        }
+    }
+
     function telegramSaveEndpoint() {
         var form = document.querySelector('[data-telegram-destination-form]');
         if (form && form.action) {
@@ -1970,9 +2083,11 @@ function initChannelDestinationsUi() {
                     card.classList.toggle('is-selected', !!(radio && radio.checked));
                 });
                 syncDestinationPanelsForMode(input.value);
+                syncStylePanelsForMode(input.value);
             });
             if (input.checked) {
                 syncDestinationPanelsForMode(input.value);
+                syncStylePanelsForMode(input.value);
             }
         });
     });
@@ -1989,6 +2104,25 @@ function initChannelDestinationsUi() {
                 });
                 panel.querySelectorAll('[data-dest-tab-panel]').forEach(function (tabPanel) {
                     tabPanel.classList.toggle('is-active', tabPanel.getAttribute('data-dest-tab-panel') === target);
+                });
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-channel-style-panels]').forEach(function (panel) {
+        panel.querySelectorAll('[data-style-tab-target]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (button.classList.contains('is-channel-disabled') || button.hidden) {
+                    return;
+                }
+                var target = button.getAttribute('data-style-tab-target');
+                panel.querySelectorAll('[data-style-tab-target]').forEach(function (tab) {
+                    tab.classList.toggle('is-active', tab === button);
+                });
+                panel.querySelectorAll('[data-style-tab-panel]').forEach(function (tabPanel) {
+                    var match = tabPanel.getAttribute('data-style-tab-panel') === target;
+                    tabPanel.classList.toggle('is-active', match);
+                    tabPanel.hidden = !match;
                 });
             });
         });

@@ -258,35 +258,121 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
                 <p><?= e(t('section.style_position.description')) ?></p>
             </div>
         </div>
-        <div class="form-grid two-columns">
-            <label>
-                <span><?= e(t('label.desktop_style')) ?></span>
-                <select name="desktop_style" data-style-select>
-                    <?php foreach (widget_styles() as $key => $label): ?>
-                        <option value="<?= e($key) ?>"<?= selected(normalize_widget_style((string) $widget['desktop_style']), $key) ?>><?= e(translate_widget_style($key)) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <label>
-                <span><?= e(t('label.mobile_style')) ?></span>
-                <select name="mobile_style" data-style-select>
-                    <?php foreach (widget_styles() as $key => $label): ?>
-                        <option value="<?= e($key) ?>"<?= selected(normalize_widget_style((string) $widget['mobile_style']), $key) ?>><?= e(translate_widget_style($key)) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-        </div>
 
-        <div class="style-preview-grid">
-            <?php foreach (widget_styles() as $key => $label): ?>
-                <div class="style-preview" data-style-preview-card="<?= e($key) ?>">
-                    <div class="mini-widget ctcw-widget <?= e($key) ?>">
-                        <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
-                        <span class="ctcw-text"><?= e(t('preview.default_cta')) ?></span>
-                    </div>
-                    <small><?= e(translate_widget_style($key)) ?></small>
+        <?php
+        $styleWhatsappVisible = $channelMode === 'whatsapp_only' || $channelMode === 'both';
+        $styleTelegramVisible = $channelMode === 'telegram_only' || $channelMode === 'both';
+        $activeStyleTab = $styleWhatsappVisible ? 'whatsapp' : 'telegram';
+        $whatsappDesktopStyle = normalize_widget_style((string) ($widget['desktop_style'] ?? 'style-1'));
+        $whatsappMobileStyle = normalize_widget_style((string) ($widget['mobile_style'] ?? 'style-1'));
+        $telegramDesktopStyleValue = sanitize_telegram_widget_style(
+            (string) ($widget['telegram_desktop_style'] ?? default_telegram_widget_style()),
+            default_telegram_widget_style()
+        );
+        $telegramMobileStyleValue = sanitize_telegram_widget_style(
+            (string) ($widget['telegram_mobile_style'] ?? default_telegram_widget_style()),
+            default_telegram_widget_style()
+        );
+        ?>
+
+        <div
+            class="channel-style-panels"
+            data-channel-style-panels
+            data-channel-mode="<?= e($channelMode) ?>"
+        >
+            <div class="tab-bar channel-style-tabs" role="tablist" data-channel-style-tabs>
+                <button
+                    type="button"
+                    class="tab-link<?= $activeStyleTab === 'whatsapp' ? ' is-active' : '' ?><?= !$styleWhatsappVisible ? ' is-channel-disabled' : '' ?>"
+                    data-style-tab-target="whatsapp"
+                    role="tab"
+                    <?= !$styleWhatsappVisible ? 'hidden' : '' ?>
+                >
+                    <?= e(t('label.whatsapp_style')) ?>
+                </button>
+                <button
+                    type="button"
+                    class="tab-link<?= $activeStyleTab === 'telegram' ? ' is-active' : '' ?><?= !$styleTelegramVisible ? ' is-channel-disabled' : '' ?>"
+                    data-style-tab-target="telegram"
+                    role="tab"
+                    <?= !$styleTelegramVisible ? 'hidden' : '' ?>
+                >
+                    <?= e(t('label.telegram_style')) ?>
+                </button>
+            </div>
+
+            <div
+                class="channel-style-panel<?= $activeStyleTab === 'whatsapp' ? ' is-active' : '' ?><?= !$styleWhatsappVisible ? ' is-channel-disabled' : '' ?>"
+                data-style-tab-panel="whatsapp"
+                <?= !$styleWhatsappVisible ? 'hidden' : '' ?>
+            >
+                <div class="form-grid two-columns">
+                    <label>
+                        <span><?= e(t('label.desktop_style')) ?></span>
+                        <select name="desktop_style" data-style-select data-style-channel="whatsapp">
+                            <?php foreach (widget_styles() as $key => $label): ?>
+                                <option value="<?= e($key) ?>"<?= selected($whatsappDesktopStyle, $key) ?>><?= e(translate_widget_style($key)) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>
+                        <span><?= e(t('label.mobile_style')) ?></span>
+                        <select name="mobile_style" data-style-select data-style-channel="whatsapp">
+                            <?php foreach (widget_styles() as $key => $label): ?>
+                                <option value="<?= e($key) ?>"<?= selected($whatsappMobileStyle, $key) ?>><?= e(translate_widget_style($key)) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
                 </div>
-            <?php endforeach; ?>
+                <div class="style-preview-grid" data-style-preview-grid="whatsapp">
+                    <?php foreach (widget_styles() as $key => $label): ?>
+                        <div class="style-preview" data-style-preview-card="<?= e($key) ?>" data-style-channel="whatsapp">
+                            <div class="mini-widget ctcw-widget channel-whatsapp <?= e($key) ?>">
+                                <span class="ctcw-icon"><?= whatsapp_icon_svg() ?></span>
+                                <span class="ctcw-text"><?= e(t('preview.default_cta')) ?></span>
+                            </div>
+                            <small><?= e(translate_widget_style($key)) ?></small>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div
+                class="channel-style-panel<?= $activeStyleTab === 'telegram' ? ' is-active' : '' ?><?= !$styleTelegramVisible ? ' is-channel-disabled' : '' ?>"
+                data-style-tab-panel="telegram"
+                <?= !$styleTelegramVisible ? 'hidden' : '' ?>
+            >
+                <p class="field-helper"><?= e(t('helper.telegram_launcher_style')) ?></p>
+                <div class="form-grid two-columns">
+                    <label>
+                        <span><?= e(t('label.desktop_style')) ?></span>
+                        <select name="telegram_desktop_style" data-style-select data-style-channel="telegram">
+                            <?php foreach (telegram_widget_styles() as $key => $label): ?>
+                                <option value="<?= e($key) ?>"<?= selected($telegramDesktopStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>
+                        <span><?= e(t('label.mobile_style')) ?></span>
+                        <select name="telegram_mobile_style" data-style-select data-style-channel="telegram">
+                            <?php foreach (telegram_widget_styles() as $key => $label): ?>
+                                <option value="<?= e($key) ?>"<?= selected($telegramMobileStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                </div>
+                <div class="style-preview-grid" data-style-preview-grid="telegram">
+                    <?php foreach (telegram_widget_styles() as $key => $label): ?>
+                        <div class="style-preview" data-style-preview-card="<?= e($key) ?>" data-style-channel="telegram">
+                            <div class="mini-widget ctcw-widget channel-telegram <?= e($key) ?>">
+                                <span class="ctcw-icon"><?= telegram_icon_svg() ?></span>
+                                <span class="ctcw-text"><?= e(t('channel.launcher.telegram')) ?></span>
+                            </div>
+                            <small><?= e(translate_widget_style($key)) ?></small>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         </div>
 
         <div class="position-grid">
@@ -664,6 +750,40 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
                         <input type="text" name="greeting_lead_success_message" value="<?= e((string) ($widget['greeting_lead_success_message'] ?? t('default.greeting_lead_success_message'))) ?>">
                     </label>
                 </div>
+            </div>
+            <label class="toggle-row greeting-dialog-subtoggle">
+                <input
+                    type="checkbox"
+                    name="consent_notice_enabled"
+                    value="1"
+                    data-role="consent-notice-toggle"
+                    data-consent-notice-toggle
+                    aria-controls="consent-notice-settings"
+                    aria-expanded="<?= !empty($widget['consent_notice_enabled']) ? 'true' : 'false' ?>"
+                    <?= checked($widget['consent_notice_enabled'] ?? 0) ?>
+                >
+                <span>
+                    <?= e(t('toggle.show_consent_notice')) ?>
+                    <small class="field-helper toggle-helper"><?= e(t('helper.show_consent_notice')) ?></small>
+                </span>
+            </label>
+            <div
+                id="consent-notice-settings"
+                class="consent-notice-dependent-settings"
+                data-role="consent-notice-settings"
+                data-consent-notice-settings
+                <?= !empty($widget['consent_notice_enabled']) ? '' : 'hidden' ?>
+            >
+                <label>
+                    <span><?= e(t('label.consent_notice')) ?></span>
+                    <textarea
+                        name="consent_notice_text"
+                        rows="2"
+                        maxlength="500"
+                        placeholder="<?= e(t('widget.consent.channel_neutral')) ?>"
+                    ><?= e((string) ($widget['consent_notice_text'] ?? '')) ?></textarea>
+                    <small class="field-helper"><?= e(t('helper.consent_notice_text')) ?></small>
+                </label>
             </div>
         </div>
     </section>

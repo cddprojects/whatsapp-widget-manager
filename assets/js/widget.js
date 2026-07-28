@@ -6,6 +6,7 @@
     var launcherButtons = Array.from(document.querySelectorAll('[data-widget-button]'));
     var button = launcherButtons[0] || null;
     var launcherStack = container ? container.querySelector('[data-launcher-stack]') : null;
+    var channelShells = container ? Array.from(container.querySelectorAll('[data-channel-shell]')) : [];
     var greeting = document.querySelector('[data-greeting]');
     var closeGreeting = document.querySelector('[data-close-greeting]');
     var greetingSubmit = document.querySelector('[data-greeting-submit]');
@@ -36,14 +37,16 @@
         button: { width: 260, height: 110 },
         hover: { width: 260, height: 110 },
         greeting: { width: 380, height: 300 },
-        'greeting-phone': { width: 390, height: 340 }
+        'greeting-phone': { width: 390, height: 300 },
+        'greeting-phone-consent': { width: 390, height: 340 }
     };
     var mobileStateMinimums = {
         icon: { width: 68, height: 68 },
         button: { width: 150, height: 72 },
         hover: { width: 150, height: 72 },
         greeting: { width: 320, height: 260 },
-        'greeting-phone': { width: 336, height: 290 }
+        'greeting-phone': { width: 336, height: 260 },
+        'greeting-phone-consent': { width: 336, height: 300 }
     };
     var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend'];
 
@@ -51,10 +54,10 @@
         if (isGreetingVisible()) {
             return '.ctcw-widget, .ctcw-greeting, .ctcw-widget-popup, .ctcw-launcher-stack';
         }
-        if (container && container.classList.contains('is-hovering')) {
-            return '.ctcw-widget, .ctcw-hover-box, .ctcw-launcher-stack';
+        if (container && (container.classList.contains('is-hovering') || container.querySelector('[data-channel-shell].is-hovering'))) {
+            return '.ctcw-widget, .ctcw-hover-box, .ctcw-launcher-stack, .ctcw-channel-shell';
         }
-        return '.ctcw-widget, .ctcw-launcher-stack';
+        return '.ctcw-widget, .ctcw-launcher-stack, .ctcw-channel-shell';
     }
 
     function getBoundsPadding() {
@@ -105,19 +108,58 @@
         return style === 'style-5' ? 'style-8' : style;
     }
 
-    function isStyle9LeftHover() {
-        return currentStyle === 'style-9-left-hover';
+    function normalizeTelegramStyle(style) {
+        var normalized = normalizeWidgetStyle(style);
+        if (normalized === 'style-9-left-hover') {
+            return 'style-4';
+        }
+        return normalized || 'style-4';
     }
 
-    function isStyle9MobileExpanded() {
+    function shellForElement(el) {
+        if (!el || !el.closest) {
+            return null;
+        }
+        return el.closest('[data-channel-shell]');
+    }
+
+    function activeChannelShell() {
+        if (activeLauncherButton) {
+            var shell = shellForElement(activeLauncherButton);
+            if (shell) {
+                return shell;
+            }
+        }
+        return channelShells[0] || null;
+    }
+
+    function styleForShell(shell) {
+        if (!shell) {
+            return currentStyle || 'style-1';
+        }
+        return shell.dataset.activeStyle
+            || (isMobile() ? shell.dataset.mobileStyle : shell.dataset.desktopStyle)
+            || currentStyle
+            || 'style-1';
+    }
+
+    function isStyle9LeftHover(shell) {
+        var target = shell || activeChannelShell();
+        return styleForShell(target) === 'style-9-left-hover';
+    }
+
+    function isStyle9MobileExpanded(shell) {
+        var target = shell || activeChannelShell();
         return isMobile()
-            && isStyle9LeftHover()
-            && (container.classList.contains('is-style-9-mobile-expanded')
-                || container.classList.contains('is-hovering'));
+            && isStyle9LeftHover(target)
+            && target
+            && (target.classList.contains('is-style-9-mobile-expanded')
+                || target.classList.contains('is-hovering'));
     }
 
-    function isStyle9MobileCollapsed() {
-        return isMobile() && isStyle9LeftHover() && !isStyle9MobileExpanded();
+    function isStyle9MobileCollapsed(shell) {
+        var target = shell || activeChannelShell();
+        return isMobile() && isStyle9LeftHover(target) && !isStyle9MobileExpanded(target);
     }
 
     function updateViewportCssVars() {
@@ -125,37 +167,46 @@
         document.documentElement.style.setProperty('--ctcw-viewport-width', viewportWidth + 'px');
     }
 
-    function collapseStyle9Mobile() {
-        container.classList.remove('is-style-9-mobile-expanded');
-        if (isMobile() && isStyle9LeftHover()) {
+    function collapseStyle9Mobile(shell) {
+        var targets = shell ? [shell] : channelShells;
+        targets.forEach(function (target) {
+            target.classList.remove('is-style-9-mobile-expanded');
+            if (isMobile() && isStyle9LeftHover(target)) {
+                target.classList.remove('is-hovering');
+            }
+        });
+        if (!container.querySelector('[data-channel-shell].is-hovering')) {
             container.classList.remove('is-hovering');
         }
     }
 
-    function expandStyle9Mobile() {
-        if (!isMobile() || !isStyle9LeftHover()) {
+    function expandStyle9Mobile(shell) {
+        var target = shell || activeChannelShell();
+        if (!isMobile() || !isStyle9LeftHover(target) || !target) {
             return;
         }
-        container.classList.add('is-style-9-mobile-expanded');
+        target.classList.add('is-style-9-mobile-expanded');
+        target.classList.add('is-hovering');
         container.classList.add('is-hovering');
         currentState = 'hover';
         requestWidgetResize();
     }
 
-    function isIconOnlyStyle() {
-        if (isMobile() && mobileCollapsedIconStyles.indexOf(currentStyle) !== -1) {
+    function isIconOnlyStyle(shell) {
+        var style = styleForShell(shell || activeChannelShell());
+        if (isMobile() && mobileCollapsedIconStyles.indexOf(style) !== -1) {
             return true;
         }
 
-        return iconOnlyStyles.indexOf(currentStyle) !== -1;
+        return iconOnlyStyles.indexOf(style) !== -1;
     }
 
-    function isCollapsedIconOnlyStyle() {
-        if (isStyle9MobileCollapsed()) {
+    function isCollapsedIconOnlyStyle(shell) {
+        if (isStyle9MobileCollapsed(shell)) {
             return true;
         }
 
-        return isIconOnlyStyle();
+        return isIconOnlyStyle(shell);
     }
 
     function getMobileViewportLimit() {
@@ -211,7 +262,10 @@
 
     function renderCollapsedTrigger() {
         container.classList.remove('is-hovering');
-        container.classList.remove('is-style-9-mobile-expanded');
+        channelShells.forEach(function (shell) {
+            shell.classList.remove('is-hovering');
+            shell.classList.remove('is-style-9-mobile-expanded');
+        });
         container.classList.toggle('ctcw-greeting-open', false);
         container.classList.toggle('ctcw-greeting-closed', !!greeting);
 
@@ -232,6 +286,9 @@
     function resolveSizeState() {
         if (isGreetingVisible()) {
             if (config.greetingCapturePhone && greeting && greeting.classList.contains('has-capture')) {
+                if (greeting.classList.contains('has-consent') || greeting.querySelector('.ctcw-consent-text')) {
+                    return 'greeting-phone-consent';
+                }
                 return 'greeting-phone';
             }
             return 'greeting';
@@ -358,14 +415,38 @@
 
     function applyResponsiveState() {
         var mobile = isMobile();
-        var activeStyle = normalizeWidgetStyle(mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle);
-        currentStyle = activeStyle || 'style-1';
 
         document.documentElement.classList.toggle('ctcw-mobile', mobile);
         styleNames.forEach(function (style) {
             container.classList.remove(style);
         });
-        container.classList.add(activeStyle || 'style-1');
+
+        if (channelShells.length) {
+            channelShells.forEach(function (shell) {
+                var channel = shell.getAttribute('data-channel-shell') || 'whatsapp';
+                var desktop = shell.dataset.desktopStyle
+                    || (channel === 'telegram' ? container.dataset.telegramDesktopStyle : container.dataset.desktopStyle)
+                    || 'style-1';
+                var mobileStyle = shell.dataset.mobileStyle
+                    || (channel === 'telegram' ? container.dataset.telegramMobileStyle : container.dataset.mobileStyle)
+                    || desktop;
+                var activeStyle = channel === 'telegram'
+                    ? normalizeTelegramStyle(mobile ? mobileStyle : desktop)
+                    : normalizeWidgetStyle(mobile ? mobileStyle : desktop);
+
+                styleNames.forEach(function (style) {
+                    shell.classList.remove(style);
+                });
+                shell.classList.add(activeStyle || (channel === 'telegram' ? 'style-4' : 'style-1'));
+                shell.dataset.activeStyle = activeStyle || (channel === 'telegram' ? 'style-4' : 'style-1');
+            });
+            currentStyle = styleForShell(activeChannelShell());
+        } else {
+            var legacyStyle = normalizeWidgetStyle(mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle);
+            currentStyle = legacyStyle || 'style-1';
+            container.classList.add(currentStyle);
+        }
+
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
         updateViewportCssVars();
         if (mobile) {
@@ -1109,6 +1190,7 @@
         var channel = normalizeChannel(clickedButton.getAttribute('data-channel') || selectedChannel || 'whatsapp');
         selectedChannel = channel;
         activeLauncherButton = clickedButton;
+        currentStyle = styleForShell(shellForElement(clickedButton));
         applyChannelCopy(channel);
         hideChannelUnavailable();
         hideTelegramFallback();
@@ -1120,8 +1202,9 @@
             btn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
         });
 
-        if (isStyle9MobileCollapsed()) {
-            expandStyle9Mobile();
+        var clickedShell = shellForElement(clickedButton);
+        if (isStyle9MobileCollapsed(clickedShell)) {
+            expandStyle9Mobile(clickedShell);
             return;
         }
 
@@ -1258,26 +1341,30 @@
         });
     }
 
-    function startHover() {
+    function startHover(event) {
         if (isGreetingVisible()) {
             return;
         }
+        var shell = shellForElement(event && event.currentTarget ? event.currentTarget : null);
         if (isMobile()) {
-            if (isStyle9LeftHover() && isStyle9MobileCollapsed()) {
-                expandStyle9Mobile();
+            if (isStyle9LeftHover(shell) && isStyle9MobileCollapsed(shell)) {
+                expandStyle9Mobile(shell);
             }
             return;
         }
         window.clearTimeout(hoverTimer);
         currentState = 'hover';
         hoverTimer = window.setTimeout(function () {
+            if (shell) {
+                shell.classList.add('is-hovering');
+            }
             container.classList.add('is-hovering');
             sendActualWidgetSize();
             scheduleSizeReports();
         }, 40);
     }
 
-    function endHover() {
+    function endHover(event) {
         if (isGreetingVisible()) {
             return;
         }
@@ -1285,7 +1372,13 @@
             return;
         }
         window.clearTimeout(hoverTimer);
-        container.classList.remove('is-hovering');
+        var shell = shellForElement(event && event.currentTarget ? event.currentTarget : null);
+        if (shell) {
+            shell.classList.remove('is-hovering');
+        }
+        if (!container.querySelector('[data-channel-shell].is-hovering')) {
+            container.classList.remove('is-hovering');
+        }
         window.setTimeout(function () {
             if (!isGreetingVisible()) {
                 currentState = isIconOnlyStyle() ? 'icon' : 'button';
@@ -1295,8 +1388,6 @@
         }, 250);
     }
 
-    container.addEventListener('mouseenter', startHover);
-    container.addEventListener('mouseleave', endHover);
     launcherButtons.forEach(function (launcherButton) {
         launcherButton.addEventListener('mouseenter', startHover);
         launcherButton.addEventListener('mouseleave', endHover);

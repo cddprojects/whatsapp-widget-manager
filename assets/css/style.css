@@ -3707,6 +3707,45 @@ code {
     margin-bottom: 0;
 }
 
+.channel-style-panels {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.channel-style-tabs[data-visible-count="1"],
+.channel-style-tabs.is-single-channel {
+    display: none;
+}
+
+.channel-style-panel {
+    display: none;
+}
+
+.channel-style-panel.is-active:not(.is-channel-disabled) {
+    display: block;
+}
+
+.channel-style-panel.is-channel-disabled,
+.channel-style-tabs [data-style-tab-target].is-channel-disabled {
+    display: none !important;
+}
+
+.channel-style-heading {
+    margin: 0 0 12px;
+    font-size: 1rem;
+}
+
+.consent-notice-dependent-settings {
+    margin-top: 12px;
+}
+
+.toggle-helper {
+    display: block;
+    margin-top: 4px;
+    font-weight: 400;
+}
+
 .telegram-destination-list {
     display: grid;
     gap: 12px;

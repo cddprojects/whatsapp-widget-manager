@@ -210,6 +210,7 @@ function dashboard_js_i18n(): array
         'widget.continue_whatsapp' => t('widget.continue_whatsapp'),
         'widget.continue_telegram' => t('widget.continue_telegram'),
         'widget.enter_phone_neutral' => t('widget.enter_phone_neutral'),
+        'widget.consent.channel_neutral' => t('widget.consent.channel_neutral'),
         'telegram.help.username' => t('telegram.help.username'),
         'telegram.help.bot' => t('telegram.help.bot'),
         'telegram.help.link' => t('telegram.help.link'),

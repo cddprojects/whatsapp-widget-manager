@@ -45,12 +45,9 @@ $channelMode = (string) ($channelConfig['modes'] ?? 'whatsapp_only');
 $defaultPublicChannel = in_array(WIDGET_CHANNEL_WHATSAPP, $readyChannels, true)
     ? WIDGET_CHANNEL_WHATSAPP
     : (($readyChannels[0] ?? WIDGET_CHANNEL_WHATSAPP));
-$consentText = '';
-if (!empty($widget['greeting_capture_phone'])) {
-    $consentText = count($readyChannels) > 1 || in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true)
-        ? t('widget.consent.channel_neutral')
-        : '';
-}
+$consentText = !empty($widget['greeting_capture_phone'])
+    ? widget_consent_notice_text($widget, $readyChannels)
+    : '';
 
 $whatsappCta = channel_launcher_label(WIDGET_CHANNEL_WHATSAPP, $isOnline, $widget);
 $telegramCta = channel_launcher_label(WIDGET_CHANNEL_TELEGRAM, $isOnline, $widget);
@@ -135,6 +132,14 @@ $widgetConfig = [
 
 $desktopStyle = normalize_widget_style((string) ($widget['desktop_style'] ?? 'style-1'));
 $mobileStyle = normalize_widget_style((string) ($widget['mobile_style'] ?? 'style-1'));
+$telegramDesktopStyle = sanitize_telegram_widget_style(
+    (string) ($widget['telegram_desktop_style'] ?? default_telegram_widget_style()),
+    default_telegram_widget_style()
+);
+$telegramMobileStyle = sanitize_telegram_widget_style(
+    (string) ($widget['telegram_mobile_style'] ?? default_telegram_widget_style()),
+    default_telegram_widget_style()
+);
 $useDesktopMobilePosition = !empty($widget['same_mobile_desktop_settings']);
 $desktopPositionType = (string) ($widget['desktop_position_type'] ?? 'fixed');
 $mobilePositionType = $useDesktopMobilePosition
@@ -192,9 +197,11 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
 <?php if ($showWidget): ?>
     <?= $widget['custom_script_body'] ?? '' ?>
     <div
-        class="ctcw-container ctcw-widget-root ctcw-widget-anchor <?= e($desktopAnchorClass) ?> <?= e($mobileAnchorClass) ?> <?= e($desktopStyle) ?> <?= e($launcherModeClass) ?> <?= $isOnline ? 'is-online' : 'is-offline' ?>"
+        class="ctcw-container ctcw-widget-root ctcw-widget-anchor <?= e($desktopAnchorClass) ?> <?= e($mobileAnchorClass) ?> <?= e($launcherModeClass) ?> <?= $isOnline ? 'is-online' : 'is-offline' ?>"
         data-mobile-style="<?= e($mobileStyle) ?>"
         data-desktop-style="<?= e($desktopStyle) ?>"
+        data-telegram-mobile-style="<?= e($telegramMobileStyle) ?>"
+        data-telegram-desktop-style="<?= e($telegramDesktopStyle) ?>"
         data-show-desktop="<?= !empty($widget['show_desktop']) ? '1' : '0' ?>"
         data-show-mobile="<?= !empty($widget['show_mobile']) ? '1' : '0' ?>"
         data-desktop-align="<?= e($desktopAlign) ?>"
@@ -202,7 +209,7 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
         data-channel-mode="<?= e($channelMode) ?>"
     >
         <?php if (!empty($widget['greeting_enabled'])): ?>
-            <div class="ctcw-greeting ctcw-widget-popup<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?>" data-greeting data-active-channel="<?= e($defaultPublicChannel) ?>">
+            <div class="ctcw-greeting ctcw-widget-popup<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?><?= $consentText !== '' ? ' has-consent' : '' ?>" data-greeting data-active-channel="<?= e($defaultPublicChannel) ?>">
                 <div class="ctcw-greeting-header">
                     <strong class="ctcw-greeting-title" data-greeting-title><?= e($greetingTitle) ?></strong>
                     <button class="ctcw-close" type="button" aria-label="<?= e(t('widget.close')) ?>" data-close-greeting>
@@ -274,28 +281,42 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
 
         <div class="ctcw-widget-trigger ctcw-launcher-stack <?= e($launcherModeClass) ?>" data-launcher-stack>
             <?php if ($showWhatsappLauncher): ?>
-                <button
-                    class="ctcw-widget ctcw-launcher ctcw-cta-button channel-whatsapp"
-                    type="button"
-                    data-widget-button
-                    data-channel="whatsapp"
-                    aria-label="<?= e($whatsappCta) ?>"
+                <div
+                    class="ctcw-channel-shell floating-channel-launcher floating-channel-launcher--whatsapp <?= e($desktopStyle) ?>"
+                    data-channel-shell="whatsapp"
+                    data-desktop-style="<?= e($desktopStyle) ?>"
+                    data-mobile-style="<?= e($mobileStyle) ?>"
                 >
-                    <span class="ctcw-icon ctcw-cta-icon"><?= whatsapp_icon_svg() ?></span>
-                    <span class="ctcw-text ctcw-cta-label ctcw-style-9-label"><?= e($whatsappCta) ?></span>
-                </button>
+                    <button
+                        class="ctcw-widget ctcw-launcher ctcw-cta-button channel-whatsapp floating-channel-launcher__button"
+                        type="button"
+                        data-widget-button
+                        data-channel="whatsapp"
+                        aria-label="<?= e($whatsappCta) ?>"
+                    >
+                        <span class="ctcw-icon ctcw-cta-icon"><?= whatsapp_icon_svg() ?></span>
+                        <span class="ctcw-text ctcw-cta-label ctcw-style-9-label"><?= e($whatsappCta) ?></span>
+                    </button>
+                </div>
             <?php endif; ?>
             <?php if ($showTelegramLauncher): ?>
-                <button
-                    class="ctcw-widget ctcw-launcher ctcw-cta-button channel-telegram"
-                    type="button"
-                    data-widget-button
-                    data-channel="telegram"
-                    aria-label="<?= e($telegramCta) ?>"
+                <div
+                    class="ctcw-channel-shell floating-channel-launcher floating-channel-launcher--telegram <?= e($telegramDesktopStyle) ?>"
+                    data-channel-shell="telegram"
+                    data-desktop-style="<?= e($telegramDesktopStyle) ?>"
+                    data-mobile-style="<?= e($telegramMobileStyle) ?>"
                 >
-                    <span class="ctcw-icon ctcw-cta-icon"><?= telegram_icon_svg() ?></span>
-                    <span class="ctcw-text ctcw-cta-label ctcw-style-9-label"><?= e($telegramCta) ?></span>
-                </button>
+                    <button
+                        class="ctcw-widget ctcw-launcher ctcw-cta-button channel-telegram floating-channel-launcher__button"
+                        type="button"
+                        data-widget-button
+                        data-channel="telegram"
+                        aria-label="<?= e($telegramCta) ?>"
+                    >
+                        <span class="ctcw-icon ctcw-cta-icon"><?= telegram_icon_svg() ?></span>
+                        <span class="ctcw-text ctcw-cta-label ctcw-style-9-label"><?= e($telegramCta) ?></span>
+                    </button>
+                </div>
             <?php endif; ?>
         </div>
     </div>
