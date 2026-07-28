@@ -24,8 +24,24 @@ try {
 
     enforce_api_rate_limit((int) $clientCredential['id'], (int) $widgetCredential['id']);
 
+    $channelRaw = trim((string) ($_GET['channel'] ?? ''));
+    $channel = null;
+    if ($channelRaw !== '') {
+        $channel = normalize_widget_channel($channelRaw);
+        if ($channel === null) {
+            api_json_error('invalid_channel', 'Invalid channel. Use whatsapp or telegram.', 400);
+        }
+    }
+
     $period = parse_api_summary_period();
     $leadCount = count_widget_leads_for_api(
+        (int) $client['id'],
+        (int) $widget['id'],
+        $period['start_utc'],
+        $period['end_utc'],
+        $channel
+    );
+    $channels = count_widget_leads_by_channel_for_api(
         (int) $client['id'],
         (int) $widget['id'],
         $period['start_utc'],
@@ -61,6 +77,7 @@ try {
             'end_exclusive' => format_api_datetime_local($period['end_local']),
         ],
         'lead_count' => $leadCount,
+        'channels' => $channels,
     ]);
 } catch (Throwable $exception) {
     if (!api_credentials_schema_ready()) {

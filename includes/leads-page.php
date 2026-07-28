@@ -28,6 +28,7 @@ $isAllLeadsPage = $leadPageMode === 'all_leads';
 $isSuperadminPage = $leadPageMode === 'superadmin';
 $useSuperadminLeadActions = $isSuperadminPage || $isAllLeadsPage;
 $sort = $sort ?? 'newest';
+$channelFilter = isset($channelFilter) ? trim((string) $channelFilter) : '';
 $perPage = normalize_lead_list_per_page($perPage ?? ($result['per_page'] ?? null));
 $page = (int) ($result['page'] ?? 1);
 $leadPaginationQuery = [
@@ -36,6 +37,7 @@ $leadPaginationQuery = [
     'date_to' => $dateTo,
     'widget_id' => $widgetFilterId,
     'client_id' => $clientFilterId,
+    'channel' => $channelFilter,
     'sort' => $isAllLeadsPage ? $sort : '',
     'page' => $page,
     'per_page' => $perPage,
@@ -156,6 +158,16 @@ $toolbarSelectedButtons = static function () use (
                     <span><?= e(t('filter.to_date')) ?></span>
                     <input type="date" name="date_to" value="<?= e($dateTo) ?>">
                 </label>
+                <?php if (!$isRecycleBin): ?>
+                    <label class="lead-filter-channel">
+                        <span><?= e(t('filter.channel')) ?></span>
+                        <select name="channel">
+                            <option value=""><?= e(t('filter.all_channels')) ?></option>
+                            <option value="whatsapp"<?= $channelFilter === 'whatsapp' ? ' selected' : '' ?>><?= e(t('channel.whatsapp')) ?></option>
+                            <option value="telegram"<?= $channelFilter === 'telegram' ? ' selected' : '' ?>><?= e(t('channel.telegram')) ?></option>
+                        </select>
+                    </label>
+                <?php endif; ?>
                 <div class="recycle-bin-filter-actions">
                     <div class="lead-toolbar-default" data-lead-toolbar-default>
                         <?php $toolbarDefaultButtons(); ?>
@@ -223,6 +235,14 @@ $toolbarSelectedButtons = static function () use (
                     <span><?= e(t('filter.to_date')) ?></span>
                     <input type="date" name="date_to" value="<?= e($dateTo) ?>">
                 </label>
+                <label class="lead-filter-channel">
+                    <span><?= e(t('filter.channel')) ?></span>
+                    <select name="channel">
+                        <option value=""><?= e(t('filter.all_channels')) ?></option>
+                        <option value="whatsapp"<?= $channelFilter === 'whatsapp' ? ' selected' : '' ?>><?= e(t('channel.whatsapp')) ?></option>
+                        <option value="telegram"<?= $channelFilter === 'telegram' ? ' selected' : '' ?>><?= e(t('channel.telegram')) ?></option>
+                    </select>
+                </label>
                 <div class="all-leads-toolbar-actions">
                     <div class="lead-toolbar-default" data-lead-toolbar-default>
                         <?php $toolbarDefaultButtons(); ?>
@@ -269,6 +289,14 @@ $toolbarSelectedButtons = static function () use (
                 <label class="lead-filter-to">
                     <span><?= e(t('filter.to_date')) ?></span>
                     <input type="date" name="date_to" value="<?= e($dateTo) ?>">
+                </label>
+                <label class="lead-filter-channel">
+                    <span><?= e(t('filter.channel')) ?></span>
+                    <select name="channel">
+                        <option value=""><?= e(t('filter.all_channels')) ?></option>
+                        <option value="whatsapp"<?= $channelFilter === 'whatsapp' ? ' selected' : '' ?>><?= e(t('channel.whatsapp')) ?></option>
+                        <option value="telegram"<?= $channelFilter === 'telegram' ? ' selected' : '' ?>><?= e(t('channel.telegram')) ?></option>
+                    </select>
                 </label>
                 <div class="client-lead-toolbar-actions">
                     <div class="lead-toolbar-default" data-lead-toolbar-default>
@@ -317,6 +345,14 @@ $toolbarSelectedButtons = static function () use (
                 <label class="lead-filter-to">
                     <span><?= e(t('filter.to_date')) ?></span>
                     <input type="date" name="date_to" value="<?= e($dateTo) ?>">
+                </label>
+                <label class="lead-filter-channel">
+                    <span><?= e(t('filter.channel')) ?></span>
+                    <select name="channel">
+                        <option value=""><?= e(t('filter.all_channels')) ?></option>
+                        <option value="whatsapp"<?= $channelFilter === 'whatsapp' ? ' selected' : '' ?>><?= e(t('channel.whatsapp')) ?></option>
+                        <option value="telegram"<?= $channelFilter === 'telegram' ? ' selected' : '' ?>><?= e(t('channel.telegram')) ?></option>
+                    </select>
                 </label>
             </div>
             <div class="lead-toolbar-actions">
@@ -410,6 +446,10 @@ $toolbarSelectedButtons = static function () use (
                                 </td>
                             <?php endif; ?>
                             <td class="col-lead" data-label="<?= e(t('table.lead')) ?>">
+                                <?php
+                                $leadChannel = normalize_lead_channel($lead['channel'] ?? null);
+                                ?>
+                                <div class="lead-phone-channel">
                                 <?php if ($copyPhone !== ''): ?>
                                     <button
                                         type="button"
@@ -421,6 +461,15 @@ $toolbarSelectedButtons = static function () use (
                                 <?php else: ?>
                                     <span class="lead-phone-empty">—</span>
                                 <?php endif; ?>
+                                <?php if (!$isRecycleBin): ?>
+                                    <span class="channel-badge channel-badge--<?= e($leadChannel) ?>"><?= e(t('channel.' . $leadChannel)) ?></span>
+                                    <?php if (!empty($lead['destination_name']) || !empty($lead['destination_type'])): ?>
+                                        <small class="lead-destination-meta">
+                                            <?= e(trim((string) ($lead['destination_name'] ?? '') . ' · ' . (string) ($lead['destination_type'] ?? ''), ' ·')) ?>
+                                        </small>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                </div>
                             </td>
                             <?php if (!$isRecycleBin): ?>
                                 <td class="col-source" data-label="<?= e(t('table.source_page')) ?>">

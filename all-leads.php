@@ -7,6 +7,10 @@ require_superadmin();
 $query = trim((string) ($_GET['q'] ?? ''));
 $dateFrom = trim((string) ($_GET['date_from'] ?? ''));
 $dateTo = trim((string) ($_GET['date_to'] ?? ''));
+$channelFilter = trim((string) ($_GET['channel'] ?? ''));
+if ($channelFilter !== '' && normalize_widget_channel($channelFilter) === null) {
+    $channelFilter = '';
+}
 $widgetFilterId = (int) ($_GET['widget_id'] ?? 0);
 $clientFilterId = (int) ($_GET['client_id'] ?? 0);
 $sort = trim((string) ($_GET['sort'] ?? 'newest'));
@@ -24,6 +28,7 @@ $result = search_client_leads([
     'q' => $query,
     'date_from' => $dateFrom,
     'date_to' => $dateTo,
+    'channel' => $channelFilter,
     'sort' => $sort,
     'page' => $page,
     'per_page' => $perPage,
@@ -41,6 +46,7 @@ $exportUrl = app_url('export-leads.php', [
     'q' => $query,
     'date_from' => $dateFrom,
     'date_to' => $dateTo,
+    'channel' => $channelFilter,
 ]);
 
 $pageTitle = t('page.all_leads');

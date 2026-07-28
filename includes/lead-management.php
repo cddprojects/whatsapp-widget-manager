@@ -409,6 +409,16 @@ function build_client_leads_where(array $options, array &$params): string
         $params['deleted_by_role'] = $deletedByRole;
     }
 
+    $channel = normalize_widget_channel((string) ($options['channel'] ?? ''));
+    if ($channel !== null && table_has_column('widget_leads', 'channel')) {
+        if ($channel === WIDGET_CHANNEL_WHATSAPP) {
+            $where[] = '(wl.channel IS NULL OR wl.channel = :channel OR wl.channel = \'\')';
+        } else {
+            $where[] = 'wl.channel = :channel';
+        }
+        $params['channel'] = $channel;
+    }
+
     return implode(' AND ', $where);
 }
 
