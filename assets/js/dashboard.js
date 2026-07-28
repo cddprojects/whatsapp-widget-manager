@@ -1906,13 +1906,60 @@ function initChannelDestinationsUi() {
                     tabPanel.classList.toggle('is-active', match && !tabPanel.classList.contains('is-channel-disabled'));
                 });
             } else if (whatsappPanel && telegramPanel) {
-                // Keep current active tab if still enabled.
                 var activeName = activeTab.getAttribute('data-dest-tab-target');
                 panel.querySelectorAll('[data-dest-tab-panel]').forEach(function (tabPanel) {
                     tabPanel.classList.toggle('is-active', tabPanel.getAttribute('data-dest-tab-panel') === activeName);
                 });
             }
         });
+    }
+
+    function telegramSaveEndpoint() {
+        var form = document.querySelector('[data-telegram-destination-form]');
+        if (form && form.action) {
+            return form.action;
+        }
+        return 'telegram-destination-save.php';
+    }
+
+    function telegramCsrfToken() {
+        var field = document.querySelector('[data-telegram-destination-form] input[name="csrf_token"]')
+            || document.querySelector('input[name="csrf_token"]');
+        return field ? String(field.value || '') : '';
+    }
+
+    function postTelegramDestinationAction(payload) {
+        var body = new URLSearchParams();
+        Object.keys(payload).forEach(function (key) {
+            if (payload[key] !== undefined && payload[key] !== null) {
+                body.append(key, String(payload[key]));
+            }
+        });
+        body.append('csrf_token', telegramCsrfToken());
+        body.append('response', 'json');
+
+        return fetch(telegramSaveEndpoint(), {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            credentials: 'same-origin',
+            body: body.toString()
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                return { ok: response.ok, status: response.status, data: data || {} };
+            });
+        });
+    }
+
+    function reloadDestinationsView() {
+        var url = new URL(window.location.href);
+        url.hash = 'destinations';
+        if (!url.searchParams.get('dest_tab') && !url.searchParams.get('tab')) {
+            url.searchParams.set('dest_tab', 'telegram');
+        }
+        window.location.href = url.toString();
     }
 
     document.querySelectorAll('[data-channel-mode-grid]').forEach(function (grid) {
@@ -1947,6 +1994,45 @@ function initChannelDestinationsUi() {
         });
     });
 
+    document.querySelectorAll('[data-telegram-dest-action]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var action = button.getAttribute('data-telegram-dest-action');
+            var destinationId = button.getAttribute('data-destination-id');
+            var widgetId = button.getAttribute('data-widget-id');
+            if (!action || !destinationId || !widgetId) {
+                return;
+            }
+
+            if (action === 'delete' && !window.confirm(ctcwI18n('telegram.confirm_delete'))) {
+                return;
+            }
+
+            var payload = {
+                destination_action: action,
+                destination_id: destinationId,
+                widget_id: widgetId
+            };
+            if (action === 'toggle') {
+                payload.is_active = button.getAttribute('data-is-active') === '1' ? '1' : '';
+            }
+
+            button.disabled = true;
+            postTelegramDestinationAction(payload)
+                .then(function (result) {
+                    if (!result.data.success) {
+                        window.alert(result.data.message || ctcwI18n('telegram.error.save_failed'));
+                        button.disabled = false;
+                        return;
+                    }
+                    reloadDestinationsView();
+                })
+                .catch(function () {
+                    window.alert(ctcwI18n('telegram.error.save_failed'));
+                    button.disabled = false;
+                });
+        });
+    });
+
     document.querySelectorAll('dialog[data-telegram-modal]').forEach(function (modal) {
         if (modal.parentElement !== document.body) {
             document.body.appendChild(modal);
@@ -1960,6 +2046,8 @@ function initChannelDestinationsUi() {
         var valueHelp = modal.querySelector('[data-telegram-value-help]');
         var valueLabel = modal.querySelector('[data-telegram-value-label]');
         var valueInput = modal.querySelector('[data-telegram-field="destination_value"]');
+        var statusNode = modal.querySelector('[data-telegram-form-status]');
+        var saveButton = modal.querySelector('[data-telegram-save-button]');
 
         function syncTypeUi() {
             if (!typeSelect) {
@@ -1997,15 +2085,35 @@ function initChannelDestinationsUi() {
                 node.hidden = true;
                 node.textContent = '';
             });
+            if (statusNode) {
+                statusNode.hidden = true;
+                statusNode.textContent = '';
+                statusNode.classList.remove('is-error', 'is-success');
+            }
         }
 
         function showError(field, message) {
             var node = modal.querySelector('[data-telegram-error="' + field + '"]');
             if (!node) {
+                if (statusNode) {
+                    statusNode.hidden = false;
+                    statusNode.textContent = message;
+                    statusNode.classList.add('is-error');
+                }
                 return;
             }
             node.hidden = false;
             node.textContent = message;
+        }
+
+        function showStatus(message, isError) {
+            if (!statusNode) {
+                return;
+            }
+            statusNode.hidden = false;
+            statusNode.textContent = message;
+            statusNode.classList.toggle('is-error', !!isError);
+            statusNode.classList.toggle('is-success', !isError);
         }
 
         function validateInline() {
@@ -2066,6 +2174,11 @@ function initChannelDestinationsUi() {
                 if (active) {
                     active.checked = data.is_active !== false;
                 }
+            } else {
+                var activeDefault = modal.querySelector('input[name="is_active"]');
+                if (activeDefault) {
+                    activeDefault.checked = true;
+                }
             }
             syncTypeUi();
             if (typeof modal.showModal === 'function') {
@@ -2073,6 +2186,12 @@ function initChannelDestinationsUi() {
             } else {
                 modal.setAttribute('open', 'open');
             }
+            window.setTimeout(function () {
+                var focusField = modal.querySelector('[data-telegram-field="display_name"]');
+                if (focusField) {
+                    focusField.focus();
+                }
+            }, 30);
         }
 
         function closeModal() {
@@ -2087,7 +2206,13 @@ function initChannelDestinationsUi() {
             typeSelect.addEventListener('change', syncTypeUi);
         }
         if (valueInput) {
-            valueInput.addEventListener('input', validateInline);
+            valueInput.addEventListener('input', function () {
+                var node = modal.querySelector('[data-telegram-error="destination_value"]');
+                if (node) {
+                    node.hidden = true;
+                    node.textContent = '';
+                }
+            });
         }
 
         document.querySelectorAll('[data-open-telegram-modal]').forEach(function (button) {
@@ -2112,9 +2237,62 @@ function initChannelDestinationsUi() {
 
         if (form) {
             form.addEventListener('submit', function (event) {
+                event.preventDefault();
                 if (!validateInline()) {
-                    event.preventDefault();
+                    return;
                 }
+
+                if (saveButton) {
+                    saveButton.disabled = true;
+                    saveButton.classList.add('is-loading');
+                }
+
+                var formData = new FormData(form);
+                formData.set('response', 'json');
+                if (!formData.get('destination_action')) {
+                    formData.set('destination_action', 'save');
+                }
+
+                fetch(form.action || telegramSaveEndpoint(), {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: formData
+                })
+                    .then(function (response) {
+                        return response.json().then(function (data) {
+                            return { ok: response.ok, data: data || {} };
+                        });
+                    })
+                    .then(function (result) {
+                        if (!result.data.success) {
+                            var fieldErrors = result.data.field_errors || {};
+                            Object.keys(fieldErrors).forEach(function (field) {
+                                showError(field, fieldErrors[field]);
+                            });
+                            showStatus(
+                                result.data.message || ctcwI18n('telegram.error.save_failed'),
+                                true
+                            );
+                            if (saveButton) {
+                                saveButton.disabled = false;
+                                saveButton.classList.remove('is-loading');
+                            }
+                            return;
+                        }
+
+                        showStatus(result.data.message || ctcwI18n('telegram.flash.saved'), false);
+                        window.setTimeout(reloadDestinationsView, 250);
+                    })
+                    .catch(function () {
+                        showStatus(ctcwI18n('telegram.error.save_failed'), true);
+                        if (saveButton) {
+                            saveButton.disabled = false;
+                            saveButton.classList.remove('is-loading');
+                        }
+                    });
             });
         }
     });

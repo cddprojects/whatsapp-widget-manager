@@ -116,6 +116,15 @@ $bothModeErrors = validate_widget_data([
 ]);
 assert_true($bothModeErrors === [], 'Both-channel widget validates without destinations');
 
+$jsI18n = dashboard_js_i18n();
+assert_true(isset($jsI18n['telegram.add_destination']), 'JS i18n includes telegram.add_destination');
+assert_eq('Add Telegram Destination', $jsI18n['telegram.add_destination'], 'JS i18n add destination label');
+assert_true(isset($jsI18n['telegram.error.save_failed']), 'JS i18n includes save_failed');
+assert_true(str_contains(telegram_icon_svg(), 'viewBox="0 0 24 24"'), 'Telegram icon SVG present');
+assert_true(str_contains(file_get_contents(dirname(__DIR__) . '/assets/css/widget.css'), '#0088cc')
+    || str_contains(file_get_contents(dirname(__DIR__) . '/assets/css/widget.css'), '#0088CC'),
+    'Widget CSS uses Telegram brand blue');
+
 echo "\n=== Migration runner smoke (no DB required for help) ===\n";
 $migrateHelp = [];
 exec('php ' . escapeshellarg(dirname(__DIR__) . '/migrate.php') . ' --help 2>&1', $migrateHelp, $helpCode);

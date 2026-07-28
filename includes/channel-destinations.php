@@ -121,7 +121,7 @@ function telegram_destination_duplicate_exists(
 function save_telegram_destination(int $widgetId, array $input, ?int $destinationId = null): array
 {
     if ($widgetId <= 0 || !channel_schema_ready()) {
-        return ['ok' => false, 'errors' => ['Invalid widget.']];
+        return ['ok' => false, 'errors' => [t('telegram.error.invalid_destination')]];
     }
 
     $validated = validate_telegram_destination_input($input);

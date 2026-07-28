@@ -117,12 +117,19 @@ $panelClass = $destinationsTelegramOnly ? 'client-telegram-panel' : 'settings-ca
                     <h3><?= e(t('telegram.destinations_title')) ?></h3>
                     <p class="helper-text"><?= e(t('telegram.destinations_help')) ?></p>
                 </div>
-                <button type="button" class="btn btn-primary" data-open-telegram-modal>
-                    <?= e(t('telegram.add_destination')) ?>
-                </button>
+                <?php if ($widgetId > 0): ?>
+                    <button type="button" class="btn btn-primary" data-open-telegram-modal>
+                        <?= e(t('telegram.add_destination')) ?>
+                    </button>
+                <?php endif; ?>
             </div>
 
-            <?php if ($telegramDestinations === []): ?>
+            <?php if ($widgetId <= 0): ?>
+                <div class="empty-state" data-telegram-empty-state>
+                    <h3><?= e(t('telegram.save_widget_first_title')) ?></h3>
+                    <p><?= e(t('telegram.save_widget_first_description')) ?></p>
+                </div>
+            <?php elseif ($telegramDestinations === []): ?>
                 <div class="empty-state" data-telegram-empty-state>
                     <h3><?= e(t('telegram.empty_title')) ?></h3>
                     <p><?= e(t('telegram.empty_description')) ?></p>
@@ -172,25 +179,25 @@ $panelClass = $destinationsTelegramOnly ? 'client-telegram-panel' : 'settings-ca
                                 <div class="action-menu" data-action-menu>
                                     <button type="button" class="action-menu-toggle" aria-label="<?= e(t('action.more')) ?>">⋯</button>
                                     <div class="action-menu-panel">
-                                        <form method="post" action="<?= e($saveUrl) ?>">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="widget_id" value="<?= $widgetId ?>">
-                                            <input type="hidden" name="destination_id" value="<?= (int) $destination['id'] ?>">
-                                            <input type="hidden" name="destination_action" value="toggle">
-                                            <?php if (empty($destination['is_active'])): ?>
-                                                <input type="hidden" name="is_active" value="1">
-                                                <button type="submit" class="action-menu-item"><?= e(t('telegram.enable')) ?></button>
-                                            <?php else: ?>
-                                                <button type="submit" class="action-menu-item"><?= e(t('telegram.disable')) ?></button>
-                                            <?php endif; ?>
-                                        </form>
-                                        <form method="post" action="<?= e($saveUrl) ?>" onsubmit="return confirm(<?= json_encode(t('telegram.confirm_delete')) ?>);">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="widget_id" value="<?= $widgetId ?>">
-                                            <input type="hidden" name="destination_id" value="<?= (int) $destination['id'] ?>">
-                                            <input type="hidden" name="destination_action" value="delete">
-                                            <button type="submit" class="action-menu-item action-danger"><?= e(t('button.delete')) ?></button>
-                                        </form>
+                                        <button
+                                            type="button"
+                                            class="action-menu-item"
+                                            data-telegram-dest-action="toggle"
+                                            data-destination-id="<?= (int) $destination['id'] ?>"
+                                            data-is-active="<?= empty($destination['is_active']) ? '1' : '0' ?>"
+                                            data-widget-id="<?= $widgetId ?>"
+                                        >
+                                            <?= e(empty($destination['is_active']) ? t('telegram.enable') : t('telegram.disable')) ?>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="action-menu-item action-danger"
+                                            data-telegram-dest-action="delete"
+                                            data-destination-id="<?= (int) $destination['id'] ?>"
+                                            data-widget-id="<?= $widgetId ?>"
+                                        >
+                                            <?= e(t('button.delete')) ?>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -202,27 +209,11 @@ $panelClass = $destinationsTelegramOnly ? 'client-telegram-panel' : 'settings-ca
     </div>
 </<?= $panelTag ?>>
 
-<dialog class="ctcw-modal" data-telegram-modal>
-    <form method="post" action="<?= e($saveUrl) ?>" class="settings-form" data-telegram-destination-form>
-        <?= csrf_field() ?>
-        <input type="hidden" name="widget_id" value="<?= $widgetId ?>">
-        <input type="hidden" name="destination_id" value="" data-telegram-destination-id>
-        <input type="hidden" name="destination_action" value="save">
-        <div class="card-header-row">
-            <div>
-                <h3 data-telegram-modal-title><?= e(t('telegram.add_destination')) ?></h3>
-                <p class="helper-text"><?= e(t('telegram.modal_help')) ?></p>
-            </div>
-            <button type="button" class="btn btn-light" data-close-telegram-modal><?= e(t('button.close')) ?></button>
-        </div>
-        <?php
-        $telegramDestination = [];
-        $telegramFormId = 'telegram-destination-form';
-        require __DIR__ . '/telegram-destination-form.php';
-        ?>
-        <div class="form-actions">
-            <button type="button" class="btn btn-light" data-close-telegram-modal><?= e(t('button.cancel')) ?></button>
-            <button type="submit" class="btn btn-primary"><?= e(t('button.save')) ?></button>
-        </div>
-    </form>
-</dialog>
+<?php
+// Never nest the Telegram modal form inside the widget edit form (HTML forbids nested forms).
+// Admin widget form defers rendering until after </form>; client pages render inline.
+$deferTelegramModal = $destinationsContext === 'admin' && empty($destinationsTelegramOnly);
+if (!$deferTelegramModal) {
+    require __DIR__ . '/telegram-destination-modal.php';
+}
+?>

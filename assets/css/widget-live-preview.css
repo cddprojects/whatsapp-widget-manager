@@ -127,6 +127,8 @@
 .ctcw-admin-live-preview {
     --ctcw-green: #25d366;
     --ctcw-green-dark: #128c7e;
+    --ctcw-telegram: #0088cc;
+    --ctcw-telegram-dark: #007ab8;
     --ctcw-text: #102a43;
 }
 
@@ -184,7 +186,7 @@
 }
 
 .ctcw-admin-live-preview .ctcw-widget.channel-telegram {
-    background: #229ed9;
+    background: var(--ctcw-telegram, #0088cc);
 }
 
 .ctcw-admin-live-preview .ctcw-widget[data-preview-channel] {

@@ -1581,7 +1581,8 @@ function whatsapp_icon_svg(): string
 
 function telegram_icon_svg(): string
 {
-    return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M27.6 6.4 4.9 15.2c-1.62.63-1.6 1.5-.3 1.9l5.8 1.8 2.24 6.84c.3.82.15 1.15.98 1.15.64 0 .93-.3 1.3-.64l3.12-3.03 6.48 4.78c1.19.66 2.04.32 2.34-1.1l4.24-19.98c.43-1.73-.66-2.5-1.8-2.02ZM12.7 19.5l-.3 4.2c-.04.62.27.76.6.46l2.3-2.14 4.78 3.53c.55.3 1.05.14 1.2-.5l3.9-16.84c.2-.84-.32-1.22-.9-.97L7.1 16.1c-.8.3-.79.74.14.95l5.46 1.7 12.64-7.98c.6-.36 1.14-.17.69.23L12.7 19.5Z"/></svg>';
+    // Official-style Telegram paper-plane mark (currentColor for theme reuse).
+    return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M9.04 15.3 8.85 18.9c.27 0 .39-.12.53-.26l2.55-2.45 5.29 3.88c.97.53 1.66.25 1.92-.9L21.9 4.72c.3-1.28-.46-1.78-1.4-1.47L2.72 9.52c-1.24.48-1.22 1.17-.21 1.48l4.66 1.45L18.3 6.2c.53-.35 1.02-.16.62.2L9.04 15.3Z"/></svg>';
 }
 
 /**
