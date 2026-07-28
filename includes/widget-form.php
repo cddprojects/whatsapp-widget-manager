@@ -7,17 +7,25 @@ if (!is_array($businessHours)) {
 }
 $embed = !empty($widget['id']) && !empty($widget['public_key']) ? embed_code($widget) : '';
 $settingsSections = [
-    ['id' => 'whatsapp-number', 'number' => '1', 'label' => t('section.whatsapp_number.title')],
-    ['id' => 'prefilled-message', 'number' => '2', 'label' => t('section.prefilled_message.title')],
-    ['id' => 'call-to-action', 'number' => '3', 'label' => t('section.call_to_action.title')],
-    ['id' => 'style-position', 'number' => '4', 'label' => t('section.style_position.title')],
-    ['id' => 'url-structure', 'number' => '5', 'label' => t('section.url_structure.title')],
-    ['id' => 'display-settings', 'number' => '6', 'label' => t('section.display_settings.title')],
-    ['id' => 'business-hours', 'number' => '7', 'label' => t('section.business_hours.title')],
-    ['id' => 'greeting-dialog', 'number' => '8', 'label' => t('section.greeting_dialog.title')],
-    ['id' => 'domain-embed', 'number' => '9', 'label' => t('section.domain_embed.title')],
-    ['id' => 'custom-code', 'number' => '10', 'label' => t('section.custom_code.title')],
+    ['id' => 'communication-channels', 'number' => '1', 'label' => t('section.communication_channels.title')],
+    ['id' => 'destinations', 'number' => '2', 'label' => t('section.destinations.title')],
+    ['id' => 'prefilled-message', 'number' => '3', 'label' => t('section.prefilled_message.title')],
+    ['id' => 'call-to-action', 'number' => '4', 'label' => t('section.call_to_action.title')],
+    ['id' => 'style-position', 'number' => '5', 'label' => t('section.style_position.title')],
+    ['id' => 'url-structure', 'number' => '6', 'label' => t('section.url_structure.title')],
+    ['id' => 'display-settings', 'number' => '7', 'label' => t('section.display_settings.title')],
+    ['id' => 'business-hours', 'number' => '8', 'label' => t('section.business_hours.title')],
+    ['id' => 'greeting-dialog', 'number' => '9', 'label' => t('section.greeting_dialog.title')],
+    ['id' => 'domain-embed', 'number' => '10', 'label' => t('section.domain_embed.title')],
+    ['id' => 'custom-code', 'number' => '11', 'label' => t('section.custom_code.title')],
 ];
+$channelConfig = !empty($widget['id'])
+    ? get_widget_channel_config((int) $widget['id'], $widget)
+    : widget_channel_mode_defaults() + ['rows' => []];
+$channelMode = (string) ($widget['channel_mode'] ?? $channelConfig['modes'] ?? 'whatsapp_only');
+if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
+    $channelMode = 'whatsapp_only';
+}
 ?>
 
 <?php if (!empty($errors)): ?>
@@ -100,12 +108,12 @@ $settingsSections = [
         </aside>
 
         <div class="settings-panels">
-    <section class="settings-card is-active" data-settings-panel="whatsapp-number">
+    <section class="settings-card is-active" data-settings-panel="communication-channels">
         <div class="section-title">
             <span>1</span>
             <div>
-                <h2><?= e(t('section.whatsapp_number.title')) ?></h2>
-                <p><?= e(t('section.whatsapp_number.description')) ?></p>
+                <h2><?= e(t('section.communication_channels.title')) ?></h2>
+                <p><?= e(t('section.communication_channels.description')) ?></p>
             </div>
         </div>
         <label class="widget-name-field">
@@ -113,31 +121,57 @@ $settingsSections = [
             <input type="text" name="widget_name" value="<?= e($widget['widget_name']) ?>">
         </label>
 
-        <?php
-        $allowEmptyPhones = true;
-        require __DIR__ . '/phone-number-list.php';
-        $destinationNumbers = widget_phone_list($widget);
-        $destinationCount = count($destinationNumbers);
-        $destinationMethod = effective_destination_selection_method($widget, $destinationCount);
-        ?>
-        <div class="ctcw-destination-distribution" data-destination-distribution-panel<?= $destinationCount < 2 ? ' hidden' : '' ?>>
-            <label>
-                <span><?= e(t('distribution.label')) ?></span>
-                <select name="destination_selection_method" data-destination-selection-method>
-                    <option value="round_robin"<?= selected($destinationMethod, 'round_robin') ?>><?= e(t('distribution.option_round_robin')) ?></option>
-                    <option value="random"<?= selected($destinationMethod, 'random') ?>><?= e(t('distribution.option_random')) ?></option>
-                </select>
-            </label>
-            <p class="helper-text" data-destination-method-help="round_robin"<?= $destinationMethod === 'round_robin' ? '' : ' hidden' ?>><?= e(t('distribution.help_round_robin')) ?></p>
-            <p class="helper-text" data-destination-method-help="random"<?= $destinationMethod === 'random' ? '' : ' hidden' ?>><?= e(t('distribution.help_random')) ?></p>
-            <p class="ctcw-destination-summary" data-destination-summary-text><?= e(destination_distribution_label($widget, $destinationCount)) ?></p>
+        <div class="channel-mode-grid" data-channel-mode-grid>
+            <?php
+            $channelModes = [
+                'whatsapp_only' => [
+                    'title' => t('channel.mode.whatsapp_only'),
+                    'description' => t('channel.mode.whatsapp_only_desc'),
+                    'icon' => 'whatsapp',
+                ],
+                'telegram_only' => [
+                    'title' => t('channel.mode.telegram_only'),
+                    'description' => t('channel.mode.telegram_only_desc'),
+                    'icon' => 'telegram',
+                ],
+                'both' => [
+                    'title' => t('channel.mode.both'),
+                    'description' => t('channel.mode.both_desc'),
+                    'icon' => 'both',
+                ],
+            ];
+            foreach ($channelModes as $modeValue => $modeMeta):
+            ?>
+                <label class="channel-mode-card<?= $channelMode === $modeValue ? ' is-selected' : '' ?>">
+                    <input
+                        type="radio"
+                        name="channel_mode"
+                        value="<?= e($modeValue) ?>"
+                        <?= $channelMode === $modeValue ? 'checked' : '' ?>
+                        data-channel-mode-input
+                    >
+                    <span class="channel-mode-icon channel-mode-icon--<?= e($modeMeta['icon']) ?>" aria-hidden="true"></span>
+                    <strong><?= e($modeMeta['title']) ?></strong>
+                    <span><?= e($modeMeta['description']) ?></span>
+                </label>
+            <?php endforeach; ?>
         </div>
-        <p class="ctcw-destination-single-summary" data-destination-single-summary<?= $destinationCount === 1 ? '' : ' hidden' ?>><?= e(t('distribution.one_number')) ?></p>
+        <p class="helper-text"><?= e(t('channel.embed_unchanged_help')) ?></p>
+        <?php if (!empty($channelConfig['telegram']) && count_active_channel_destinations((int) ($widget['id'] ?? 0), WIDGET_CHANNEL_TELEGRAM) < 1): ?>
+            <div class="alert alert-warning">
+                <?= e(t('channel.warning.telegram_incomplete')) ?>
+            </div>
+        <?php endif; ?>
     </section>
+
+    <?php
+    $destinationsContext = 'admin';
+    require __DIR__ . '/destinations-panel.php';
+    ?>
 
     <section class="settings-card" data-settings-panel="prefilled-message">
         <div class="section-title">
-            <span>2</span>
+            <span>3</span>
             <div>
                 <h2><?= e(t('section.prefilled_message.title')) ?></h2>
                 <p><?= e(t('section.prefilled_message.description')) ?></p>
@@ -180,7 +214,7 @@ $settingsSections = [
 
     <section class="settings-card" data-settings-panel="call-to-action">
         <div class="section-title">
-            <span>3</span>
+            <span>4</span>
             <div>
                 <h2><?= e(t('section.call_to_action.title')) ?></h2>
                 <p><?= e(t('section.call_to_action.description')) ?></p>
@@ -194,7 +228,7 @@ $settingsSections = [
 
     <section class="settings-card" data-settings-panel="style-position">
         <div class="section-title">
-            <span>4</span>
+            <span>5</span>
             <div>
                 <h2><?= e(t('section.style_position.title')) ?></h2>
                 <p><?= e(t('section.style_position.description')) ?></p>
@@ -309,7 +343,7 @@ $settingsSections = [
 
     <section class="settings-card" data-settings-panel="url-structure">
         <div class="section-title">
-            <span>5</span>
+            <span>6</span>
             <div>
                 <h2><?= e(t('section.url_structure.title')) ?></h2>
                 <p><?= e(t('section.url_structure.description')) ?></p>
@@ -358,7 +392,7 @@ $settingsSections = [
 
     <section class="settings-card" data-settings-panel="display-settings">
         <div class="section-title">
-            <span>6</span>
+            <span>7</span>
             <div>
                 <h2><?= e(t('section.display_settings.title')) ?></h2>
                 <p><?= e(t('section.display_settings.description')) ?></p>
@@ -382,7 +416,7 @@ $settingsSections = [
 
     <section class="settings-card" data-settings-panel="business-hours">
         <div class="section-title">
-            <span>7</span>
+            <span>8</span>
             <div>
                 <h2><?= e(t('section.business_hours.title')) ?></h2>
                 <p><?= e(t('section.business_hours.description')) ?></p>
@@ -451,7 +485,7 @@ $settingsSections = [
 
     <section class="settings-card" data-settings-panel="greeting-dialog">
         <div class="section-title">
-            <span>8</span>
+            <span>9</span>
             <div>
                 <h2><?= e(t('section.greeting_dialog.title')) ?></h2>
                 <p><?= e(t('section.greeting_dialog.description')) ?></p>
@@ -612,7 +646,7 @@ $settingsSections = [
 
     <section class="settings-card" data-settings-panel="domain-embed">
         <div class="section-title">
-            <span>9</span>
+            <span>10</span>
             <div>
                 <h2><?= e(t('section.domain_embed.title')) ?></h2>
                 <p><?= e(t('section.domain_embed.description')) ?></p>
@@ -670,7 +704,7 @@ $settingsSections = [
 
     <section class="settings-card" data-settings-panel="custom-code">
         <div class="section-title">
-            <span>10</span>
+            <span>11</span>
             <div>
                 <h2><?= e(t('section.custom_code.title')) ?></h2>
                 <p><?= e(t('section.custom_code.description')) ?></p>

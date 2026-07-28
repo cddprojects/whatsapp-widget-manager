@@ -104,6 +104,10 @@ return [
         'file' => 'update-phone-numbers.php',
         'methods' => ['POST'],
     ],
+    '/telegram-destination-save' => [
+        'file' => 'telegram-destination-save.php',
+        'methods' => ['POST'],
+    ],
     '/delete-lead' => [
         'file' => 'delete-lead.php',
         'methods' => ['POST'],

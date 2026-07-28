@@ -3557,3 +3557,177 @@ code {
         justify-content: center;
     }
 }
+
+/* Communication channels + Telegram destinations */
+.channel-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin: 18px 0 12px;
+}
+
+.channel-mode-card {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.channel-mode-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.channel-mode-card.is-selected,
+.channel-mode-card:has(input:checked) {
+    border-color: #0f766e;
+    background: #f0fdfa;
+}
+
+.channel-mode-card strong {
+    font-size: 15px;
+}
+
+.channel-mode-card span:last-child {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.channel-mode-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #ecfdf5;
+}
+
+.channel-mode-icon--telegram {
+    background: #eff6ff;
+}
+
+.channel-mode-icon--both {
+    background: linear-gradient(135deg, #ecfdf5, #eff6ff);
+}
+
+.dest-tab-panel {
+    display: none;
+    margin-top: 18px;
+}
+
+.dest-tab-panel.is-active {
+    display: block;
+}
+
+.telegram-destination-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.telegram-destination-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+}
+
+.telegram-destination-main {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.telegram-destination-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.telegram-destination-meta code {
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.telegram-destination-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.btn-small {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.ctcw-modal {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 0;
+    max-width: 560px;
+    width: calc(100% - 32px);
+    box-shadow: none;
+}
+
+.ctcw-modal::backdrop {
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.ctcw-modal .settings-form {
+    padding: 20px;
+}
+
+.field-error {
+    color: #b91c1c;
+    font-size: 12px;
+}
+
+.channel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--line);
+    background: #fff;
+}
+
+.channel-badge--whatsapp {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.channel-badge--telegram {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+@media (max-width: 900px) {
+    .channel-mode-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .telegram-destination-card {
+        flex-direction: column;
+    }
+
+    .telegram-destination-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}

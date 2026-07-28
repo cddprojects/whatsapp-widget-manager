@@ -28,12 +28,16 @@ if (is_post()) {
     }
 
     $updated = sanitize_widget_input($_POST, $widget);
-    $errors = validate_widget_data($updated);
+    $errors = validate_widget_data($updated, $widgetId);
 
     if (!$errors) {
-        update_widget_admin($widgetId, $updated);
-        flash('success', t('flash.widget_updated'));
-        redirect('edit-widget.php?id=' . $widgetId);
+        try {
+            update_widget_admin($widgetId, $updated);
+            flash('success', t('flash.widget_updated'));
+            redirect('edit-widget.php?id=' . $widgetId);
+        } catch (InvalidArgumentException $exception) {
+            $errors[] = $exception->getMessage();
+        }
     }
 
     $widget = array_merge($widget, $updated);

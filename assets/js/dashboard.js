@@ -1253,6 +1253,7 @@
         bootFeature('Phone submit button ID validation', initPhoneSubmitButtonIdValidation);
         bootFeature('Admin live preview', initAdminLivePreview);
         bootFeature('Client create form', initClientCreateForm);
+        bootFeature('Channel destinations UI', initChannelDestinationsUi);
     }
 
     if (document.readyState === 'loading') {
@@ -1781,4 +1782,198 @@ function initAdminLivePreview() {
 
     initLivePreviewToggle();
     previewDebugLog('[CTC] Admin preview initialized');
+}
+
+function initChannelDestinationsUi() {
+    document.querySelectorAll('[data-channel-mode-grid]').forEach(function (grid) {
+        grid.querySelectorAll('[data-channel-mode-input]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                grid.querySelectorAll('.channel-mode-card').forEach(function (card) {
+                    var radio = card.querySelector('[data-channel-mode-input]');
+                    card.classList.toggle('is-selected', !!(radio && radio.checked));
+                });
+                var telegramPanels = document.querySelectorAll('[data-dest-tab-panel="telegram"]');
+                var enabled = input.value === 'telegram_only' || input.value === 'both';
+                telegramPanels.forEach(function (panel) {
+                    panel.classList.toggle('is-channel-disabled', !enabled);
+                });
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-destinations-panel]').forEach(function (panel) {
+        panel.querySelectorAll('[data-dest-tab-target]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var target = button.getAttribute('data-dest-tab-target');
+                panel.querySelectorAll('[data-dest-tab-target]').forEach(function (tab) {
+                    tab.classList.toggle('is-active', tab === button);
+                });
+                panel.querySelectorAll('[data-dest-tab-panel]').forEach(function (tabPanel) {
+                    tabPanel.classList.toggle('is-active', tabPanel.getAttribute('data-dest-tab-panel') === target);
+                });
+            });
+        });
+    });
+
+    document.querySelectorAll('dialog[data-telegram-modal]').forEach(function (modal) {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        var form = modal.querySelector('[data-telegram-destination-form]');
+        var idInput = modal.querySelector('[data-telegram-destination-id]');
+        var title = modal.querySelector('[data-telegram-modal-title]');
+        var typeSelect = modal.querySelector('[data-telegram-type-select]');
+        var startWrap = modal.querySelector('[data-telegram-bot-start-wrap]');
+        var valueHelp = modal.querySelector('[data-telegram-value-help]');
+        var valueInput = modal.querySelector('[data-telegram-field="destination_value"]');
+
+        function syncTypeUi() {
+            if (!typeSelect) {
+                return;
+            }
+            var type = typeSelect.value;
+            if (startWrap) {
+                startWrap.hidden = type !== 'bot';
+            }
+            if (valueHelp) {
+                if (type === 'username') {
+                    valueHelp.textContent = ctcwI18n('telegram.help.username');
+                    if (valueInput) valueInput.placeholder = '@example_support';
+                } else if (type === 'bot') {
+                    valueHelp.textContent = ctcwI18n('telegram.help.bot');
+                    if (valueInput) valueInput.placeholder = '@example_bot';
+                } else {
+                    valueHelp.textContent = ctcwI18n('telegram.help.link');
+                    if (valueInput) valueInput.placeholder = 'https://t.me/example';
+                }
+            }
+        }
+
+        function clearErrors() {
+            modal.querySelectorAll('[data-telegram-error]').forEach(function (node) {
+                node.hidden = true;
+                node.textContent = '';
+            });
+        }
+
+        function showError(field, message) {
+            var node = modal.querySelector('[data-telegram-error="' + field + '"]');
+            if (!node) {
+                return;
+            }
+            node.hidden = false;
+            node.textContent = message;
+        }
+
+        function validateInline() {
+            clearErrors();
+            var type = typeSelect ? typeSelect.value : 'username';
+            var value = valueInput ? String(valueInput.value || '').trim() : '';
+            var ok = true;
+
+            if (!value) {
+                showError('destination_value', ctcwI18n(type === 'group' || type === 'channel' ? 'telegram.error.enter_link' : 'telegram.error.enter_username'));
+                ok = false;
+            } else if ((type === 'username' || type === 'bot') && /\s/.test(value)) {
+                showError('destination_value', ctcwI18n('telegram.error.username_spaces'));
+                ok = false;
+            } else if ((type === 'username' || type === 'bot') && /^(https?:)?\/\//i.test(value)) {
+                showError('destination_value', ctcwI18n('telegram.error.username_not_url'));
+                ok = false;
+            }
+
+            var startInput = modal.querySelector('[data-telegram-field="bot_start_parameter"]');
+            if (type === 'bot' && startInput && startInput.value) {
+                if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(startInput.value).trim())) {
+                    showError('bot_start_parameter', ctcwI18n('telegram.error.start_param_chars'));
+                    ok = false;
+                }
+            }
+
+            return ok;
+        }
+
+        function openModal(data) {
+            clearErrors();
+            if (form) {
+                form.reset();
+            }
+            if (idInput) {
+                idInput.value = data && data.id ? String(data.id) : '';
+            }
+            if (title) {
+                title.textContent = data && data.id
+                    ? ctcwI18n('telegram.edit_destination')
+                    : ctcwI18n('telegram.add_destination');
+            }
+            if (data) {
+                var map = {
+                    display_name: data.display_name || '',
+                    destination_type: data.destination_type || 'username',
+                    destination_value: data.destination_value || '',
+                    bot_start_parameter: data.bot_start_parameter || ''
+                };
+                Object.keys(map).forEach(function (name) {
+                    var field = modal.querySelector('[data-telegram-field="' + name + '"]');
+                    if (field) {
+                        field.value = map[name];
+                    }
+                });
+                var active = modal.querySelector('input[name="is_active"]');
+                if (active) {
+                    active.checked = data.is_active !== false;
+                }
+            }
+            syncTypeUi();
+            if (typeof modal.showModal === 'function') {
+                modal.showModal();
+            } else {
+                modal.setAttribute('open', 'open');
+            }
+        }
+
+        function closeModal() {
+            if (typeof modal.close === 'function') {
+                modal.close();
+            } else {
+                modal.removeAttribute('open');
+            }
+        }
+
+        if (typeSelect) {
+            typeSelect.addEventListener('change', syncTypeUi);
+        }
+        if (valueInput) {
+            valueInput.addEventListener('input', validateInline);
+        }
+
+        document.querySelectorAll('[data-open-telegram-modal]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                openModal(null);
+            });
+        });
+
+        document.querySelectorAll('[data-edit-telegram-destination]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                try {
+                    openModal(JSON.parse(button.getAttribute('data-edit-telegram-destination') || '{}'));
+                } catch (error) {
+                    openModal(null);
+                }
+            });
+        });
+
+        modal.querySelectorAll('[data-close-telegram-modal]').forEach(function (button) {
+            button.addEventListener('click', closeModal);
+        });
+
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                if (!validateInline()) {
+                    event.preventDefault();
+                }
+            });
+        }
+    });
 }
