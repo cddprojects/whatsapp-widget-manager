@@ -775,10 +775,11 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
     <script type="application/json" id="country-code-data"><?= json_for_html(calling_code_options()) ?></script>
 </form>
 
-    // Render Telegram modal outside the widget form to avoid illegal nested forms.
-    if ((int) ($widget['id'] ?? 0) > 0) {
-        $saveUrl = app_url('telegram-destination-save.php');
-        $widgetId = (int) $widget['id'];
-        require __DIR__ . '/telegram-destination-modal.php';
-    }
+<?php
+// Render Telegram modal outside the widget form to avoid illegal nested forms.
+if ((int) ($widget['id'] ?? 0) > 0) {
+    $saveUrl = app_url('telegram-destination-save.php');
+    $widgetId = (int) $widget['id'];
+    require __DIR__ . '/telegram-destination-modal.php';
+}
 ?>

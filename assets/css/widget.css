@@ -629,6 +629,36 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     opacity: 1;
 }
 
+/* Channel-specific colors must win over style skins. */
+.style-1 .ctcw-widget.channel-telegram,
+.style-1 .ctcw-launcher.channel-telegram {
+    background: linear-gradient(135deg, var(--ctcw-telegram, #0088cc), var(--ctcw-telegram-dark, #007ab8));
+}
+
+.style-8 .ctcw-widget.channel-telegram,
+.style-8 .ctcw-launcher.channel-telegram {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.style-6 .ctcw-widget.channel-telegram,
+.style-6 .ctcw-launcher.channel-telegram {
+    color: var(--ctcw-telegram-dark, #007ab8);
+    background: transparent;
+}
+
+.style-7 .ctcw-widget.channel-telegram,
+.style-7 .ctcw-launcher.channel-telegram {
+    color: var(--ctcw-telegram, #0088cc);
+    background: #ffffff;
+}
+
+.style-9-left-hover .ctcw-widget.channel-telegram .ctcw-icon,
+.style-9-left-hover .ctcw-widget.channel-telegram .ctcw-text,
+.style-9-left-hover .ctcw-launcher.channel-telegram .ctcw-icon,
+.style-9-left-hover .ctcw-launcher.channel-telegram .ctcw-text {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
 @media (max-width: 767px) {
     .ctcw-widget-anchor {
         width: max-content;

@@ -383,3 +383,27 @@
     background: var(--ctcw-green);
     white-space: nowrap;
 }
+
+/* Channel-specific colors must win over style skins in the admin preview. */
+.ctcw-admin-live-preview .style-1 .ctcw-widget.channel-telegram {
+    background: linear-gradient(135deg, var(--ctcw-telegram, #0088cc), var(--ctcw-telegram-dark, #007ab8));
+}
+
+.ctcw-admin-live-preview .style-6 .ctcw-widget.channel-telegram {
+    color: var(--ctcw-telegram-dark, #007ab8);
+    background: transparent;
+}
+
+.ctcw-admin-live-preview .style-7 .ctcw-widget.channel-telegram {
+    color: var(--ctcw-telegram, #0088cc);
+    background: #ffffff;
+}
+
+.ctcw-admin-live-preview .style-8 .ctcw-widget.channel-telegram {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .style-9-left-hover .ctcw-widget.channel-telegram .ctcw-icon,
+.ctcw-admin-live-preview .style-9-left-hover .ctcw-widget.channel-telegram .ctcw-text {
+    background: var(--ctcw-telegram, #0088cc);
+}

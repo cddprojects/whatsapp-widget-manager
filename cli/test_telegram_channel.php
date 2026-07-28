@@ -125,6 +125,16 @@ assert_true(str_contains(file_get_contents(dirname(__DIR__) . '/assets/css/widge
     || str_contains(file_get_contents(dirname(__DIR__) . '/assets/css/widget.css'), '#0088CC'),
     'Widget CSS uses Telegram brand blue');
 
+$widgetFormSource = file_get_contents(dirname(__DIR__) . '/includes/widget-form.php');
+assert_true(
+    (bool) preg_match('/<\/form>\s*<\?php\s*\/\/ Render Telegram modal/s', $widgetFormSource),
+    'Widget form reopens PHP before Telegram modal include'
+);
+assert_true(
+    !preg_match('/<\/form>\s*\/\/ Render Telegram modal/s', $widgetFormSource),
+    'Widget form does not print Telegram modal PHP as plain text'
+);
+
 echo "\n=== Migration runner smoke (no DB required for help) ===\n";
 $migrateHelp = [];
 exec('php ' . escapeshellarg(dirname(__DIR__) . '/migrate.php') . ' --help 2>&1', $migrateHelp, $helpCode);
