@@ -28,6 +28,8 @@
     var hoverTimer = null;
     var sizeReportFrame = null;
     var lastPostedSize = { width: 0, height: 0, state: '' };
+    // Covers focus rings, translateY(-2px) hover, and subpixel anti-alias edges.
+    var VISUAL_EDGE_ALLOWANCE = 6;
     var pageContext = {
         siteName: '',
         siteUrl: '',
@@ -67,7 +69,7 @@
     }
 
     function getBoundsPadding() {
-        return isMobile() ? 8 : 10;
+        return VISUAL_EDGE_ALLOWANCE + (isMobile() ? 2 : 4);
     }
 
     function minimumForState(state) {
@@ -289,14 +291,14 @@
             var height = Math.max(minimum.height, bounds.height);
 
             if (availableWidth && isFinite(availableWidth)) {
-                width = Math.min(width, Math.max(minimum.width, Math.floor(availableWidth)));
+                width = Math.min(width, Math.max(minimum.width, Math.ceil(availableWidth)));
             }
             if (availableHeight && isFinite(availableHeight)) {
-                height = Math.min(height, Math.max(minimum.height, Math.floor(availableHeight)));
+                height = Math.min(height, Math.max(minimum.height, Math.ceil(availableHeight)));
             }
 
-            width = Math.round(width);
-            height = Math.round(height);
+            width = Math.ceil(width);
+            height = Math.ceil(height);
 
             if (
                 lastPostedSize.width === width
@@ -1443,14 +1445,13 @@
         }
         window.clearTimeout(hoverTimer);
         currentState = 'hover';
-        hoverTimer = window.setTimeout(function () {
-            if (shell) {
-                shell.classList.add('is-hovering');
-            }
-            container.classList.add('is-hovering');
-            sendActualWidgetSize();
-            scheduleSizeReports();
-        }, 40);
+        // Apply hover class immediately. Expand styles reserve layout width in CSS so
+        // the iframe does not need to catch up after a delayed max-width animation.
+        if (shell) {
+            shell.classList.add('is-hovering');
+        }
+        container.classList.add('is-hovering');
+        sendActualWidgetSize();
     }
 
     function endHover(event) {
@@ -1460,27 +1461,48 @@
         if (isMobile()) {
             return;
         }
-        window.clearTimeout(hoverTimer);
+
         var shell = shellForElement(event && event.currentTarget ? event.currentTarget : null);
+        var buttonEl = event && event.currentTarget && event.currentTarget.getAttribute
+            ? event.currentTarget
+            : (shell ? shell.querySelector('[data-widget-button]') : null);
+
+        // Keep hover/focus expansion while the control remains hovered or focused.
+        if (buttonEl) {
+            try {
+                if (buttonEl.matches(':hover') || buttonEl === document.activeElement) {
+                    return;
+                }
+            } catch (ignored) {
+                // :hover matching can throw in some older engines; fall through.
+            }
+        }
+
+        window.clearTimeout(hoverTimer);
         if (shell) {
             shell.classList.remove('is-hovering');
         }
         if (!container.querySelector('[data-channel-shell].is-hovering')) {
             container.classList.remove('is-hovering');
         }
-        window.setTimeout(function () {
-            if (!isGreetingVisible()) {
-                currentState = isIconOnlyStyle() ? 'icon' : 'button';
-                sendActualWidgetSize();
-                scheduleSizeReports();
-            }
-        }, 250);
+        currentState = isIconOnlyStyle() ? 'icon' : 'button';
+        sendActualWidgetSize();
     }
 
     launcherButtons.forEach(function (launcherButton) {
-        launcherButton.addEventListener('mouseenter', startHover);
-        launcherButton.addEventListener('mouseleave', endHover);
+        launcherButton.addEventListener('pointerenter', startHover);
+        launcherButton.addEventListener('pointerleave', endHover);
+        launcherButton.addEventListener('focusin', startHover);
+        launcherButton.addEventListener('focusout', function (event) {
+            if (launcherButton.contains(event.relatedTarget)) {
+                return;
+            }
+            endHover(event);
+        });
         launcherButton.addEventListener('click', handleLauncherClick, true);
+        launcherButton.addEventListener('transitionend', function () {
+            sendActualWidgetSize();
+        });
     });
     applyChannelCopy(selectedChannel);
 

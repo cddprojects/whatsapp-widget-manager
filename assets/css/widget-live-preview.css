@@ -350,17 +350,17 @@
 .ctcw-admin-live-preview .style-7-extend .ctcw-widget {
     width: auto;
     min-width: 58px;
-    max-width: 58px;
+    max-width: calc(58px + 10px + 240px + 40px);
     height: 58px;
     min-height: 58px;
     overflow: hidden;
-    padding: 0 17px;
+    padding: 0 20px;
     border-radius: 999px;
     justify-content: flex-start;
 }
 
 .ctcw-admin-live-preview .style-7-extend .ctcw-text {
-    max-width: 0;
+    max-width: 240px;
     overflow: hidden;
     opacity: 0;
 }

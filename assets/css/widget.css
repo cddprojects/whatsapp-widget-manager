@@ -10,6 +10,8 @@
     --ctcw-available-height: 100vh;
     --ctcw-popup-gap: 12px;
     --ctcw-root-pad: 0px;
+    --ctcw-visual-edge-allowance: 6px;
+    --ctcw-hover-label-max-width: 240px;
 }
 
 html,
@@ -135,6 +137,8 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     align-items: center;
     justify-content: center;
     max-width: 100%;
+    /* Absorb translateY hover and focus-visible rings so the iframe need not catch up. */
+    padding: var(--ctcw-visual-edge-allowance, 6px);
     pointer-events: auto;
 }
 
@@ -614,30 +618,31 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 .style-7-extend .ctcw-widget {
     width: auto;
     min-width: 58px;
-    max-width: 58px;
+    /* Reserve expanded hover width so the parent iframe does not lag behind. */
+    max-width: calc(58px + 10px + var(--ctcw-hover-label-max-width) + 40px);
     height: 58px;
     min-height: 58px;
     overflow: hidden;
-    padding: 0 17px;
+    padding: 0 20px;
     border-radius: 999px;
     justify-content: flex-start;
-    transition: max-width 0.25s ease, padding 0.25s ease, transform 0.2s ease, background 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .style-7-extend .ctcw-text {
-    max-width: 0;
+    max-width: var(--ctcw-hover-label-max-width);
     overflow: hidden;
     opacity: 0;
-    transition: max-width 0.25s ease, opacity 0.2s ease;
+    transition: opacity 0.2s ease;
 }
 
 .style-7-extend.is-hovering .ctcw-widget {
-    max-width: 320px;
+    max-width: calc(58px + 10px + var(--ctcw-hover-label-max-width) + 40px);
     padding: 0 20px;
 }
 
 .style-7-extend.is-hovering .ctcw-text {
-    max-width: 240px;
+    max-width: var(--ctcw-hover-label-max-width);
     opacity: 1;
 }
 
@@ -657,6 +662,8 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     color: #ffffff;
     flex-direction: row-reverse;
     justify-content: flex-start;
+    /* Stable layout box: label slot is reserved; hover only fades it in. */
+    transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .style-9-left-hover .ctcw-icon {
@@ -673,21 +680,27 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     align-items: center;
     justify-content: center;
     height: 38px;
-    max-width: 0;
+    width: max-content;
+    max-width: var(--ctcw-hover-label-max-width);
+    min-width: 0;
     overflow: hidden;
-    padding: 0;
+    padding: 0 18px;
     border-radius: 999px;
     background: var(--ctcw-green);
     color: #ffffff;
     opacity: 0;
     white-space: nowrap;
-    transition: max-width 0.24s ease, opacity 0.2s ease, padding 0.24s ease;
+    transform: translateX(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
 }
 
 .style-9-left-hover.is-hovering .ctcw-text {
-    max-width: 240px;
+    max-width: var(--ctcw-hover-label-max-width);
     padding: 0 18px;
     opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
 /* Channel-specific colors must win over style skins. */
@@ -743,17 +756,16 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     }
 
     html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-text {
-        display: none;
-        max-width: 0;
         opacity: 0;
-        padding: 0;
+        pointer-events: none;
     }
 
     html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-widget {
-        width: 58px;
+        /* Keep the reserved hover width; do not snap max-width on tap. */
+        width: auto;
         min-width: 58px;
-        max-width: 58px;
-        padding: 0 17px;
+        max-width: calc(58px + 10px + var(--ctcw-hover-label-max-width) + 40px);
+        padding: 0 20px;
     }
 
     html.ctcw-mobile .style-9-left-hover .ctcw-widget {
@@ -766,14 +778,15 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     html.ctcw-mobile .style-9-left-hover:not(.is-style-9-mobile-expanded):not(.is-hovering) .ctcw-cta-label,
     html.ctcw-mobile .style-9-left-hover:not(.is-style-9-mobile-expanded):not(.is-hovering) .ctcw-style-9-label {
         display: inline-flex;
-        width: 0;
+        width: max-content;
         min-width: 0;
-        max-width: 0;
-        padding-left: 0;
-        padding-right: 0;
+        max-width: var(--ctcw-hover-label-max-width);
+        padding-left: 16px;
+        padding-right: 16px;
         opacity: 0;
         overflow: hidden;
         pointer-events: none;
+        transform: translateX(6px);
     }
 
     html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-text,
@@ -784,9 +797,9 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     html.ctcw-mobile .style-9-left-hover.is-hovering .ctcw-style-9-label {
         display: inline-flex;
         align-items: center;
-        width: auto;
-        min-width: 116px;
-        max-width: min(240px, calc(var(--ctcw-viewport-width, 100vw) - 96px));
+        width: max-content;
+        min-width: 0;
+        max-width: min(var(--ctcw-hover-label-max-width), calc(var(--ctcw-viewport-width, 100vw) - 96px));
         padding-left: 16px;
         padding-right: 16px;
         opacity: 1;

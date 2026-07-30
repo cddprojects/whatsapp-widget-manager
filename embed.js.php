@@ -137,7 +137,7 @@ $config = [
         if (!isFinite(number) || number <= 0) {
             return fallback;
         }
-        return Math.round(number);
+        return Math.ceil(number);
     }
 
     function clampSize(width, height, state) {

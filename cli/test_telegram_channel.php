@@ -176,6 +176,15 @@ assert_true(
         || str_contains($widgetCss, '.ctcw-widget:focus-visible'),
     'Launcher keyboard focus-visible styles are present'
 );
+assert_true(
+    str_contains($widgetCss, '--ctcw-visual-edge-allowance')
+        || str_contains($widgetCss, 'ctcw-visual-edge-allowance'),
+    'Widget CSS defines visual edge allowance for hover/focus'
+);
+assert_true(
+    str_contains($widgetJs, 'VISUAL_EDGE_ALLOWANCE'),
+    'Widget JS applies visual edge allowance when measuring'
+);
 
 echo "\n=== Migration runner smoke (no DB required for help) ===\n";
 $migrateHelp = [];
