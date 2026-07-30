@@ -5,14 +5,17 @@
     --ctcw-telegram-dark: #007ab8;
     --ctcw-text: #102a43;
     --ctcw-shadow: none;
-    --ctcw-mobile-vertical-offset: 12px;
-    --ctcw-mobile-horizontal-offset: 12px;
     --ctcw-viewport-width: 100vw;
+    --ctcw-available-width: 100vw;
+    --ctcw-available-height: 100vh;
     --ctcw-popup-gap: 12px;
+    --ctcw-root-pad: 0px;
 }
 
 html,
 body {
+    width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -41,7 +44,9 @@ body * {
     flex-direction: column;
     gap: var(--ctcw-popup-gap);
     width: max-content;
-    max-width: 380px;
+    max-width: min(380px, 100%);
+    height: max-content;
+    max-height: none;
     background: transparent !important;
     box-shadow: none !important;
     filter: none !important;
@@ -60,60 +65,39 @@ body * {
     justify-content: flex-start;
 }
 
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-right {
-    align-items: flex-end;
-}
-
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-left {
-    align-items: flex-start;
-}
-
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-right,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-right {
     align-items: flex-end;
 }
 
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-left,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-left {
     align-items: flex-start;
 }
 
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-bottom.is-right {
-    bottom: 12px;
-    right: 12px;
-}
-
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-bottom.is-left {
-    bottom: 12px;
-    left: 12px;
-}
-
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-right {
-    top: 12px;
-    right: 12px;
-}
-
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-left {
-    top: 12px;
-    left: 12px;
-}
-
+/* Host page positions the iframe; keep content flush inside to avoid unmeasured insets. */
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-bottom.is-right,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-bottom.is-mobile-right {
-    bottom: var(--ctcw-mobile-vertical-offset);
-    right: var(--ctcw-mobile-horizontal-offset);
+    bottom: 0;
+    right: 0;
 }
 
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-bottom.is-left,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-bottom.is-mobile-left {
-    bottom: var(--ctcw-mobile-vertical-offset);
-    left: var(--ctcw-mobile-horizontal-offset);
+    bottom: 0;
+    left: 0;
 }
 
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-right,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-right {
-    top: var(--ctcw-mobile-vertical-offset);
-    right: var(--ctcw-mobile-horizontal-offset);
+    top: 0;
+    right: 0;
 }
 
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-left,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
-    top: var(--ctcw-mobile-vertical-offset);
-    left: var(--ctcw-mobile-horizontal-offset);
+    top: 0;
+    left: 0;
 }
 
 .ctcw-container.is-hidden {
@@ -253,7 +237,7 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     position: relative;
     display: none;
     width: 340px;
-    max-width: 340px;
+    max-width: min(340px, calc(var(--ctcw-available-width, 100vw) - 16px));
     min-width: 0;
     padding: 16px;
     border: 1px solid #e5e7eb;
@@ -262,20 +246,25 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     color: var(--ctcw-text);
     box-shadow: none !important;
     pointer-events: auto;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .ctcw-greeting.has-capture {
     width: 340px;
-    max-width: 340px;
+    max-width: min(340px, calc(var(--ctcw-available-width, 100vw) - 16px));
 }
 
-.ctcw-greeting.has-capture:not(.has-consent) {
-    overflow: visible;
+.ctcw-greeting.is-visible {
+    display: flex;
+    flex-direction: column;
+    max-height: min(
+        520px,
+        calc(var(--ctcw-available-height, 100vh) - var(--ctcw-launchers-reserve, 120px) - 24px)
+    );
 }
 
-.ctcw-greeting.has-consent {
-    overflow-y: auto;
+.ctcw-greeting.has-capture.is-visible {
+    display: flex;
 }
 
 .ctcw-greeting-header {
@@ -284,6 +273,7 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 8px;
+    flex: 0 0 auto;
 }
 
 .ctcw-greeting-title {
@@ -308,6 +298,16 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 .ctcw-greeting-form {
     display: grid;
     gap: 10px;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+.ctcw-greeting.has-consent .ctcw-greeting-form,
+.ctcw-greeting.is-scrollable .ctcw-greeting-form {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .ctcw-greeting.has-capture .ctcw-greeting-header {
@@ -448,7 +448,8 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 
 .ctcw-greeting.is-visible,
 .ctcw-widget-popup.is-visible {
-    display: block;
+    display: flex;
+    flex-direction: column;
     flex: 0 0 auto;
     animation: ctcwFadeIn 0.25s ease;
 }
@@ -762,26 +763,25 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     .ctcw-greeting,
     .ctcw-greeting.has-capture,
     .ctcw-widget-popup {
-        width: min(384px, calc(100vw - 24px));
-        max-width: calc(100vw - 24px);
+        width: min(384px, calc(var(--ctcw-available-width, 100vw) - 16px));
+        max-width: calc(var(--ctcw-available-width, 100vw) - 16px);
         min-width: 0;
     }
 
-    .ctcw-greeting.has-consent,
-    .ctcw-greeting.has-capture.has-consent,
-    .ctcw-widget-popup.has-consent {
-        max-height: min(70dvh, 520px);
+    .ctcw-greeting.is-visible {
+        max-height: min(
+            520px,
+            calc(var(--ctcw-available-height, 100vh) - var(--ctcw-launchers-reserve, 120px) - 16px)
+        );
+    }
+
+    .ctcw-greeting.has-consent .ctcw-greeting-form,
+    .ctcw-greeting.is-scrollable .ctcw-greeting-form {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
 
-    .ctcw-greeting:not(.has-consent),
-    .ctcw-greeting.has-capture:not(.has-consent) {
-        max-height: none;
-        overflow: visible;
-    }
-
-    .ctcw-greeting-form {
+    .ctcw-greeting:not(.has-consent):not(.is-scrollable) .ctcw-greeting-form {
         overflow: visible;
     }
 

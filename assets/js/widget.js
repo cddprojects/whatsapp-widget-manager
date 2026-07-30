@@ -22,7 +22,12 @@
     var selectedChannel = String(config.defaultChannel || 'whatsapp');
     var activeLauncherButton = button;
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
+    var parentViewportHeight = null;
+    var parentAvailableWidth = null;
+    var parentAvailableHeight = null;
     var hoverTimer = null;
+    var sizeReportFrame = null;
+    var lastPostedSize = { width: 0, height: 0, state: '' };
     var pageContext = {
         siteName: '',
         siteUrl: '',
@@ -33,35 +38,36 @@
     };
     var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-7'];
     var stateMinimums = {
-        icon: { width: 110, height: 110 },
-        button: { width: 260, height: 110 },
-        hover: { width: 260, height: 110 },
-        greeting: { width: 380, height: 300 },
-        'greeting-phone': { width: 390, height: 300 },
-        'greeting-phone-consent': { width: 390, height: 340 }
+        icon: { width: 72, height: 72 },
+        button: { width: 72, height: 72 },
+        hover: { width: 72, height: 72 },
+        greeting: { width: 300, height: 160 },
+        'greeting-phone': { width: 300, height: 180 },
+        'greeting-phone-consent': { width: 300, height: 200 }
     };
     var mobileStateMinimums = {
-        icon: { width: 68, height: 68 },
-        button: { width: 150, height: 72 },
-        hover: { width: 150, height: 72 },
-        greeting: { width: 320, height: 260 },
-        'greeting-phone': { width: 336, height: 260 },
-        'greeting-phone-consent': { width: 336, height: 300 }
+        icon: { width: 64, height: 64 },
+        button: { width: 64, height: 64 },
+        hover: { width: 64, height: 64 },
+        greeting: { width: 280, height: 150 },
+        'greeting-phone': { width: 280, height: 170 },
+        'greeting-phone-consent': { width: 280, height: 190 }
     };
     var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend'];
 
     function getMeasureSelectors() {
-        if (isGreetingVisible()) {
-            return '.ctcw-widget, .ctcw-greeting, .ctcw-widget-popup, .ctcw-launcher-stack';
-        }
-        if (container && (container.classList.contains('is-hovering') || container.querySelector('[data-channel-shell].is-hovering'))) {
-            return '.ctcw-widget, .ctcw-hover-box, .ctcw-launcher-stack, .ctcw-channel-shell';
-        }
-        return '.ctcw-widget, .ctcw-launcher-stack, .ctcw-channel-shell';
+        return [
+            '.ctcw-greeting.is-visible',
+            '.ctcw-launcher-stack',
+            '.ctcw-channel-shell',
+            '.ctcw-widget',
+            '.ctcw-channel-unavailable:not([hidden])',
+            '.ctcw-telegram-fallback:not([hidden])'
+        ].join(', ');
     }
 
     function getBoundsPadding() {
-        return isMobile() ? 8 : 16;
+        return isMobile() ? 8 : 10;
     }
 
     function minimumForState(state) {
@@ -163,8 +169,152 @@
     }
 
     function updateViewportCssVars() {
-        var viewportWidth = parentViewportWidth || window.innerWidth || 320;
+        var viewportWidth = parentAvailableWidth
+            || parentViewportWidth
+            || window.innerWidth
+            || 320;
+        var viewportHeight = parentAvailableHeight
+            || parentViewportHeight
+            || window.innerHeight
+            || 640;
+        var launcherReserve = 72;
+        if (launcherStack) {
+            var stackRect = launcherStack.getBoundingClientRect();
+            if (stackRect.height > 0) {
+                launcherReserve = Math.ceil(stackRect.height + 16);
+            } else if (launcherButtons.length > 1) {
+                launcherReserve = 72 * launcherButtons.length + 10 * (launcherButtons.length - 1);
+            }
+        }
+
         document.documentElement.style.setProperty('--ctcw-viewport-width', viewportWidth + 'px');
+        document.documentElement.style.setProperty('--ctcw-available-width', viewportWidth + 'px');
+        document.documentElement.style.setProperty('--ctcw-available-height', viewportHeight + 'px');
+        document.documentElement.style.setProperty('--ctcw-launchers-reserve', launcherReserve + 'px');
+
+        if (greeting) {
+            var needsScroll = greeting.classList.contains('has-consent');
+            if (greeting.classList.contains('is-visible')) {
+                var form = greeting.querySelector('.ctcw-greeting-form');
+                if (form && form.scrollHeight > form.clientHeight + 1) {
+                    needsScroll = true;
+                }
+            }
+            greeting.classList.toggle('is-scrollable', needsScroll);
+        }
+    }
+
+    function postSizeToParent(width, height, state) {
+        var trustedOrigin = getTrustedParentOrigin();
+        var payload = {
+            type: 'ctcw:size',
+            id: String(config.widgetId || window.CTCW_WIDGET_ID || ''),
+            width: width,
+            height: height,
+            state: state
+        };
+
+        try {
+            window.parent.postMessage(payload, trustedOrigin || '*');
+        } catch (error) {
+            try {
+                window.parent.postMessage(payload, '*');
+            } catch (ignored) {
+                // Fail safely: keep local UI usable even if messaging is blocked.
+            }
+        }
+    }
+
+    function getVisibleWidgetBounds() {
+        var elements = Array.from(document.querySelectorAll(getMeasureSelectors())).filter(isElementVisible);
+        if (!elements.length && container) {
+            var rootRect = container.getBoundingClientRect();
+            if (rootRect.width > 0 && rootRect.height > 0) {
+                return {
+                    width: Math.ceil(rootRect.width),
+                    height: Math.ceil(rootRect.height)
+                };
+            }
+            var fallback = minimumForState(resolveSizeState());
+            return { width: fallback.width, height: fallback.height };
+        }
+
+        var minX = Infinity;
+        var minY = Infinity;
+        var maxX = -Infinity;
+        var maxY = -Infinity;
+        var padding = getBoundsPadding();
+
+        elements.forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            minX = Math.min(minX, rect.left);
+            minY = Math.min(minY, rect.top);
+            maxX = Math.max(maxX, rect.right);
+            maxY = Math.max(maxY, rect.bottom);
+        });
+
+        if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+            var emptyFallback = minimumForState(resolveSizeState());
+            return { width: emptyFallback.width, height: emptyFallback.height };
+        }
+
+        return {
+            width: Math.ceil(maxX - minX + padding),
+            height: Math.ceil(maxY - minY + padding)
+        };
+    }
+
+    function sendActualWidgetSize() {
+        if (sizeReportFrame) {
+            window.cancelAnimationFrame(sizeReportFrame);
+        }
+
+        sizeReportFrame = window.requestAnimationFrame(function () {
+            sizeReportFrame = null;
+            var root = document.querySelector('.ctcw-widget-root');
+            if (!root || root.classList.contains('is-hidden')) {
+                return;
+            }
+
+            updateViewportCssVars();
+
+            var state = resolveSizeState();
+            var bounds = getVisibleWidgetBounds();
+            var minimum = minimumForState(state);
+            var availableWidth = parentAvailableWidth
+                || (isMobile() ? getMobileViewportLimit() : null)
+                || window.innerWidth;
+            var availableHeight = parentAvailableHeight || parentViewportHeight || window.innerHeight;
+            var width = Math.max(minimum.width, bounds.width);
+            var height = Math.max(minimum.height, bounds.height);
+
+            if (availableWidth && isFinite(availableWidth)) {
+                width = Math.min(width, Math.max(minimum.width, Math.floor(availableWidth)));
+            }
+            if (availableHeight && isFinite(availableHeight)) {
+                height = Math.min(height, Math.max(minimum.height, Math.floor(availableHeight)));
+            }
+
+            width = Math.round(width);
+            height = Math.round(height);
+
+            if (
+                lastPostedSize.width === width
+                && lastPostedSize.height === height
+                && lastPostedSize.state === state
+            ) {
+                return;
+            }
+
+            lastPostedSize = { width: width, height: height, state: state };
+            postSizeToParent(width, height, state);
+        });
+    }
+
+    function scheduleSizeReports() {
+        [0, 80, 200, 450].forEach(function (delay) {
+            window.setTimeout(sendActualWidgetSize, delay);
+        });
     }
 
     function collapseStyle9Mobile(shell) {
@@ -324,67 +474,6 @@
         }
         var rect = el.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0;
-    }
-
-    function getVisibleWidgetBounds() {
-        var elements = Array.from(document.querySelectorAll(getMeasureSelectors())).filter(isElementVisible);
-        if (!elements.length) {
-            var fallback = minimumForState(resolveSizeState());
-            return { width: fallback.width, height: fallback.height };
-        }
-
-        var minX = Infinity;
-        var minY = Infinity;
-        var maxX = -Infinity;
-        var maxY = -Infinity;
-        var padding = getBoundsPadding();
-
-        elements.forEach(function (el) {
-            var rect = el.getBoundingClientRect();
-            minX = Math.min(minX, rect.left);
-            minY = Math.min(minY, rect.top);
-            maxX = Math.max(maxX, rect.right);
-            maxY = Math.max(maxY, rect.bottom);
-        });
-
-        return {
-            width: Math.ceil(maxX - minX + padding),
-            height: Math.ceil(maxY - minY + padding)
-        };
-    }
-
-    function sendActualWidgetSize() {
-        window.requestAnimationFrame(function () {
-            var root = document.querySelector('.ctcw-widget-root');
-            if (!root || root.classList.contains('is-hidden')) {
-                return;
-            }
-
-            var state = resolveSizeState();
-            var bounds = isGreetingVisible() ? getVisibleWidgetBounds() : measureCollapsedTriggerBounds();
-            var minimum = minimumForState(state);
-            var viewportLimit = isMobile() ? getMobileViewportLimit() : null;
-            var width = Math.max(minimum.width, bounds.width);
-            var height = Math.max(minimum.height, bounds.height);
-
-            if (viewportLimit) {
-                width = Math.min(width, viewportLimit);
-            }
-
-            window.parent.postMessage({
-                type: 'ctcw:size',
-                id: String(config.widgetId || window.CTCW_WIDGET_ID || ''),
-                width: width,
-                height: height,
-                state: state
-            }, '*');
-        });
-    }
-
-    function scheduleSizeReports() {
-        [0, 50, 150, 300, 600, 900].forEach(function (delay) {
-            window.setTimeout(sendActualWidgetSize, delay);
-        });
     }
 
     function closeGreetingDialog() {
@@ -1402,13 +1491,34 @@
 
         if (event.data.type === 'ctcw:page-context') {
             parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
+            parentViewportHeight = parseInt(event.data.height, 10) || parentViewportHeight;
+            if (event.data.availableWidth != null) {
+                parentAvailableWidth = parseInt(event.data.availableWidth, 10) || parentAvailableWidth;
+            } else {
+                parentAvailableWidth = parentViewportWidth;
+            }
+            if (event.data.availableHeight != null) {
+                parentAvailableHeight = parseInt(event.data.availableHeight, 10) || parentAvailableHeight;
+            } else {
+                parentAvailableHeight = parentViewportHeight;
+            }
             updatePageContext(event.data);
+            updateViewportCssVars();
             applyResponsiveState();
             return;
         }
 
         if (event.data.type === 'ctcw:viewport') {
             parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
+            if (event.data.height != null) {
+                parentViewportHeight = parseInt(event.data.height, 10) || parentViewportHeight;
+            }
+            if (event.data.availableWidth != null) {
+                parentAvailableWidth = parseInt(event.data.availableWidth, 10) || parentAvailableWidth;
+            }
+            if (event.data.availableHeight != null) {
+                parentAvailableHeight = parseInt(event.data.availableHeight, 10) || parentAvailableHeight;
+            }
             var legacyUrl = typeof event.data.url === 'string' ? event.data.url : '';
             var legacyPath = '/';
             if (legacyUrl !== '') {
@@ -1423,6 +1533,7 @@
                 urlFull: legacyUrl,
                 url: legacyPath
             });
+            updateViewportCssVars();
             applyResponsiveState();
         }
     });
@@ -1432,6 +1543,12 @@
             sendActualWidgetSize();
         });
         resizeObserver.observe(container);
+        if (launcherStack) {
+            resizeObserver.observe(launcherStack);
+        }
+        if (greeting) {
+            resizeObserver.observe(greeting);
+        }
     }
 
     applyResponsiveState();

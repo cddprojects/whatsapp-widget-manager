@@ -158,6 +158,14 @@ $dashboardJs = file_get_contents(dirname(__DIR__) . '/assets/js/dashboard.js');
 assert_true(str_contains($dashboardJs, 'consentNoticeEnabled'), 'Live preview tracks consent toggle');
 assert_true(str_contains($dashboardJs, 'telegramDesktopStyle'), 'Live preview tracks Telegram style');
 
+$embedJs = file_get_contents(dirname(__DIR__) . '/embed.js.php');
+assert_true(!preg_match('/height\s*=\s*255/', $embedJs), 'Embed script does not force greeting height to 255');
+assert_true(str_contains($embedJs, 'availableWidth'), 'Embed script sends availableWidth to iframe');
+assert_true(str_contains($embedJs, 'availableHeight'), 'Embed script sends availableHeight to iframe');
+$widgetJs = file_get_contents(dirname(__DIR__) . '/assets/js/widget.js');
+assert_true(str_contains($widgetJs, '--ctcw-available-height'), 'Widget JS sets available height CSS var');
+assert_true(str_contains($widgetJs, 'lastPostedSize'), 'Widget JS debounces duplicate size posts');
+
 echo "\n=== Migration runner smoke (no DB required for help) ===\n";
 $migrateHelp = [];
 exec('php ' . escapeshellarg(dirname(__DIR__) . '/migrate.php') . ' --help 2>&1', $migrateHelp, $helpCode);
