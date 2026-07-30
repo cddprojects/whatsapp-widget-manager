@@ -184,9 +184,50 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     background: var(--ctcw-telegram-dark, #007ab8);
 }
 
+/* Dialog-open is indicated by the greeting itself — do not draw a white
+   rectangular frame around the launcher (especially Style 9's transparent shell). */
 .ctcw-launcher.is-dialog-open {
-    outline: 2px solid rgba(255, 255, 255, 0.85);
-    outline-offset: 2px;
+    outline: none;
+}
+
+.ctcw-launcher:focus,
+.ctcw-widget:focus,
+.ctcw-cta-button:focus {
+    outline: none;
+}
+
+.ctcw-launcher:focus-visible,
+.ctcw-widget:focus-visible,
+.ctcw-cta-button:focus-visible {
+    outline: 3px solid rgba(15, 23, 42, 0.55);
+    outline-offset: 3px;
+}
+
+.ctcw-launcher.channel-whatsapp:focus-visible,
+.ctcw-widget.channel-whatsapp:focus-visible {
+    outline-color: rgba(18, 140, 126, 0.95);
+}
+
+.ctcw-launcher.channel-telegram:focus-visible,
+.ctcw-widget.channel-telegram:focus-visible {
+    outline-color: rgba(0, 136, 204, 0.95);
+}
+
+/* Style 9's control is a transparent zero-radius box around icon + label.
+   Put the keyboard ring on the circular icon so it does not look like a card. */
+.style-9-left-hover .ctcw-launcher:focus-visible,
+.style-9-left-hover .ctcw-widget:focus-visible {
+    outline: none;
+}
+
+.style-9-left-hover .ctcw-launcher.channel-whatsapp:focus-visible .ctcw-icon,
+.style-9-left-hover .ctcw-widget.channel-whatsapp:focus-visible .ctcw-icon {
+    box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.95) !important;
+}
+
+.style-9-left-hover .ctcw-launcher.channel-telegram:focus-visible .ctcw-icon,
+.style-9-left-hover .ctcw-widget.channel-telegram:focus-visible .ctcw-icon {
+    box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.95) !important;
 }
 
 .ctcw-channel-unavailable {

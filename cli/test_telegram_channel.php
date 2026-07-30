@@ -166,6 +166,17 @@ $widgetJs = file_get_contents(dirname(__DIR__) . '/assets/js/widget.js');
 assert_true(str_contains($widgetJs, '--ctcw-available-height'), 'Widget JS sets available height CSS var');
 assert_true(str_contains($widgetJs, 'lastPostedSize'), 'Widget JS debounces duplicate size posts');
 
+$widgetCss = file_get_contents(dirname(__DIR__) . '/assets/css/widget.css');
+assert_true(
+    !preg_match('/\.ctcw-launcher\.is-dialog-open\s*\{[^}]*outline:\s*2px\s+solid\s+rgba\(255,\s*255,\s*255/s', $widgetCss),
+    'Launcher dialog-open state no longer uses white rectangular outline'
+);
+assert_true(
+    str_contains($widgetCss, '.ctcw-launcher:focus-visible')
+        || str_contains($widgetCss, '.ctcw-widget:focus-visible'),
+    'Launcher keyboard focus-visible styles are present'
+);
+
 echo "\n=== Migration runner smoke (no DB required for help) ===\n";
 $migrateHelp = [];
 exec('php ' . escapeshellarg(dirname(__DIR__) . '/migrate.php') . ' --help 2>&1', $migrateHelp, $helpCode);
