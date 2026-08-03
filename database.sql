@@ -99,6 +99,15 @@ CREATE TABLE IF NOT EXISTS widget_leads (
     source_url TEXT NULL,
     page_title VARCHAR(255) NULL,
     whatsapp_redirect_url TEXT NULL,
+    channel VARCHAR(32) NULL DEFAULT NULL,
+    channel_destination_id INT UNSIGNED NULL DEFAULT NULL,
+    destination_type VARCHAR(32) NULL DEFAULT NULL,
+    destination_name VARCHAR(120) NULL DEFAULT NULL,
+    destination_snapshot VARCHAR(512) NULL DEFAULT NULL,
+    channel_selected_at DATETIME NULL DEFAULT NULL,
+    destination_resolved_at DATETIME NULL DEFAULT NULL,
+    redirect_attempted_at DATETIME NULL DEFAULT NULL,
+    fallback_type VARCHAR(64) NULL DEFAULT NULL,
     ip_address VARCHAR(100) NULL,
     user_agent TEXT NULL,
     deleted_at DATETIME NULL DEFAULT NULL,
@@ -114,8 +123,58 @@ CREATE TABLE IF NOT EXISTS widget_leads (
     INDEX idx_widget_leads_deleted_at (deleted_at),
     INDEX idx_widget_leads_visitor_phone (visitor_full_phone),
     INDEX idx_widget_leads_created_at (created_at),
+    INDEX idx_widget_leads_channel_created (channel, created_at),
+    INDEX idx_widget_leads_client_channel_created (client_id, channel, created_at),
     CONSTRAINT fk_widget_leads_widget FOREIGN KEY (widget_id) REFERENCES widgets(id) ON DELETE CASCADE,
     CONSTRAINT fk_widget_leads_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS widget_channels (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    widget_id INT UNSIGNED NOT NULL,
+    channel VARCHAR(32) NOT NULL,
+    is_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    is_default TINYINT(1) NOT NULL DEFAULT 0,
+    display_order INT UNSIGNED NOT NULL DEFAULT 0,
+    destination_selection_method VARCHAR(30) NOT NULL DEFAULT 'random',
+    round_robin_next_index INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_widget_channels_widget_channel (widget_id, channel),
+    KEY idx_widget_channels_widget_enabled (widget_id, is_enabled),
+    CONSTRAINT fk_widget_channels_widget
+        FOREIGN KEY (widget_id) REFERENCES widgets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS channel_destinations (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    widget_id INT UNSIGNED NOT NULL,
+    channel VARCHAR(32) NOT NULL,
+    destination_type VARCHAR(32) NOT NULL,
+    destination_value VARCHAR(512) NOT NULL,
+    display_name VARCHAR(120) NOT NULL DEFAULT '',
+    bot_start_parameter VARCHAR(64) NULL DEFAULT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    distribution_weight INT UNSIGNED NOT NULL DEFAULT 1,
+    sort_order INT UNSIGNED NOT NULL DEFAULT 0,
+    deleted_at DATETIME NULL DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_channel_destinations_lookup (widget_id, channel, deleted_at, is_active),
+    KEY idx_channel_destinations_value (widget_id, channel, destination_type, destination_value(191)),
+    CONSTRAINT fk_channel_destinations_widget
+        FOREIGN KEY (widget_id) REFERENCES widgets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    filename VARCHAR(255) NOT NULL,
+    checksum CHAR(64) NOT NULL,
+    applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_schema_migrations_filename (filename)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS app_settings (

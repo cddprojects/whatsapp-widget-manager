@@ -3,19 +3,41 @@
 
     var config = window.CTCW_WIDGET || {};
     var container = document.querySelector('.ctcw-widget-root');
-    var button = document.querySelector('[data-widget-button]');
+    var launcherButtons = Array.from(document.querySelectorAll('[data-widget-button]'));
+    var button = launcherButtons[0] || null;
+    var launcherStack = container ? container.querySelector('[data-launcher-stack]') : null;
+    var channelShells = container ? Array.from(container.querySelectorAll('[data-channel-shell]')) : [];
     var greeting = document.querySelector('[data-greeting]');
     var closeGreeting = document.querySelector('[data-close-greeting]');
-    var greetingSubmit = document.querySelector('[data-greeting-submit]');
+    var greetingSubmitButtons = Array.from(document.querySelectorAll('[data-greeting-submit]'));
+    var greetingSubmit = greetingSubmitButtons[0] || null;
+    var greetingCta = document.querySelector('[data-greeting-cta]');
     var phoneInput = document.querySelector('[data-greeting-phone]');
     var phoneError = document.querySelector('[data-greeting-phone-error]');
     var greetingSuccess = document.querySelector('[data-greeting-success]');
-    var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-6', 'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover'];
+    var channelUnavailable = container ? container.querySelector('[data-channel-unavailable]') : null;
+    var channelUnavailableText = container ? container.querySelector('[data-channel-unavailable-text]') : null;
+    var styleNames = [
+        'style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-6',
+        'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover',
+        'tg-compact', 'tg-icon', 'tg-pill', 'tg-reveal'
+    ];
+    var telegramStyleNames = ['tg-compact', 'tg-icon', 'tg-pill', 'tg-reveal'];
     var isOpening = false;
+    var isSubmittingLead = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
     var currentState = 'button';
+    var selectedChannel = String(config.defaultChannel || 'whatsapp');
+    var activeLauncherButton = button;
     var parentViewportWidth = config.initialMode === 'mobile' ? 767 : (config.initialMode === 'desktop' ? 768 : null);
+    var parentViewportHeight = null;
+    var parentAvailableWidth = null;
+    var parentAvailableHeight = null;
     var hoverTimer = null;
+    var sizeReportFrame = null;
+    var lastPostedSize = { width: 0, height: 0, state: '' };
+    // Covers focus rings, translateY(-2px) hover, and subpixel anti-alias edges.
+    var VISUAL_EDGE_ALLOWANCE = 6;
     var pageContext = {
         siteName: '',
         siteUrl: '',
@@ -24,35 +46,38 @@
         url: '/',
         urlFull: ''
     };
-    var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-7'];
+    var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'tg-icon'];
     var stateMinimums = {
-        icon: { width: 110, height: 110 },
-        button: { width: 260, height: 110 },
-        hover: { width: 260, height: 110 },
-        greeting: { width: 380, height: 300 },
-        'greeting-phone': { width: 390, height: 340 }
+        icon: { width: 72, height: 72 },
+        button: { width: 72, height: 72 },
+        hover: { width: 72, height: 72 },
+        greeting: { width: 300, height: 160 },
+        'greeting-phone': { width: 300, height: 180 },
+        'greeting-phone-consent': { width: 300, height: 200 }
     };
     var mobileStateMinimums = {
-        icon: { width: 68, height: 68 },
-        button: { width: 150, height: 72 },
-        hover: { width: 150, height: 72 },
-        greeting: { width: 320, height: 260 },
-        'greeting-phone': { width: 336, height: 290 }
+        icon: { width: 64, height: 64 },
+        button: { width: 64, height: 64 },
+        hover: { width: 64, height: 64 },
+        greeting: { width: 280, height: 150 },
+        'greeting-phone': { width: 280, height: 170 },
+        'greeting-phone-consent': { width: 280, height: 190 }
     };
-    var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend'];
+    var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend', 'tg-icon'];
 
     function getMeasureSelectors() {
-        if (isGreetingVisible()) {
-            return '.ctcw-widget, .ctcw-greeting, .ctcw-widget-popup';
-        }
-        if (container && container.classList.contains('is-hovering')) {
-            return '.ctcw-widget, .ctcw-hover-box';
-        }
-        return '.ctcw-widget';
+        return [
+            '.ctcw-greeting.is-visible',
+            '.ctcw-launcher-stack',
+            '.ctcw-channel-shell',
+            '.ctcw-widget',
+            '.ctcw-channel-unavailable:not([hidden])',
+            '.ctcw-telegram-fallback:not([hidden])'
+        ].join(', ');
     }
 
     function getBoundsPadding() {
-        return isMobile() ? 8 : 16;
+        return VISUAL_EDGE_ALLOWANCE + (isMobile() ? 2 : 4);
     }
 
     function minimumForState(state) {
@@ -60,7 +85,7 @@
         return table[state] || table.icon;
     }
 
-    if (!container || !button) {
+    if (!container || launcherButtons.length === 0) {
         return;
     }
 
@@ -88,68 +113,294 @@
     }
 
     function resetSubmitButton(submitButton) {
+        var buttons = submitButton ? [submitButton] : greetingSubmitButtons;
+        buttons.forEach(function (button) {
+            if (!button) {
+                return;
+            }
+            button.disabled = false;
+            button.classList.remove('is-loading');
+        });
         if (!submitButton) {
-            return;
+            isSubmittingLead = false;
         }
-        submitButton.disabled = false;
-        submitButton.classList.remove('is-loading');
+    }
+
+    function setSubmitButtonsLoading(isLoading) {
+        greetingSubmitButtons.forEach(function (button) {
+            if (!button) {
+                return;
+            }
+            button.disabled = !!isLoading;
+            button.classList.toggle('is-loading', !!isLoading);
+        });
     }
 
     function normalizeWidgetStyle(style) {
         return style === 'style-5' ? 'style-8' : style;
     }
 
-    function isStyle9LeftHover() {
-        return currentStyle === 'style-9-left-hover';
+    function normalizeTelegramStyle(style) {
+        var normalized = normalizeWidgetStyle(String(style || '').trim());
+        if (normalized === 'reveal_label_hover') {
+            return 'tg-reveal';
+        }
+        if (telegramStyleNames.indexOf(normalized) !== -1) {
+            return normalized;
+        }
+        if (['style-2', 'style-3', 'style-3-large', 'style-7'].indexOf(normalized) !== -1) {
+            return 'tg-icon';
+        }
+        if (['style-1', 'style-6', 'style-8'].indexOf(normalized) !== -1) {
+            return 'tg-pill';
+        }
+        if (['style-7-extend', 'style-9-left-hover'].indexOf(normalized) !== -1) {
+            return 'tg-reveal';
+        }
+        // style-4 (old default), empty, unknown → compact
+        return 'tg-compact';
     }
 
-    function isStyle9MobileExpanded() {
+    function isRevealLabelStyle(shell) {
+        var style = styleForShell(shell || activeChannelShell());
+        return style === 'tg-reveal' || style === 'style-9-left-hover';
+    }
+
+    function shellForElement(el) {
+        if (!el || !el.closest) {
+            return null;
+        }
+        return el.closest('[data-channel-shell]');
+    }
+
+    function activeChannelShell() {
+        if (activeLauncherButton) {
+            var shell = shellForElement(activeLauncherButton);
+            if (shell) {
+                return shell;
+            }
+        }
+        return channelShells[0] || null;
+    }
+
+    function styleForShell(shell) {
+        if (!shell) {
+            return currentStyle || 'style-1';
+        }
+        return shell.dataset.activeStyle
+            || (isMobile() ? shell.dataset.mobileStyle : shell.dataset.desktopStyle)
+            || currentStyle
+            || 'style-1';
+    }
+
+    function isStyle9LeftHover(shell) {
+        var target = shell || activeChannelShell();
+        return styleForShell(target) === 'style-9-left-hover';
+    }
+
+    function isStyle9MobileExpanded(shell) {
+        var target = shell || activeChannelShell();
         return isMobile()
-            && isStyle9LeftHover()
-            && (container.classList.contains('is-style-9-mobile-expanded')
-                || container.classList.contains('is-hovering'));
+            && isStyle9LeftHover(target)
+            && target
+            && (target.classList.contains('is-style-9-mobile-expanded')
+                || target.classList.contains('is-hovering'));
     }
 
-    function isStyle9MobileCollapsed() {
-        return isMobile() && isStyle9LeftHover() && !isStyle9MobileExpanded();
+    function isStyle9MobileCollapsed(shell) {
+        var target = shell || activeChannelShell();
+        return isMobile() && isStyle9LeftHover(target) && !isStyle9MobileExpanded(target);
     }
 
     function updateViewportCssVars() {
-        var viewportWidth = parentViewportWidth || window.innerWidth || 320;
+        var viewportWidth = parentAvailableWidth
+            || parentViewportWidth
+            || window.innerWidth
+            || 320;
+        var viewportHeight = parentAvailableHeight
+            || parentViewportHeight
+            || window.innerHeight
+            || 640;
+        var launcherReserve = 72;
+        if (launcherStack) {
+            var stackRect = launcherStack.getBoundingClientRect();
+            if (stackRect.height > 0) {
+                launcherReserve = Math.ceil(stackRect.height + 16);
+            } else if (launcherButtons.length > 1) {
+                launcherReserve = 72 * launcherButtons.length + 10 * (launcherButtons.length - 1);
+            }
+        }
+
         document.documentElement.style.setProperty('--ctcw-viewport-width', viewportWidth + 'px');
+        document.documentElement.style.setProperty('--ctcw-available-width', viewportWidth + 'px');
+        document.documentElement.style.setProperty('--ctcw-available-height', viewportHeight + 'px');
+        document.documentElement.style.setProperty('--ctcw-launchers-reserve', launcherReserve + 'px');
+
+        if (greeting) {
+            var needsScroll = greeting.classList.contains('has-consent');
+            if (greeting.classList.contains('is-visible')) {
+                var form = greeting.querySelector('.ctcw-greeting-form');
+                if (form && form.scrollHeight > form.clientHeight + 1) {
+                    needsScroll = true;
+                }
+            }
+            greeting.classList.toggle('is-scrollable', needsScroll);
+        }
     }
 
-    function collapseStyle9Mobile() {
-        container.classList.remove('is-style-9-mobile-expanded');
-        if (isMobile() && isStyle9LeftHover()) {
+    function postSizeToParent(width, height, state) {
+        var trustedOrigin = getTrustedParentOrigin();
+        var payload = {
+            type: 'ctcw:size',
+            id: String(config.widgetId || window.CTCW_WIDGET_ID || ''),
+            width: width,
+            height: height,
+            state: state
+        };
+
+        try {
+            window.parent.postMessage(payload, trustedOrigin || '*');
+        } catch (error) {
+            try {
+                window.parent.postMessage(payload, '*');
+            } catch (ignored) {
+                // Fail safely: keep local UI usable even if messaging is blocked.
+            }
+        }
+    }
+
+    function getVisibleWidgetBounds() {
+        var elements = Array.from(document.querySelectorAll(getMeasureSelectors())).filter(isElementVisible);
+        if (!elements.length && container) {
+            var rootRect = container.getBoundingClientRect();
+            if (rootRect.width > 0 && rootRect.height > 0) {
+                return {
+                    width: Math.ceil(rootRect.width),
+                    height: Math.ceil(rootRect.height)
+                };
+            }
+            var fallback = minimumForState(resolveSizeState());
+            return { width: fallback.width, height: fallback.height };
+        }
+
+        var minX = Infinity;
+        var minY = Infinity;
+        var maxX = -Infinity;
+        var maxY = -Infinity;
+        var padding = getBoundsPadding();
+
+        elements.forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            minX = Math.min(minX, rect.left);
+            minY = Math.min(minY, rect.top);
+            maxX = Math.max(maxX, rect.right);
+            maxY = Math.max(maxY, rect.bottom);
+        });
+
+        if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+            var emptyFallback = minimumForState(resolveSizeState());
+            return { width: emptyFallback.width, height: emptyFallback.height };
+        }
+
+        return {
+            width: Math.ceil(maxX - minX + padding),
+            height: Math.ceil(maxY - minY + padding)
+        };
+    }
+
+    function sendActualWidgetSize() {
+        if (sizeReportFrame) {
+            window.cancelAnimationFrame(sizeReportFrame);
+        }
+
+        sizeReportFrame = window.requestAnimationFrame(function () {
+            sizeReportFrame = null;
+            var root = document.querySelector('.ctcw-widget-root');
+            if (!root || root.classList.contains('is-hidden')) {
+                return;
+            }
+
+            updateViewportCssVars();
+
+            var state = resolveSizeState();
+            var bounds = getVisibleWidgetBounds();
+            var minimum = minimumForState(state);
+            var availableWidth = parentAvailableWidth
+                || (isMobile() ? getMobileViewportLimit() : null)
+                || window.innerWidth;
+            var availableHeight = parentAvailableHeight || parentViewportHeight || window.innerHeight;
+            var width = Math.max(minimum.width, bounds.width);
+            var height = Math.max(minimum.height, bounds.height);
+
+            if (availableWidth && isFinite(availableWidth)) {
+                width = Math.min(width, Math.max(minimum.width, Math.ceil(availableWidth)));
+            }
+            if (availableHeight && isFinite(availableHeight)) {
+                height = Math.min(height, Math.max(minimum.height, Math.ceil(availableHeight)));
+            }
+
+            width = Math.ceil(width);
+            height = Math.ceil(height);
+
+            if (
+                lastPostedSize.width === width
+                && lastPostedSize.height === height
+                && lastPostedSize.state === state
+            ) {
+                return;
+            }
+
+            lastPostedSize = { width: width, height: height, state: state };
+            postSizeToParent(width, height, state);
+        });
+    }
+
+    function scheduleSizeReports() {
+        [0, 80, 200, 450].forEach(function (delay) {
+            window.setTimeout(sendActualWidgetSize, delay);
+        });
+    }
+
+    function collapseStyle9Mobile(shell) {
+        var targets = shell ? [shell] : channelShells;
+        targets.forEach(function (target) {
+            target.classList.remove('is-style-9-mobile-expanded');
+            if (isMobile() && isStyle9LeftHover(target)) {
+                target.classList.remove('is-hovering');
+            }
+        });
+        if (!container.querySelector('[data-channel-shell].is-hovering')) {
             container.classList.remove('is-hovering');
         }
     }
 
-    function expandStyle9Mobile() {
-        if (!isMobile() || !isStyle9LeftHover()) {
+    function expandStyle9Mobile(shell) {
+        var target = shell || activeChannelShell();
+        if (!isMobile() || !isStyle9LeftHover(target) || !target) {
             return;
         }
-        container.classList.add('is-style-9-mobile-expanded');
+        target.classList.add('is-style-9-mobile-expanded');
+        target.classList.add('is-hovering');
         container.classList.add('is-hovering');
         currentState = 'hover';
         requestWidgetResize();
     }
 
-    function isIconOnlyStyle() {
-        if (isMobile() && mobileCollapsedIconStyles.indexOf(currentStyle) !== -1) {
+    function isIconOnlyStyle(shell) {
+        var style = styleForShell(shell || activeChannelShell());
+        if (isMobile() && mobileCollapsedIconStyles.indexOf(style) !== -1) {
             return true;
         }
 
-        return iconOnlyStyles.indexOf(currentStyle) !== -1;
+        return iconOnlyStyles.indexOf(style) !== -1;
     }
 
-    function isCollapsedIconOnlyStyle() {
-        if (isStyle9MobileCollapsed()) {
+    function isCollapsedIconOnlyStyle(shell) {
+        if (isStyle9MobileCollapsed(shell)) {
             return true;
         }
 
-        return isIconOnlyStyle();
+        return isIconOnlyStyle(shell);
     }
 
     function getMobileViewportLimit() {
@@ -170,7 +421,7 @@
 
     function measureCollapsedTriggerBounds() {
         var padding = getBoundsPadding();
-        var trigger = button;
+        var trigger = launcherStack || button;
 
         if (!trigger) {
             return minimumForState(resolveSizeState());
@@ -180,8 +431,8 @@
             return getVisibleWidgetBounds();
         }
 
-        if (isCollapsedIconOnlyStyle()) {
-            var iconRect = measureTriggerElement(trigger);
+        if (isCollapsedIconOnlyStyle() && launcherButtons.length === 1) {
+            var iconRect = measureTriggerElement(button);
             return {
                 width: Math.max(minimumForState('icon').width, iconRect.width + padding),
                 height: Math.max(minimumForState('icon').height, iconRect.height + padding)
@@ -189,7 +440,10 @@
         }
 
         var triggerSize = measureTriggerElement(trigger);
-        var width = Math.max(minimumForState('button').width, triggerSize.width + padding);
+        var minWidth = launcherButtons.length > 1
+            ? Math.max(minimumForState('button').width, 110)
+            : minimumForState('button').width;
+        var width = Math.max(minWidth, triggerSize.width + padding);
         var height = Math.max(minimumForState('button').height, triggerSize.height + padding);
         var viewportLimit = isMobile() ? getMobileViewportLimit() : null;
 
@@ -202,7 +456,10 @@
 
     function renderCollapsedTrigger() {
         container.classList.remove('is-hovering');
-        container.classList.remove('is-style-9-mobile-expanded');
+        channelShells.forEach(function (shell) {
+            shell.classList.remove('is-hovering');
+            shell.classList.remove('is-style-9-mobile-expanded');
+        });
         container.classList.toggle('ctcw-greeting-open', false);
         container.classList.toggle('ctcw-greeting-closed', !!greeting);
 
@@ -223,6 +480,9 @@
     function resolveSizeState() {
         if (isGreetingVisible()) {
             if (config.greetingCapturePhone && greeting && greeting.classList.contains('has-capture')) {
+                if (greeting.classList.contains('has-consent') || greeting.querySelector('.ctcw-consent-text')) {
+                    return 'greeting-phone-consent';
+                }
                 return 'greeting-phone';
             }
             return 'greeting';
@@ -260,94 +520,67 @@
         return rect.width > 0 && rect.height > 0;
     }
 
-    function getVisibleWidgetBounds() {
-        var elements = Array.from(document.querySelectorAll(getMeasureSelectors())).filter(isElementVisible);
-        if (!elements.length) {
-            var fallback = minimumForState(resolveSizeState());
-            return { width: fallback.width, height: fallback.height };
-        }
-
-        var minX = Infinity;
-        var minY = Infinity;
-        var maxX = -Infinity;
-        var maxY = -Infinity;
-        var padding = getBoundsPadding();
-
-        elements.forEach(function (el) {
-            var rect = el.getBoundingClientRect();
-            minX = Math.min(minX, rect.left);
-            minY = Math.min(minY, rect.top);
-            maxX = Math.max(maxX, rect.right);
-            maxY = Math.max(maxY, rect.bottom);
-        });
-
-        return {
-            width: Math.ceil(maxX - minX + padding),
-            height: Math.ceil(maxY - minY + padding)
-        };
-    }
-
-    function sendActualWidgetSize() {
-        window.requestAnimationFrame(function () {
-            var root = document.querySelector('.ctcw-widget-root');
-            if (!root || root.classList.contains('is-hidden')) {
-                return;
-            }
-
-            var state = resolveSizeState();
-            var bounds = isGreetingVisible() ? getVisibleWidgetBounds() : measureCollapsedTriggerBounds();
-            var minimum = minimumForState(state);
-            var viewportLimit = isMobile() ? getMobileViewportLimit() : null;
-            var width = Math.max(minimum.width, bounds.width);
-            var height = Math.max(minimum.height, bounds.height);
-
-            if (viewportLimit) {
-                width = Math.min(width, viewportLimit);
-            }
-
-            window.parent.postMessage({
-                type: 'ctcw:size',
-                id: String(config.widgetId || window.CTCW_WIDGET_ID || ''),
-                width: width,
-                height: height,
-                state: state
-            }, '*');
-        });
-    }
-
-    function scheduleSizeReports() {
-        [0, 50, 150, 300, 600, 900].forEach(function (delay) {
-            window.setTimeout(sendActualWidgetSize, delay);
-        });
-    }
-
     function closeGreetingDialog() {
         if (!greeting) {
             return;
         }
 
         showPhoneError('');
+        hideChannelUnavailable();
+        hideTelegramFallback();
         if (phoneInput) {
             phoneInput.removeAttribute('aria-invalid');
         }
         if (greetingSuccess) {
             greetingSuccess.hidden = true;
         }
-        resetSubmitButton(greetingSubmit);
+        isSubmittingLead = false;
+        resetSubmitButton();
+        launcherButtons.forEach(function (btn) {
+            btn.classList.remove('is-dialog-open');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+        if (container) {
+            container.removeAttribute('data-active-channel');
+        }
         renderCollapsedTrigger();
         requestWidgetResize();
     }
 
     function applyResponsiveState() {
         var mobile = isMobile();
-        var activeStyle = normalizeWidgetStyle(mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle);
-        currentStyle = activeStyle || 'style-1';
 
         document.documentElement.classList.toggle('ctcw-mobile', mobile);
         styleNames.forEach(function (style) {
             container.classList.remove(style);
         });
-        container.classList.add(activeStyle || 'style-1');
+
+        if (channelShells.length) {
+            channelShells.forEach(function (shell) {
+                var channel = shell.getAttribute('data-channel-shell') || 'whatsapp';
+                var desktop = shell.dataset.desktopStyle
+                    || (channel === 'telegram' ? container.dataset.telegramDesktopStyle : container.dataset.desktopStyle)
+                    || 'style-1';
+                var mobileStyle = shell.dataset.mobileStyle
+                    || (channel === 'telegram' ? container.dataset.telegramMobileStyle : container.dataset.mobileStyle)
+                    || desktop;
+                var activeStyle = channel === 'telegram'
+                    ? normalizeTelegramStyle(mobile ? mobileStyle : desktop)
+                    : normalizeWidgetStyle(mobile ? mobileStyle : desktop);
+
+                styleNames.forEach(function (style) {
+                    shell.classList.remove(style);
+                });
+                shell.classList.add(activeStyle || (channel === 'telegram' ? 'tg-compact' : 'style-1'));
+                shell.dataset.activeStyle = activeStyle || (channel === 'telegram' ? 'tg-compact' : 'style-1');
+            });
+            currentStyle = styleForShell(activeChannelShell());
+        } else {
+            var legacyStyle = normalizeWidgetStyle(mobile ? container.dataset.mobileStyle : container.dataset.desktopStyle);
+            currentStyle = legacyStyle || 'style-1';
+            container.classList.add(currentStyle);
+        }
+
         container.classList.toggle('is-hidden', mobile ? !config.showMobile : !config.showDesktop);
         updateViewportCssVars();
         if (mobile) {
@@ -588,23 +821,209 @@
         openUrl(url);
     }
 
-    function saveLead(phone, url) {
+    var savedLeadId = null;
+    var telegramFallbackState = {
+        url: '',
+        username: ''
+    };
+    var channelPicker = container.querySelector('[data-channel-picker]');
+    var telegramFallback = container.querySelector('[data-telegram-fallback]');
+    var telegramFallbackText = container.querySelector('[data-telegram-fallback-text]');
+    var telegramCopyBtn = container.querySelector('[data-telegram-copy]');
+    var channelMode = String(config.channelMode || 'whatsapp_only');
+    var enabledChannels = Array.isArray(config.enabledChannels) ? config.enabledChannels : ['whatsapp'];
+    var readyChannels = Array.isArray(config.readyChannels) && config.readyChannels.length
+        ? config.readyChannels
+        : enabledChannels.slice();
+    var channelLabels = config.channelLabels || {};
+    var widgetI18n = config.i18n || {};
+    selectedChannel = normalizeChannel(config.defaultChannel || readyChannels[0] || 'whatsapp');
+
+    function normalizeChannel(channel) {
+        return channel === 'telegram' ? 'telegram' : 'whatsapp';
+    }
+
+    function channelCopy(channel, key, fallback) {
+        var labels = channelLabels[normalizeChannel(channel)] || {};
+        if (labels[key]) {
+            return labels[key];
+        }
+        return fallback;
+    }
+
+    function applyChannelCopy(channel) {
+        var ch = normalizeChannel(channel);
+        selectedChannel = ch;
+        if (container) {
+            container.setAttribute('data-active-channel', ch);
+        }
+        if (greeting) {
+            greeting.setAttribute('data-active-channel', ch);
+        }
+        var continueLabel = channelCopy(ch, 'continue', ch === 'telegram'
+            ? (widgetI18n.continueTelegram || 'Continue on Telegram')
+            : (widgetI18n.continueWhatsApp || 'Continue on WhatsApp'));
+        greetingSubmitButtons.forEach(function (button) {
+            if (!button) {
+                return;
+            }
+            button.setAttribute('aria-label', continueLabel);
+            if (button.hasAttribute('data-greeting-cta') || button.classList.contains('ctcw-greeting-cta')) {
+                button.textContent = continueLabel;
+            }
+        });
+        if (greetingCta && !greetingCta.hasAttribute('data-greeting-submit')) {
+            greetingCta.textContent = continueLabel;
+            greetingCta.setAttribute('aria-label', continueLabel);
+        }
+        if (greetingSuccess) {
+            greetingSuccess.textContent = channelCopy(ch, 'success', ch === 'telegram'
+                ? (widgetI18n.redirectingTelegram || 'Opening Telegram...')
+                : (widgetI18n.redirectingWhatsApp || 'Opening WhatsApp...'));
+        }
+    }
+
+    function hideChannelUnavailable() {
+        if (channelUnavailable) {
+            channelUnavailable.hidden = true;
+        }
+        if (channelUnavailableText) {
+            channelUnavailableText.textContent = '';
+        }
+        var form = greeting ? greeting.querySelector('[data-greeting-form]') : null;
+        if (form) {
+            form.hidden = false;
+        }
+    }
+
+    function showChannelUnavailable(message) {
+        var form = greeting ? greeting.querySelector('[data-greeting-form]') : null;
+        if (form) {
+            form.hidden = true;
+        }
+        if (channelPicker) {
+            channelPicker.hidden = true;
+        }
+        if (telegramFallback) {
+            telegramFallback.hidden = true;
+        }
+        if (channelUnavailableText) {
+            channelUnavailableText.textContent = message;
+        }
+        if (channelUnavailable) {
+            channelUnavailable.hidden = false;
+        }
+        revealGreeting();
+        sendActualWidgetSize();
+        scheduleSizeReports();
+    }
+
+    function unavailableMessageFor(channel, serverMessage, errorCode) {
+        var ch = normalizeChannel(channel);
+        var code = String(errorCode || '');
+        var msg = String(serverMessage || '');
+        if (code === 'no_active_destination' || /no active .*destination/i.test(msg)) {
+            return channelCopy(ch, 'noDestination', ch === 'telegram'
+                ? (widgetI18n.noTelegramDestination || 'No active Telegram destination is configured.')
+                : (widgetI18n.noWhatsAppDestination || 'No active WhatsApp destination is configured.'));
+        }
+        if (code === 'channel_disabled' || code === 'channel_unavailable' || /unavailable|disabled|offline|not available/i.test(msg)) {
+            return channelCopy(ch, 'unavailable', ch === 'telegram'
+                ? (widgetI18n.telegramUnavailable || 'Telegram is currently unavailable.')
+                : (widgetI18n.whatsappUnavailable || 'WhatsApp is currently unavailable.'));
+        }
+        return widgetI18n.unableToContinue || 'Unable to continue right now.';
+    }
+
+    function isMultiChannel() {
+        return launcherButtons.length > 1 || (channelMode === 'both' && readyChannels.length > 1);
+    }
+
+    function isTelegramOnly() {
+        return channelMode === 'telegram_only'
+            || (readyChannels.length === 1 && readyChannels[0] === 'telegram')
+            || (enabledChannels.length === 1 && enabledChannels[0] === 'telegram');
+    }
+
+    function showChannelPicker() {
+        // Legacy fallback if an old embed still renders a picker.
+        if (!channelPicker) {
+            return continueWithChannel(selectedChannel || (isTelegramOnly() ? 'telegram' : 'whatsapp'));
+        }
+        if (greeting && greeting.querySelector('.ctcw-greeting-form')) {
+            greeting.querySelector('.ctcw-greeting-form').hidden = true;
+        }
+        if (telegramFallback) {
+            telegramFallback.hidden = true;
+        }
+        channelPicker.hidden = false;
+        currentState = 'channel-picker';
+        revealGreeting();
+        sendActualWidgetSize();
+        scheduleSizeReports();
+    }
+
+    function hideChannelPicker() {
+        if (channelPicker) {
+            channelPicker.hidden = true;
+        }
+    }
+
+    function hideTelegramFallback() {
+        if (telegramFallback) {
+            telegramFallback.hidden = true;
+        }
+    }
+
+    function showTelegramFallback(result) {
+        telegramFallbackState.url = result.redirect_url || '';
+        telegramFallbackState.username = result.fallback && result.fallback.username
+            ? result.fallback.username
+            : '';
+        if (greeting && greeting.querySelector('.ctcw-greeting-form')) {
+            greeting.querySelector('.ctcw-greeting-form').hidden = true;
+        }
+        hideChannelPicker();
+        hideChannelUnavailable();
+        if (telegramFallback) {
+            telegramFallback.hidden = false;
+            if (telegramFallbackText) {
+                telegramFallbackText.textContent = telegramFallbackState.username
+                    ? (widgetI18n.copyUsername || 'Copy Telegram Username')
+                    : (widgetI18n.redirectingTelegram || widgetI18n.continueTelegram || 'Opening Telegram...');
+            }
+            if (telegramCopyBtn) {
+                telegramCopyBtn.hidden = !telegramFallbackState.username;
+            }
+        }
+        currentState = 'telegram-fallback';
+        revealGreeting();
+        sendActualWidgetSize();
+        scheduleSizeReports();
+    }
+
+    function saveLead(phone, url, channel) {
         var leadPage = getLeadPageContext();
+        var payload = {
+            widget_id: config.widgetId,
+            public_key: config.publicKey,
+            visitor_phone: phone,
+            source_url: leadPage.url,
+            page_title: leadPage.title,
+            whatsapp_redirect_url: url || '',
+            website: '',
+            channel: normalizeChannel(channel || selectedChannel || 'whatsapp')
+        };
+        if (savedLeadId) {
+            payload.lead_id = savedLeadId;
+        }
 
         return fetch(config.saveLeadUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                widget_id: config.widgetId,
-                public_key: config.publicKey,
-                visitor_phone: phone,
-                source_url: leadPage.url,
-                page_title: leadPage.title,
-                whatsapp_redirect_url: url,
-                website: ''
-            })
+            body: JSON.stringify(payload)
         })
             .then(function (response) {
                 return response.json();
@@ -613,37 +1032,50 @@
                 if (!data || !data.success) {
                     throw new Error(data && data.message ? data.message : 'Save failed');
                 }
+                if (data.lead_id) {
+                    savedLeadId = data.lead_id;
+                }
                 return data;
             });
     }
 
-    function resolveDestination() {
+    function resolveDestination(channel) {
         if (!config.destinationResolveUrl || !config.publicKey) {
             return Promise.reject(new Error('Destination resolver unavailable'));
         }
 
         var leadPage = getLeadPageContext();
+        var payload = {
+            widget_id: config.widgetId,
+            public_key: config.publicKey,
+            source_url: leadPage.url,
+            channel: normalizeChannel(channel || selectedChannel || 'whatsapp')
+        };
+        if (savedLeadId) {
+            payload.lead_id = savedLeadId;
+        }
 
         return fetch(config.destinationResolveUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                widget_id: config.widgetId,
-                public_key: config.publicKey,
-                source_url: leadPage.url
-            })
+            body: JSON.stringify(payload)
         })
             .then(function (response) {
-                return response.json();
+                return response.json().then(function (data) {
+                    return { ok: response.ok, data: data || {} };
+                });
             })
-            .then(function (data) {
-                if (!data || !data.success || !data.full_number) {
-                    throw new Error(data && data.message ? data.message : 'Unable to resolve destination');
+            .then(function (result) {
+                if (!result.ok || !result.data.success) {
+                    var error = new Error(result.data.message || 'Unable to resolve destination');
+                    error.channel = normalizeChannel(channel || selectedChannel || 'whatsapp');
+                    error.serverMessage = result.data.message || '';
+                    error.errorCode = result.data.error || '';
+                    throw error;
                 }
-
-                return cleanDigits(data.full_number);
+                return result.data;
             });
     }
 
@@ -671,15 +1103,63 @@
         return 'https://wa.me/' + phone + '?text=' + encodedMessage;
     }
 
-    function redirectWithResolvedDestination() {
-        return resolveDestination()
-            .then(function (phone) {
+    function continueWithChannel(channel) {
+        hideChannelPicker();
+        hideChannelUnavailable();
+        var ch = normalizeChannel(channel);
+        selectedChannel = ch;
+        applyChannelCopy(ch);
+
+        if (ch === 'telegram') {
+            return resolveDestination('telegram')
+                .then(function (result) {
+                    if (!result.redirect_url) {
+                        showChannelUnavailable(unavailableMessageFor('telegram', 'Telegram is currently unavailable'));
+                        return;
+                    }
+                    openUrl(result.redirect_url);
+                    if (result.fallback && result.fallback.type === 'copy_username') {
+                        showTelegramFallback(result);
+                    }
+                })
+                .catch(function (error) {
+                    showChannelUnavailable(unavailableMessageFor(
+                        'telegram',
+                        error && (error.serverMessage || error.message),
+                        error && error.errorCode
+                    ));
+                });
+        }
+
+        return resolveDestination('whatsapp')
+            .then(function (result) {
+                var phone = cleanDigits(result.full_number || '');
+                if (!phone) {
+                    showChannelUnavailable(unavailableMessageFor('whatsapp', 'No active destination', 'no_active_destination'));
+                    return;
+                }
                 redirectToWhatsapp(buildUrlWithPhone(phone));
+            })
+            .catch(function (error) {
+                showChannelUnavailable(unavailableMessageFor(
+                    'whatsapp',
+                    error && (error.serverMessage || error.message),
+                    error && error.errorCode
+                ));
             });
     }
 
+    function afterLeadSavedContinue() {
+        // Channel is known from the launcher the visitor clicked.
+        return continueWithChannel(selectedChannel || (isTelegramOnly() ? 'telegram' : 'whatsapp'));
+    }
+
+    function redirectWithResolvedDestination() {
+        return afterLeadSavedContinue();
+    }
+
     function handlePhoneCaptureSubmit(submitButton) {
-        if (!config.online) {
+        if (!config.online || isSubmittingLead) {
             return;
         }
 
@@ -687,8 +1167,12 @@
         var forceMode = isForcePhoneCapture();
         var saveFailedMessage = (config.phoneValidation && config.phoneValidation.saveFailed)
             || 'We could not save your phone number. Please try again.';
-        var redirectFailedMessage = (config.phoneValidation && config.phoneValidation.redirectFailed)
-            || 'We could not connect you to WhatsApp. Please try again.';
+        var redirectFailedMessage = unavailableMessageFor(
+            selectedChannel,
+            selectedChannel === 'telegram'
+                ? (widgetI18n.telegramUnavailable || 'Telegram is currently unavailable.')
+                : (widgetI18n.whatsappUnavailable || 'WhatsApp is currently unavailable.')
+        );
 
         if (phone === '' && !forceMode && !config.greetingPhoneRequired) {
             clearPhoneInputInvalid();
@@ -725,16 +1209,14 @@
             return;
         }
 
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.classList.add('is-loading');
-        }
+        isSubmittingLead = true;
+        setSubmitButtonsLoading(true);
 
         if (!forceMode) {
             closeGreetingDialog();
         }
 
-        saveLead(phoneToSave, '')
+        saveLead(phoneToSave, '', selectedChannel)
             .then(function () {
                 notifyPhoneSubmitSuccess();
                 if (forceMode && greetingSuccess) {
@@ -746,15 +1228,22 @@
             .catch(function (error) {
                 var message = (error && error.message) ? error.message : saveFailedMessage;
                 if (forceMode) {
-                    resetSubmitButton(submitButton);
+                    isSubmittingLead = false;
+                    resetSubmitButton();
                     setPhoneInputInvalid(message);
                     return;
                 }
 
                 redirectWithResolvedDestination().catch(function () {
-                    setPhoneInputInvalid(redirectFailedMessage);
+                    isSubmittingLead = false;
+                    resetSubmitButton();
+                    showChannelUnavailable(redirectFailedMessage);
                 });
             });
+    }
+
+    function submitLeadForActiveChannel(submitButton) {
+        return handlePhoneCaptureSubmit(submitButton || greetingSubmit);
     }
 
     function buildMessage() {
@@ -809,7 +1298,8 @@
         if (phoneInput) {
             phoneInput.removeAttribute('aria-invalid');
         }
-        resetSubmitButton(greetingSubmit);
+        isSubmittingLead = false;
+        resetSubmitButton();
         revealGreeting();
         window.setTimeout(function () {
             if (phoneInput) {
@@ -837,19 +1327,36 @@
         revealGreeting();
     }
 
-    function handleWhatsAppClick(event) {
+    function handleLauncherClick(event) {
         event.preventDefault();
         event.stopPropagation();
         if (typeof event.stopImmediatePropagation === 'function') {
             event.stopImmediatePropagation();
         }
 
-        if (isOpening) {
+        if (isOpening || isSubmittingLead) {
             return;
         }
 
-        if (isStyle9MobileCollapsed()) {
-            expandStyle9Mobile();
+        var clickedButton = event.currentTarget;
+        var channel = normalizeChannel(clickedButton.getAttribute('data-channel') || selectedChannel || 'whatsapp');
+        selectedChannel = channel;
+        activeLauncherButton = clickedButton;
+        currentStyle = styleForShell(shellForElement(clickedButton));
+        applyChannelCopy(channel);
+        hideChannelUnavailable();
+        hideTelegramFallback();
+        hideChannelPicker();
+
+        launcherButtons.forEach(function (btn) {
+            var isActive = btn === clickedButton;
+            btn.classList.toggle('is-dialog-open', isActive);
+            btn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+        });
+
+        var clickedShell = shellForElement(clickedButton);
+        if (isStyle9MobileCollapsed(clickedShell)) {
+            expandStyle9Mobile(clickedShell);
             return;
         }
 
@@ -860,14 +1367,19 @@
 
         if (!config.online) {
             currentState = 'animation';
-            button.classList.add('is-shaking');
+            clickedButton.classList.add('is-shaking');
             sendActualWidgetSize();
             scheduleSizeReports();
             window.setTimeout(function () {
-                button.classList.remove('is-shaking');
+                clickedButton.classList.remove('is-shaking');
                 currentState = isIconOnlyStyle() ? 'icon' : 'button';
                 sendActualWidgetSize();
             }, 400);
+            return;
+        }
+
+        if (readyChannels.indexOf(channel) === -1) {
+            showChannelUnavailable(unavailableMessageFor(channel, 'No active destination'));
             return;
         }
 
@@ -896,6 +1408,12 @@
             return;
         }
 
+        // Greeting already open from another launcher — replace with this channel's flow.
+        if (config.greetingEnabled && greeting && isGreetingVisible() && config.greetingCapturePhone) {
+            showGreetingPhoneCapture();
+            return;
+        }
+
         redirectWithResolvedDestination().catch(function () {
             currentState = isIconOnlyStyle() ? 'icon' : 'button';
             sendActualWidgetSize();
@@ -904,7 +1422,10 @@
 
     if (shouldAutoOpenGreeting()) {
         window.setTimeout(
-            revealGreeting,
+            function () {
+                applyChannelCopy(selectedChannel);
+                revealGreeting();
+            },
             Math.max(0, Number(config.greetingDelaySeconds || 0)) * 1000
         );
     }
@@ -913,10 +1434,18 @@
         closeGreeting.addEventListener('click', closeGreetingDialog);
     }
 
-    if (greetingSubmit) {
-        greetingSubmit.addEventListener('click', function (event) {
+    var greetingForm = greeting ? greeting.querySelector('form[data-greeting-form]') : null;
+    if (greetingForm) {
+        greetingForm.addEventListener('submit', function (event) {
             event.preventDefault();
-            handlePhoneCaptureSubmit(greetingSubmit);
+            submitLeadForActiveChannel(greetingSubmit);
+        });
+    } else {
+        greetingSubmitButtons.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                submitLeadForActiveChannel(button);
+            });
         });
     }
 
@@ -927,48 +1456,116 @@
         });
     }
 
-    function startHover() {
+    container.querySelectorAll('[data-select-channel]').forEach(function (legacyButton) {
+        legacyButton.addEventListener('click', function () {
+            var channel = normalizeChannel(legacyButton.getAttribute('data-select-channel') || 'whatsapp');
+            selectedChannel = channel;
+            applyChannelCopy(channel);
+            continueWithChannel(channel).catch(function () {
+                showChannelUnavailable(unavailableMessageFor(channel));
+                sendActualWidgetSize();
+            });
+        });
+    });
+
+    if (telegramCopyBtn) {
+        telegramCopyBtn.addEventListener('click', function () {
+            if (!telegramFallbackState.username || !navigator.clipboard) {
+                return;
+            }
+            navigator.clipboard.writeText('@' + telegramFallbackState.username).then(function () {
+                telegramCopyBtn.textContent = widgetI18n.copiedUsername || 'Copied';
+                if (savedLeadId && config.saveLeadUrl) {
+                    fetch(config.saveLeadUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            widget_id: config.widgetId,
+                            public_key: config.publicKey,
+                            lead_id: savedLeadId,
+                            fallback_type: 'copy_username',
+                            website: '',
+                            channel: 'telegram'
+                        })
+                    }).catch(function () {});
+                }
+            });
+        });
+    }
+
+    function startHover(event) {
         if (isGreetingVisible()) {
             return;
         }
+        var shell = shellForElement(event && event.currentTarget ? event.currentTarget : null);
         if (isMobile()) {
-            if (isStyle9LeftHover() && isStyle9MobileCollapsed()) {
-                expandStyle9Mobile();
+            if (isStyle9LeftHover(shell) && isStyle9MobileCollapsed(shell)) {
+                expandStyle9Mobile(shell);
             }
             return;
         }
         window.clearTimeout(hoverTimer);
         currentState = 'hover';
-        hoverTimer = window.setTimeout(function () {
-            container.classList.add('is-hovering');
-            sendActualWidgetSize();
-            scheduleSizeReports();
-        }, 40);
+        // Apply hover class immediately. Expand styles reserve layout width in CSS so
+        // the iframe does not need to catch up after a delayed max-width animation.
+        if (shell) {
+            shell.classList.add('is-hovering');
+        }
+        container.classList.add('is-hovering');
+        sendActualWidgetSize();
     }
 
-    function endHover() {
+    function endHover(event) {
         if (isGreetingVisible()) {
             return;
         }
         if (isMobile()) {
             return;
         }
-        window.clearTimeout(hoverTimer);
-        container.classList.remove('is-hovering');
-        window.setTimeout(function () {
-            if (!isGreetingVisible()) {
-                currentState = isIconOnlyStyle() ? 'icon' : 'button';
-                sendActualWidgetSize();
-                scheduleSizeReports();
+
+        var shell = shellForElement(event && event.currentTarget ? event.currentTarget : null);
+        var buttonEl = event && event.currentTarget && event.currentTarget.getAttribute
+            ? event.currentTarget
+            : (shell ? shell.querySelector('[data-widget-button]') : null);
+
+        // Keep hover/focus expansion while the control remains hovered or focused.
+        if (buttonEl) {
+            try {
+                if (buttonEl.matches(':hover') || buttonEl === document.activeElement) {
+                    return;
+                }
+            } catch (ignored) {
+                // :hover matching can throw in some older engines; fall through.
             }
-        }, 250);
+        }
+
+        window.clearTimeout(hoverTimer);
+        if (shell) {
+            shell.classList.remove('is-hovering');
+        }
+        if (!container.querySelector('[data-channel-shell].is-hovering')) {
+            container.classList.remove('is-hovering');
+        }
+        currentState = isIconOnlyStyle() ? 'icon' : 'button';
+        sendActualWidgetSize();
     }
 
-    container.addEventListener('mouseenter', startHover);
-    container.addEventListener('mouseleave', endHover);
-    button.addEventListener('mouseenter', startHover);
-    button.addEventListener('mouseleave', endHover);
-    button.addEventListener('click', handleWhatsAppClick, true);
+    launcherButtons.forEach(function (launcherButton) {
+        launcherButton.addEventListener('pointerenter', startHover);
+        launcherButton.addEventListener('pointerleave', endHover);
+        launcherButton.addEventListener('focusin', startHover);
+        launcherButton.addEventListener('focusout', function (event) {
+            if (launcherButton.contains(event.relatedTarget)) {
+                return;
+            }
+            endHover(event);
+        });
+        launcherButton.addEventListener('click', handleLauncherClick, true);
+        launcherButton.addEventListener('transitionend', function () {
+            sendActualWidgetSize();
+        });
+    });
+    applyChannelCopy(selectedChannel);
 
     window.addEventListener('message', function (event) {
         if (!isTrustedParentMessage(event)) {
@@ -977,13 +1574,34 @@
 
         if (event.data.type === 'ctcw:page-context') {
             parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
+            parentViewportHeight = parseInt(event.data.height, 10) || parentViewportHeight;
+            if (event.data.availableWidth != null) {
+                parentAvailableWidth = parseInt(event.data.availableWidth, 10) || parentAvailableWidth;
+            } else {
+                parentAvailableWidth = parentViewportWidth;
+            }
+            if (event.data.availableHeight != null) {
+                parentAvailableHeight = parseInt(event.data.availableHeight, 10) || parentAvailableHeight;
+            } else {
+                parentAvailableHeight = parentViewportHeight;
+            }
             updatePageContext(event.data);
+            updateViewportCssVars();
             applyResponsiveState();
             return;
         }
 
         if (event.data.type === 'ctcw:viewport') {
             parentViewportWidth = parseInt(event.data.width, 10) || parentViewportWidth;
+            if (event.data.height != null) {
+                parentViewportHeight = parseInt(event.data.height, 10) || parentViewportHeight;
+            }
+            if (event.data.availableWidth != null) {
+                parentAvailableWidth = parseInt(event.data.availableWidth, 10) || parentAvailableWidth;
+            }
+            if (event.data.availableHeight != null) {
+                parentAvailableHeight = parseInt(event.data.availableHeight, 10) || parentAvailableHeight;
+            }
             var legacyUrl = typeof event.data.url === 'string' ? event.data.url : '';
             var legacyPath = '/';
             if (legacyUrl !== '') {
@@ -998,6 +1616,7 @@
                 urlFull: legacyUrl,
                 url: legacyPath
             });
+            updateViewportCssVars();
             applyResponsiveState();
         }
     });
@@ -1007,6 +1626,12 @@
             sendActualWidgetSize();
         });
         resizeObserver.observe(container);
+        if (launcherStack) {
+            resizeObserver.observe(launcherStack);
+        }
+        if (greeting) {
+            resizeObserver.observe(greeting);
+        }
     }
 
     applyResponsiveState();

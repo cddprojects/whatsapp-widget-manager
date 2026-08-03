@@ -77,39 +77,78 @@ $config = [
         return config.src + '&mode=' + encodeURIComponent(activeMode());
     }
 
+    function cssLengthToPx(value, fallback) {
+        var raw = String(value == null ? '' : value).trim();
+        if (raw === '') {
+            return fallback;
+        }
+        if (/^-?\d+(\.\d+)?px$/i.test(raw)) {
+            return Math.max(0, parseFloat(raw));
+        }
+        if (/^-?\d+(\.\d+)?$/i.test(raw)) {
+            return Math.max(0, parseFloat(raw));
+        }
+        return fallback;
+    }
+
+    function positionInsetPx() {
+        var position = activeConfig().position || {};
+        return {
+            vertical: cssLengthToPx(position.verticalValue, isMobile() ? 12 : 25),
+            horizontal: cssLengthToPx(position.horizontalValue, isMobile() ? 12 : 25)
+        };
+    }
+
+    function availableViewportSize() {
+        var margin = viewportMargins();
+        var inset = positionInsetPx();
+        var width = Math.max(64, window.innerWidth - margin - inset.horizontal);
+        var height = Math.max(64, window.innerHeight - margin - inset.vertical);
+
+        return {
+            width: Math.floor(width),
+            height: Math.floor(height)
+        };
+    }
+
     function minimumForState(state) {
+        // Closed-launcher floors only. Open greeting sizes come from measured content.
         if (isMobile()) {
-            if (state === 'greeting-phone') {
-                return { width: 330, height: 300 };
-            }
-            if (state === 'greeting') {
-                return { width: 310, height: 240 };
+            if (state === 'greeting-phone' || state === 'greeting-phone-consent' || state === 'greeting') {
+                return { width: 280, height: 180 };
             }
             if (state === 'button' || state === 'hover') {
-                return { width: 180, height: 80 };
+                return { width: 64, height: 64 };
             }
-            return { width: 86, height: 86 };
+            return { width: 64, height: 64 };
         }
 
-        if (state === 'greeting-phone') {
-            return { width: 390, height: 240 };
-        }
-        if (state === 'greeting') {
-            return { width: 380, height: 240 };
+        if (state === 'greeting-phone' || state === 'greeting-phone-consent' || state === 'greeting') {
+            return { width: 300, height: 180 };
         }
         if (state === 'button' || state === 'hover') {
-            return { width: 260, height: 110 };
+            return { width: 72, height: 72 };
         }
-        return { width: 110, height: 110 };
+        return { width: 72, height: 72 };
+    }
+
+    function sanitizeDimension(value, fallback) {
+        var number = typeof value === 'number' ? value : parseFloat(String(value));
+        if (!isFinite(number) || number <= 0) {
+            return fallback;
+        }
+        return Math.ceil(number);
     }
 
     function clampSize(width, height, state) {
         var minimum = minimumForState(state || lastState || 'icon');
-        var margin = viewportMargins();
+        var available = availableViewportSize();
+        var nextWidth = sanitizeDimension(width, minimum.width);
+        var nextHeight = sanitizeDimension(height, minimum.height);
 
         return {
-            width: Math.min(window.innerWidth - margin, Math.max(minimum.width, parseInt(width, 10) || minimum.width)),
-            height: Math.min(window.innerHeight - margin, Math.max(minimum.height, parseInt(height, 10) || minimum.height))
+            width: Math.min(available.width, Math.max(minimum.width, nextWidth)),
+            height: Math.min(available.height, Math.max(minimum.height, nextHeight))
         };
     }
 
@@ -140,43 +179,37 @@ $config = [
         iframe.style[position.horizontalSide] = horizontalValue;
     }
 
-function applySize(width, height, state) {
-    var nextState = state || lastState || 'icon';
+    function applySize(width, height, state) {
+        var nextState = state || lastState || 'icon';
+        var size = clampSize(width, height, nextState);
 
-    // Force desktop greeting iframe height to 235px
-    if (!isMobile() && (nextState === 'greeting' || nextState === 'greeting-phone')) {
-        height = 255;
+        if (
+            lastSize &&
+            lastSize.width === size.width &&
+            lastSize.height === size.height &&
+            lastState === nextState
+        ) {
+            return;
+        }
+
+        var stateChanged = lastState !== nextState;
+        lastSize = size;
+        lastState = nextState;
+
+        iframe.style.width = size.width + 'px';
+        iframe.style.height = size.height + 'px';
+
+        if (stateChanged && isMobile() && (nextState === 'button' || nextState === 'icon')) {
+            window.setTimeout(function () {
+                sendViewport();
+            }, 80);
+        }
     }
-
-    var size = clampSize(width, height, nextState);
-
-    if (
-        lastSize &&
-        lastSize.width === size.width &&
-        lastSize.height === size.height &&
-        lastState === nextState
-    ) {
-        return;
-    }
-
-    var stateChanged = lastState !== nextState;
-    lastSize = size;
-    lastState = nextState;
-
-    iframe.style.width = size.width + 'px';
-    iframe.style.height = size.height + 'px';
-
-    if (stateChanged && isMobile() && (nextState === 'button' || nextState === 'icon')) {
-        window.setTimeout(function () {
-            sendViewport();
-        }, 80);
-    }
-}
 
     function applyBaseStyles() {
         iframe.setAttribute('scrolling', 'no');
         iframe.setAttribute('allowtransparency', 'true');
-        iframe.setAttribute('title', 'Click to WhatsApp chat widget');
+        iframe.setAttribute('title', 'Click to Chat widget');
         iframe.style.border = '0';
         iframe.style.background = 'transparent';
         iframe.style.zIndex = '999999';
@@ -184,7 +217,9 @@ function applySize(width, height, state) {
         iframe.style.pointerEvents = 'auto';
         iframe.style.boxShadow = 'none';
         iframe.style.maxWidth = 'calc(100vw - ' + viewportMargins() + 'px)';
-        iframe.style.maxHeight = isMobile() ? 'calc(100svh - ' + viewportMargins() + 'px)' : 'calc(100vh - ' + viewportMargins() + 'px)';
+        iframe.style.maxHeight = isMobile()
+            ? 'calc(100svh - ' + viewportMargins() + 'px)'
+            : 'calc(100vh - ' + viewportMargins() + 'px)';
         iframe.style.transition = 'none';
         applyPosition();
         var initial = isMobile() ? mobileDefaultSize : defaultSize;
@@ -249,11 +284,14 @@ function applySize(width, height, state) {
 
         var pageContext = getPageContext();
         var targetOrigin = trustedIframeOrigin() || '*';
+        var available = availableViewportSize();
 
         iframe.contentWindow.postMessage({
             type: 'ctcw:page-context',
             width: window.innerWidth,
             height: window.innerHeight,
+            availableWidth: available.width,
+            availableHeight: available.height,
             siteName: pageContext.siteName,
             siteUrl: pageContext.siteUrl,
             site: pageContext.site,
@@ -311,7 +349,7 @@ function applySize(width, height, state) {
             return;
         }
 
-        if (!event.data) {
+        if (!event.data || typeof event.data !== 'object') {
             return;
         }
 

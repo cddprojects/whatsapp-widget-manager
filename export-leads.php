@@ -9,6 +9,10 @@ $dateFrom = trim((string) ($_GET['date_from'] ?? ''));
 $dateTo = trim((string) ($_GET['date_to'] ?? ''));
 $widgetFilterId = (int) ($_GET['widget_id'] ?? 0);
 $sort = trim((string) ($_GET['sort'] ?? 'newest'));
+$channelFilter = trim((string) ($_GET['channel'] ?? ''));
+if ($channelFilter !== '' && normalize_widget_channel($channelFilter) === null) {
+    $channelFilter = '';
+}
 
 if ($scope === 'client') {
     $user = require_client();
@@ -19,6 +23,7 @@ if ($scope === 'client') {
         'q' => $query,
         'date_from' => $dateFrom,
         'date_to' => $dateTo,
+        'channel' => $channelFilter,
     ]);
     $filename = 'my-leads-' . app_lead_today_date_local() . '.csv';
 } elseif ($scope === 'admin') {
@@ -35,6 +40,7 @@ if ($scope === 'client') {
         'q' => $query,
         'date_from' => $dateFrom,
         'date_to' => $dateTo,
+        'channel' => $channelFilter,
     ]);
     $filename = 'client-leads-' . $clientId . '-' . app_lead_today_date_local() . '.csv';
 } elseif ($scope === 'all') {
@@ -51,6 +57,7 @@ if ($scope === 'client') {
         'date_from' => $dateFrom,
         'date_to' => $dateTo,
         'sort' => $sort,
+        'channel' => $channelFilter,
     ]);
     $filename = 'all-leads-' . app_lead_today_date_local() . '.csv';
 } else {
@@ -68,14 +75,27 @@ fputcsv($out, [
     t('lead.export_widget_name'),
     t('lead.export_source_url'),
     t('lead.export_captured_at'),
+    t('lead.export_channel'),
+    t('lead.export_destination_name'),
+    t('lead.export_destination_type'),
+    t('lead.export_destination_snapshot'),
+    t('lead.export_redirect_attempted_at'),
+    t('lead.export_fallback_type'),
 ]);
 
 foreach ($rows as $lead) {
+    $channel = normalize_lead_channel($lead['channel'] ?? null);
     fputcsv($out, [
         format_lead_export_phone($lead),
         $lead['widget_name'] ?? '',
         $lead['source_url'] ?? '',
         format_lead_datetime_for_export($lead['created_at'] ?? null),
+        $channel,
+        $lead['destination_name'] ?? '',
+        $lead['destination_type'] ?? '',
+        $lead['destination_snapshot'] ?? '',
+        format_lead_datetime_for_export($lead['redirect_attempted_at'] ?? null),
+        $lead['fallback_type'] ?? '',
     ]);
 }
 

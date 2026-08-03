@@ -650,29 +650,59 @@ function parse_api_summary_period(): array
     ];
 }
 
-function count_widget_leads_for_api(int $clientId, int $widgetId, string $startUtc, string $endUtc): int
-{
+function count_widget_leads_for_api(
+    int $clientId,
+    int $widgetId,
+    string $startUtc,
+    string $endUtc,
+    ?string $channel = null
+): int {
     if (!database_table_exists('widget_leads')) {
         return 0;
     }
 
-    $stmt = db()->prepare(
-        'SELECT COUNT(*)
+    $sql = 'SELECT COUNT(*)
          FROM widget_leads
          WHERE client_id = :client_id
            AND widget_id = :widget_id
            AND deleted_at IS NULL
            AND created_at >= :start_utc
-           AND created_at < :end_utc'
-    );
-    $stmt->execute([
+           AND created_at < :end_utc';
+    $params = [
         'client_id' => $clientId,
         'widget_id' => $widgetId,
         'start_utc' => $startUtc,
         'end_utc' => $endUtc,
-    ]);
+    ];
+
+    $normalized = $channel !== null && $channel !== '' ? normalize_widget_channel($channel) : null;
+    if ($channel !== null && $channel !== '' && $normalized === null) {
+        throw new InvalidArgumentException('invalid_channel');
+    }
+    if ($normalized !== null && table_has_column('widget_leads', 'channel')) {
+        if ($normalized === WIDGET_CHANNEL_WHATSAPP) {
+            $sql .= ' AND (channel IS NULL OR channel = :channel OR channel = \'\')';
+        } else {
+            $sql .= ' AND channel = :channel';
+        }
+        $params['channel'] = $normalized;
+    }
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
 
     return (int) $stmt->fetchColumn();
+}
+
+/**
+ * @return array{whatsapp: int, telegram: int}
+ */
+function count_widget_leads_by_channel_for_api(int $clientId, int $widgetId, string $startUtc, string $endUtc): array
+{
+    return [
+        'whatsapp' => count_widget_leads_for_api($clientId, $widgetId, $startUtc, $endUtc, WIDGET_CHANNEL_WHATSAPP),
+        'telegram' => count_widget_leads_for_api($clientId, $widgetId, $startUtc, $endUtc, WIDGET_CHANNEL_TELEGRAM),
+    ];
 }
 
 function format_api_datetime_local(DateTimeImmutable $value): string

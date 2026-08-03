@@ -134,7 +134,11 @@ function translate_day(string $day): string
 
 function translate_widget_style(string $styleKey): string
 {
-    $styleKey = normalize_widget_style($styleKey);
+    if (isset(telegram_widget_styles()[$styleKey]) || str_starts_with($styleKey, 'tg-')) {
+        $styleKey = sanitize_telegram_widget_style($styleKey);
+    } else {
+        $styleKey = normalize_widget_style($styleKey);
+    }
     $key = 'widget_style.' . $styleKey;
     $translated = t($key);
 
@@ -202,8 +206,38 @@ function dashboard_js_i18n(): array
         'password.min_length' => t('password.min_length'),
         'preview.label' => t('preview.label'),
         'preview.phone_required' => t('preview.phone_required'),
+        'preview.phone_required_telegram' => t('preview.phone_required_telegram'),
         'preview.default_cta' => t('preview.default_cta'),
         'preview.default_offline' => t('preview.default_offline'),
+        'channel.launcher.whatsapp' => t('channel.launcher.whatsapp'),
+        'channel.launcher.telegram' => t('channel.launcher.telegram'),
+        'widget.continue_whatsapp' => t('widget.continue_whatsapp'),
+        'widget.continue_telegram' => t('widget.continue_telegram'),
+        'widget.enter_phone_neutral' => t('widget.enter_phone_neutral'),
+        'widget.consent.channel_neutral' => t('widget.consent.channel_neutral'),
+        'telegram.help.username' => t('telegram.help.username'),
+        'telegram.help.bot' => t('telegram.help.bot'),
+        'telegram.help.link' => t('telegram.help.link'),
+        'telegram.help.group' => t('telegram.help.group'),
+        'telegram.help.channel' => t('telegram.help.channel'),
+        'telegram.label.username' => t('telegram.label.username'),
+        'telegram.label.bot_username' => t('telegram.label.bot_username'),
+        'telegram.label.group_url' => t('telegram.label.group_url'),
+        'telegram.label.channel_url' => t('telegram.label.channel_url'),
+        'telegram.label.username_or_link' => t('telegram.label.username_or_link'),
+        'telegram.add_destination' => t('telegram.add_destination'),
+        'telegram.edit_destination' => t('telegram.edit_destination'),
+        'telegram.confirm_delete' => t('telegram.confirm_delete'),
+        'telegram.flash.saved' => t('telegram.flash.saved'),
+        'telegram.flash.updated' => t('telegram.flash.updated'),
+        'telegram.flash.deleted' => t('telegram.flash.deleted'),
+        'telegram.error.enter_username' => t('telegram.error.enter_username'),
+        'telegram.error.username_spaces' => t('telegram.error.username_spaces'),
+        'telegram.error.username_not_url' => t('telegram.error.username_not_url'),
+        'telegram.error.enter_link' => t('telegram.error.enter_link'),
+        'telegram.error.start_param_chars' => t('telegram.error.start_param_chars'),
+        'telegram.error.invalid_destination' => t('telegram.error.invalid_destination'),
+        'telegram.error.save_failed' => t('telegram.error.save_failed'),
         'distribution.js_summary_round_robin' => t('distribution.js_summary_round_robin'),
         'distribution.js_summary_random' => t('distribution.js_summary_random'),
         'results.leads_found_one' => t('results.leads_found_one'),

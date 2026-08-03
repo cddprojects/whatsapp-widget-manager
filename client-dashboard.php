@@ -22,6 +22,9 @@ if (!$widget && $widgets !== []) {
 
 $activeNumbers = $widget ? widget_phone_list($widget) : [];
 $activeTab = (string) ($_GET['tab'] ?? 'manual');
+if (!in_array($activeTab, ['manual', 'upload', 'telegram'], true)) {
+    $activeTab = 'manual';
+}
 
 $pageTitle = t('page.my_whatsapp_number');
 require __DIR__ . '/includes/header.php';
@@ -106,12 +109,29 @@ require __DIR__ . '/includes/header.php';
     </section>
 
     <section class="settings-card client-phone-card">
+        <?php
+        $telegramEnabledForClient = widget_channel_is_enabled((int) $selectedWidgetId, WIDGET_CHANNEL_TELEGRAM, $widget);
+        ?>
         <div class="tab-bar">
             <a class="tab-link<?= $activeTab === 'manual' ? ' is-active' : '' ?>" href="<?= e(app_url('client-dashboard.php', ['widget_id' => (int) $selectedWidgetId, 'tab' => 'manual'])) ?>"><?= e(t('tab.phone_numbers')) ?></a>
             <a class="tab-link<?= $activeTab === 'upload' ? ' is-active' : '' ?>" href="<?= e(app_url('client-dashboard.php', ['widget_id' => (int) $selectedWidgetId, 'tab' => 'upload'])) ?>"><?= e(t('tab.upload_numbers')) ?></a>
+            <a class="tab-link<?= $activeTab === 'telegram' ? ' is-active' : '' ?>" href="<?= e(app_url('client-dashboard.php', ['widget_id' => (int) $selectedWidgetId, 'tab' => 'telegram'])) ?>"><?= e(t('tab.telegram_destinations')) ?></a>
         </div>
 
-        <?php if ($activeTab === 'upload'): ?>
+        <?php if ($activeTab === 'telegram'): ?>
+            <?php if (!$telegramEnabledForClient): ?>
+                <div class="empty-state">
+                    <h3><?= e(t('telegram.disabled_title')) ?></h3>
+                    <p><?= e(t('telegram.disabled_by_admin')) ?></p>
+                </div>
+            <?php else: ?>
+                <?php
+                $destinationsContext = 'client';
+                $destinationsTelegramOnly = true;
+                require __DIR__ . '/includes/destinations-panel.php';
+                ?>
+            <?php endif; ?>
+        <?php elseif ($activeTab === 'upload'): ?>
             <form class="settings-form client-upload-form" method="post" action="<?= e(app_url('upload-phone-numbers.php')) ?>" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="widget_id" value="<?= (int) $selectedWidgetId ?>">

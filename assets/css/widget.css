@@ -1,16 +1,42 @@
 :root {
     --ctcw-green: #25d366;
     --ctcw-green-dark: #128c7e;
+    --ctcw-telegram: #0088cc;
+    --ctcw-telegram-hover: #0077b5;
+    --ctcw-telegram-dark: #0077b5;
+    --ctcw-telegram-focus: rgba(0, 136, 204, 0.25);
+    --ctcw-channel: var(--ctcw-green);
+    --ctcw-channel-hover: var(--ctcw-green-dark);
+    --ctcw-channel-focus: rgba(18, 140, 126, 0.25);
     --ctcw-text: #102a43;
     --ctcw-shadow: none;
-    --ctcw-mobile-vertical-offset: 12px;
-    --ctcw-mobile-horizontal-offset: 12px;
     --ctcw-viewport-width: 100vw;
+    --ctcw-available-width: 100vw;
+    --ctcw-available-height: 100vh;
     --ctcw-popup-gap: 12px;
+    --ctcw-root-pad: 0px;
+    --ctcw-visual-edge-allowance: 6px;
+    --ctcw-hover-label-max-width: 240px;
+}
+
+.ctcw-container[data-active-channel="whatsapp"],
+.ctcw-greeting[data-active-channel="whatsapp"] {
+    --ctcw-channel: var(--ctcw-green);
+    --ctcw-channel-hover: var(--ctcw-green-dark);
+    --ctcw-channel-focus: rgba(18, 140, 126, 0.25);
+}
+
+.ctcw-container[data-active-channel="telegram"],
+.ctcw-greeting[data-active-channel="telegram"] {
+    --ctcw-channel: var(--ctcw-telegram);
+    --ctcw-channel-hover: var(--ctcw-telegram-hover);
+    --ctcw-channel-focus: var(--ctcw-telegram-focus);
 }
 
 html,
 body {
+    width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -39,7 +65,9 @@ body * {
     flex-direction: column;
     gap: var(--ctcw-popup-gap);
     width: max-content;
-    max-width: 380px;
+    max-width: min(380px, 100%);
+    height: max-content;
+    max-height: none;
     background: transparent !important;
     box-shadow: none !important;
     filter: none !important;
@@ -58,60 +86,39 @@ body * {
     justify-content: flex-start;
 }
 
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-right {
-    align-items: flex-end;
-}
-
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-left {
-    align-items: flex-start;
-}
-
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-right,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-right {
     align-items: flex-end;
 }
 
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-left,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-left {
     align-items: flex-start;
 }
 
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-bottom.is-right {
-    bottom: 12px;
-    right: 12px;
-}
-
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-bottom.is-left {
-    bottom: 12px;
-    left: 12px;
-}
-
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-right {
-    top: 12px;
-    right: 12px;
-}
-
-html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-left {
-    top: 12px;
-    left: 12px;
-}
-
+/* Host page positions the iframe; keep content flush inside to avoid unmeasured insets. */
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-bottom.is-right,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-bottom.is-mobile-right {
-    bottom: var(--ctcw-mobile-vertical-offset);
-    right: var(--ctcw-mobile-horizontal-offset);
+    bottom: 0;
+    right: 0;
 }
 
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-bottom.is-left,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-bottom.is-mobile-left {
-    bottom: var(--ctcw-mobile-vertical-offset);
-    left: var(--ctcw-mobile-horizontal-offset);
+    bottom: 0;
+    left: 0;
 }
 
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-right,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-right {
-    top: var(--ctcw-mobile-vertical-offset);
-    right: var(--ctcw-mobile-horizontal-offset);
+    top: 0;
+    right: 0;
 }
 
+html:not(.ctcw-mobile) .ctcw-widget-anchor.is-top.is-left,
 html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
-    top: var(--ctcw-mobile-vertical-offset);
-    left: var(--ctcw-mobile-horizontal-offset);
+    top: 0;
+    left: 0;
 }
 
 .ctcw-container.is-hidden {
@@ -143,12 +150,121 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     max-width: 100%;
 }
 
-.ctcw-widget-trigger {
+.ctcw-widget-trigger,
+.ctcw-launcher-stack {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    /* Absorb translateY hover and focus-visible rings so the iframe need not catch up. */
+    padding: var(--ctcw-visual-edge-allowance, 6px);
+    pointer-events: auto;
+}
+
+.ctcw-channel-shell,
+.floating-channel-launcher {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     max-width: 100%;
     pointer-events: auto;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.ctcw-launcher-stack.widget-mode-single {
+    flex-direction: row;
+}
+
+.ctcw-launcher-stack.widget-mode-multiple {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.ctcw-widget-anchor.is-left .ctcw-launcher-stack.widget-mode-multiple,
+.ctcw-widget-anchor.is-mobile-left .ctcw-launcher-stack.widget-mode-multiple {
+    align-items: flex-start;
+}
+
+.ctcw-widget-anchor.is-right .ctcw-launcher-stack.widget-mode-multiple,
+.ctcw-widget-anchor.is-mobile-right .ctcw-launcher-stack.widget-mode-multiple {
+    align-items: flex-end;
+}
+
+.ctcw-launcher.channel-whatsapp,
+.ctcw-widget.channel-whatsapp {
+    background: var(--ctcw-green);
+}
+
+.ctcw-launcher.channel-telegram,
+.ctcw-widget.channel-telegram {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-launcher.channel-telegram:hover,
+.ctcw-widget.channel-telegram:hover {
+    background: var(--ctcw-telegram-hover, #0077b5);
+}
+
+/* Dialog-open is indicated by the greeting itself — do not draw a white
+   rectangular frame around the launcher (especially Style 9's transparent shell). */
+.ctcw-launcher.is-dialog-open {
+    outline: none;
+}
+
+.ctcw-launcher:focus,
+.ctcw-widget:focus,
+.ctcw-cta-button:focus {
+    outline: none;
+}
+
+.ctcw-launcher:focus-visible,
+.ctcw-widget:focus-visible,
+.ctcw-cta-button:focus-visible {
+    outline: 3px solid rgba(15, 23, 42, 0.55);
+    outline-offset: 3px;
+}
+
+.ctcw-launcher.channel-whatsapp:focus-visible,
+.ctcw-widget.channel-whatsapp:focus-visible {
+    outline-color: rgba(18, 140, 126, 0.95);
+}
+
+.ctcw-launcher.channel-telegram:focus-visible,
+.ctcw-widget.channel-telegram:focus-visible {
+    outline-color: rgba(0, 136, 204, 0.95);
+}
+
+/* Style 9's control is a transparent zero-radius box around icon + label.
+   Put the keyboard ring on the circular icon so it does not look like a card. */
+.style-9-left-hover .ctcw-launcher:focus-visible,
+.style-9-left-hover .ctcw-widget:focus-visible {
+    outline: none;
+}
+
+.style-9-left-hover .ctcw-launcher.channel-whatsapp:focus-visible .ctcw-icon,
+.style-9-left-hover .ctcw-widget.channel-whatsapp:focus-visible .ctcw-icon {
+    box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.95) !important;
+}
+
+.style-9-left-hover .ctcw-launcher.channel-telegram:focus-visible .ctcw-icon,
+.style-9-left-hover .ctcw-widget.channel-telegram:focus-visible .ctcw-icon {
+    box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.95) !important;
+}
+
+.ctcw-channel-unavailable {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.ctcw-channel-unavailable p {
+    margin: 0;
 }
 
 .ctcw-widget:hover {
@@ -185,7 +301,7 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     position: relative;
     display: none;
     width: 340px;
-    max-width: 340px;
+    max-width: min(340px, calc(var(--ctcw-available-width, 100vw) - 16px));
     min-width: 0;
     padding: 16px;
     border: 1px solid #e5e7eb;
@@ -199,7 +315,20 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 
 .ctcw-greeting.has-capture {
     width: 340px;
-    max-width: 340px;
+    max-width: min(340px, calc(var(--ctcw-available-width, 100vw) - 16px));
+}
+
+.ctcw-greeting.is-visible {
+    display: flex;
+    flex-direction: column;
+    max-height: min(
+        520px,
+        calc(var(--ctcw-available-height, 100vh) - var(--ctcw-launchers-reserve, 120px) - 24px)
+    );
+}
+
+.ctcw-greeting.has-capture.is-visible {
+    display: flex;
 }
 
 .ctcw-greeting-header {
@@ -208,6 +337,7 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 8px;
+    flex: 0 0 auto;
 }
 
 .ctcw-greeting-title {
@@ -232,6 +362,17 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 .ctcw-greeting-form {
     display: grid;
     gap: 10px;
+    margin: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+.ctcw-greeting.has-consent .ctcw-greeting-form,
+.ctcw-greeting.is-scrollable .ctcw-greeting-form {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .ctcw-greeting.has-capture .ctcw-greeting-header {
@@ -340,13 +481,22 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     border-radius: 12px;
     padding: 0;
     color: #ffffff;
-    background: var(--ctcw-green);
+    background: var(--ctcw-channel, var(--ctcw-green));
     font: inherit;
     font-weight: 700;
     cursor: pointer;
     box-shadow: none !important;
     white-space: nowrap;
     pointer-events: auto;
+}
+
+.ctcw-greeting-submit:hover:not(:disabled) {
+    background: var(--ctcw-channel-hover, var(--ctcw-green-dark));
+}
+
+.ctcw-greeting-submit:focus-visible {
+    outline: 3px solid var(--ctcw-channel-focus, rgba(18, 140, 126, 0.25));
+    outline-offset: 2px;
 }
 
 .ctcw-greeting-submit:disabled,
@@ -357,6 +507,52 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 
 .ctcw-greeting-submit svg {
     display: block;
+    color: #ffffff;
+    fill: currentColor;
+}
+
+.ctcw-greeting-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 12px;
+    color: #ffffff;
+    background: var(--ctcw-channel, var(--ctcw-green));
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: none !important;
+    pointer-events: auto;
+}
+
+.ctcw-greeting:not(.has-channel-cta) .ctcw-greeting-cta {
+    display: none;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    height: 0;
+    overflow: hidden;
+    border: 0;
+}
+
+.ctcw-greeting-cta:hover:not(:disabled) {
+    background: var(--ctcw-channel-hover, var(--ctcw-green-dark));
+}
+
+.ctcw-greeting-cta:focus-visible {
+    outline: 3px solid var(--ctcw-channel-focus, rgba(18, 140, 126, 0.25));
+    outline-offset: 2px;
+}
+
+.ctcw-greeting-cta:disabled,
+.ctcw-greeting-cta.is-loading {
+    opacity: 0.75;
+    cursor: wait;
 }
 
 .ctcw-greeting-success {
@@ -372,7 +568,8 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 
 .ctcw-greeting.is-visible,
 .ctcw-widget-popup.is-visible {
-    display: block;
+    display: flex;
+    flex-direction: column;
     flex: 0 0 auto;
     animation: ctcwFadeIn 0.25s ease;
 }
@@ -496,30 +693,31 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 .style-7-extend .ctcw-widget {
     width: auto;
     min-width: 58px;
-    max-width: 58px;
+    /* Reserve expanded hover width so the parent iframe does not lag behind. */
+    max-width: calc(58px + 10px + var(--ctcw-hover-label-max-width) + 40px);
     height: 58px;
     min-height: 58px;
     overflow: hidden;
-    padding: 0 17px;
+    padding: 0 20px;
     border-radius: 999px;
     justify-content: flex-start;
-    transition: max-width 0.25s ease, padding 0.25s ease, transform 0.2s ease, background 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .style-7-extend .ctcw-text {
-    max-width: 0;
+    max-width: var(--ctcw-hover-label-max-width);
     overflow: hidden;
     opacity: 0;
-    transition: max-width 0.25s ease, opacity 0.2s ease;
+    transition: opacity 0.2s ease;
 }
 
 .style-7-extend.is-hovering .ctcw-widget {
-    max-width: 320px;
+    max-width: calc(58px + 10px + var(--ctcw-hover-label-max-width) + 40px);
     padding: 0 20px;
 }
 
 .style-7-extend.is-hovering .ctcw-text {
-    max-width: 240px;
+    max-width: var(--ctcw-hover-label-max-width);
     opacity: 1;
 }
 
@@ -539,6 +737,8 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     color: #ffffff;
     flex-direction: row-reverse;
     justify-content: flex-start;
+    /* Stable layout box: label slot is reserved; hover only fades it in. */
+    transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .style-9-left-hover .ctcw-icon {
@@ -555,21 +755,254 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     align-items: center;
     justify-content: center;
     height: 38px;
-    max-width: 0;
+    width: max-content;
+    max-width: var(--ctcw-hover-label-max-width);
+    min-width: 0;
     overflow: hidden;
-    padding: 0;
+    padding: 0 18px;
     border-radius: 999px;
     background: var(--ctcw-green);
     color: #ffffff;
     opacity: 0;
     white-space: nowrap;
-    transition: max-width 0.24s ease, opacity 0.2s ease, padding 0.24s ease;
+    transform: translateX(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
 }
 
 .style-9-left-hover.is-hovering .ctcw-text {
-    max-width: 240px;
+    max-width: var(--ctcw-hover-label-max-width);
     padding: 0 18px;
     opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+/* Channel-specific colors must win over style skins. */
+.style-1 .ctcw-widget.channel-telegram,
+.style-1 .ctcw-launcher.channel-telegram {
+    background: linear-gradient(135deg, var(--ctcw-telegram, #0088cc), var(--ctcw-telegram-hover, #0077b5));
+}
+
+.style-8 .ctcw-widget.channel-telegram,
+.style-8 .ctcw-launcher.channel-telegram {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.style-6 .ctcw-widget.channel-telegram,
+.style-6 .ctcw-launcher.channel-telegram {
+    color: var(--ctcw-telegram-hover, #0077b5);
+    background: transparent;
+}
+
+.style-7 .ctcw-widget.channel-telegram,
+.style-7 .ctcw-launcher.channel-telegram {
+    color: var(--ctcw-telegram, #0088cc);
+    background: #ffffff;
+}
+
+.style-9-left-hover .ctcw-widget.channel-telegram .ctcw-icon,
+.style-9-left-hover .ctcw-widget.channel-telegram .ctcw-text,
+.style-9-left-hover .ctcw-launcher.channel-telegram .ctcw-icon,
+.style-9-left-hover .ctcw-launcher.channel-telegram .ctcw-text {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+/* Telegram-native launcher styles */
+.tg-compact .ctcw-widget,
+.tg-compact .ctcw-launcher {
+    min-height: 58px;
+    padding: 0;
+    gap: 10px;
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    transition: transform 0.2s ease;
+}
+
+.tg-compact .ctcw-widget.channel-telegram,
+.tg-compact .ctcw-launcher.channel-telegram,
+.tg-compact .ctcw-widget.channel-telegram:hover,
+.tg-compact .ctcw-launcher.channel-telegram:hover {
+    background: transparent;
+}
+
+.tg-compact .ctcw-icon {
+    width: 58px;
+    height: 58px;
+    padding: 15px;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+    color: #ffffff;
+}
+
+.tg-compact .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    width: max-content;
+    max-width: var(--ctcw-hover-label-max-width);
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    color: #ffffff;
+    opacity: 1;
+    white-space: nowrap;
+}
+
+.tg-compact .ctcw-widget:hover,
+.tg-compact .ctcw-launcher:hover {
+    transform: translateY(-2px);
+}
+
+.tg-compact .ctcw-widget:hover .ctcw-icon,
+.tg-compact .ctcw-launcher:hover .ctcw-icon,
+.tg-compact .ctcw-widget:hover .ctcw-text,
+.tg-compact .ctcw-launcher:hover .ctcw-text {
+    background: var(--ctcw-telegram-hover, #0077b5);
+}
+
+.tg-compact .ctcw-launcher:focus-visible,
+.tg-compact .ctcw-widget:focus-visible {
+    outline: none;
+}
+
+.tg-compact .ctcw-launcher:focus-visible .ctcw-icon,
+.tg-compact .ctcw-widget:focus-visible .ctcw-icon {
+    box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.95) !important;
+}
+
+.tg-icon .ctcw-widget,
+.tg-icon .ctcw-launcher {
+    width: 58px;
+    height: 58px;
+    min-height: 58px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.tg-icon .ctcw-text {
+    display: none;
+}
+
+.tg-icon .ctcw-widget:hover,
+.tg-icon .ctcw-launcher:hover {
+    background: var(--ctcw-telegram-hover, #0077b5);
+}
+
+.tg-pill .ctcw-widget,
+.tg-pill .ctcw-launcher {
+    min-height: 52px;
+    border-radius: 999px;
+    padding: 14px 22px;
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.tg-pill .ctcw-widget:hover,
+.tg-pill .ctcw-launcher:hover {
+    background: var(--ctcw-telegram-hover, #0077b5);
+}
+
+/* Reveal label on hover: reserve full width; icon stays fixed. */
+.tg-reveal .ctcw-widget,
+.tg-reveal .ctcw-launcher {
+    min-height: 58px;
+    padding: 0;
+    gap: 10px;
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    transition: transform 0.2s ease;
+}
+
+.tg-reveal .ctcw-widget.channel-telegram,
+.tg-reveal .ctcw-launcher.channel-telegram,
+.tg-reveal .ctcw-widget.channel-telegram:hover,
+.tg-reveal .ctcw-launcher.channel-telegram:hover {
+    background: transparent;
+}
+
+.tg-reveal .ctcw-icon {
+    width: 58px;
+    height: 58px;
+    padding: 15px;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+    color: #ffffff;
+    flex: 0 0 auto;
+}
+
+.tg-reveal .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    width: max-content;
+    max-width: var(--ctcw-hover-label-max-width);
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    color: #ffffff;
+    opacity: 0;
+    white-space: nowrap;
+    transform: translateX(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.tg-reveal .ctcw-widget:hover .ctcw-text,
+.tg-reveal .ctcw-launcher:hover .ctcw-text,
+.tg-reveal .ctcw-widget:focus-visible .ctcw-text,
+.tg-reveal .ctcw-launcher:focus-visible .ctcw-text,
+.tg-reveal.is-hovering .ctcw-text,
+.tg-reveal:focus-within .ctcw-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.tg-reveal .ctcw-widget:hover .ctcw-icon,
+.tg-reveal .ctcw-launcher:hover .ctcw-icon,
+.tg-reveal .ctcw-widget:hover .ctcw-text,
+.tg-reveal .ctcw-launcher:hover .ctcw-text,
+.tg-reveal.is-hovering .ctcw-icon,
+.tg-reveal.is-hovering .ctcw-text {
+    background: var(--ctcw-telegram-hover, #0077b5);
+}
+
+.tg-reveal .ctcw-launcher:focus-visible,
+.tg-reveal .ctcw-widget:focus-visible {
+    outline: none;
+}
+
+.tg-reveal .ctcw-launcher:focus-visible .ctcw-icon,
+.tg-reveal .ctcw-widget:focus-visible .ctcw-icon {
+    box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.95) !important;
+}
+
+/* Touch / coarse pointers: label stays visible (no hover required). */
+@media (hover: none), (pointer: coarse) {
+    .tg-reveal .ctcw-text {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+    }
+}
+
+html.ctcw-mobile .tg-reveal .ctcw-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
 @media (max-width: 767px) {
@@ -595,17 +1028,16 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     }
 
     html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-text {
-        display: none;
-        max-width: 0;
         opacity: 0;
-        padding: 0;
+        pointer-events: none;
     }
 
     html.ctcw-mobile .style-7-extend:not(.is-hovering) .ctcw-widget {
-        width: 58px;
+        /* Keep the reserved hover width; do not snap max-width on tap. */
+        width: auto;
         min-width: 58px;
-        max-width: 58px;
-        padding: 0 17px;
+        max-width: calc(58px + 10px + var(--ctcw-hover-label-max-width) + 40px);
+        padding: 0 20px;
     }
 
     html.ctcw-mobile .style-9-left-hover .ctcw-widget {
@@ -618,14 +1050,15 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     html.ctcw-mobile .style-9-left-hover:not(.is-style-9-mobile-expanded):not(.is-hovering) .ctcw-cta-label,
     html.ctcw-mobile .style-9-left-hover:not(.is-style-9-mobile-expanded):not(.is-hovering) .ctcw-style-9-label {
         display: inline-flex;
-        width: 0;
+        width: max-content;
         min-width: 0;
-        max-width: 0;
-        padding-left: 0;
-        padding-right: 0;
+        max-width: var(--ctcw-hover-label-max-width);
+        padding-left: 16px;
+        padding-right: 16px;
         opacity: 0;
         overflow: hidden;
         pointer-events: none;
+        transform: translateX(6px);
     }
 
     html.ctcw-mobile .style-9-left-hover.is-style-9-mobile-expanded .ctcw-text,
@@ -636,9 +1069,9 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     html.ctcw-mobile .style-9-left-hover.is-hovering .ctcw-style-9-label {
         display: inline-flex;
         align-items: center;
-        width: auto;
-        min-width: 116px;
-        max-width: min(240px, calc(var(--ctcw-viewport-width, 100vw) - 96px));
+        width: max-content;
+        min-width: 0;
+        max-width: min(var(--ctcw-hover-label-max-width), calc(var(--ctcw-viewport-width, 100vw) - 96px));
         padding-left: 16px;
         padding-right: 16px;
         opacity: 1;
@@ -656,15 +1089,25 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     .ctcw-greeting,
     .ctcw-greeting.has-capture,
     .ctcw-widget-popup {
-        width: min(384px, calc(100vw - 24px));
-        max-width: calc(100vw - 24px);
+        width: min(384px, calc(var(--ctcw-available-width, 100vw) - 16px));
+        max-width: calc(var(--ctcw-available-width, 100vw) - 16px);
         min-width: 0;
-        max-height: min(70dvh, 520px);
+    }
+
+    .ctcw-greeting.is-visible {
+        max-height: min(
+            520px,
+            calc(var(--ctcw-available-height, 100vh) - var(--ctcw-launchers-reserve, 120px) - 16px)
+        );
+    }
+
+    .ctcw-greeting.has-consent .ctcw-greeting-form,
+    .ctcw-greeting.is-scrollable .ctcw-greeting-form {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
 
-    .ctcw-greeting-form {
+    .ctcw-greeting:not(.has-consent):not(.is-scrollable) .ctcw-greeting-form {
         overflow: visible;
     }
 
@@ -735,5 +1178,132 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     }
     75% {
         transform: scale(1.04);
+    }
+}
+
+/* Telegram must never inherit WhatsApp Style 9's left-hover rectangular shell. */
+.floating-channel-launcher--telegram.style-9-left-hover,
+.ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover {
+    /* Fallback if a stale style class is present: treat as clean pill. */
+}
+
+.floating-channel-launcher--telegram.style-9-left-hover .ctcw-widget,
+.ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-widget {
+    min-height: 48px;
+    padding: 13px 18px;
+    gap: 10px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    color: #ffffff;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.floating-channel-launcher--telegram.style-9-left-hover .ctcw-icon,
+.ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-icon {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.floating-channel-launcher--telegram.style-9-left-hover .ctcw-text,
+.ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-text {
+    display: inline-block;
+    height: auto;
+    max-width: none;
+    overflow: visible;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    opacity: 1;
+}
+
+.ctcw-consent-text {
+    margin: 8px 0 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: rgba(15, 23, 42, 0.68);
+}
+
+.ctcw-greeting:not(.has-consent) .ctcw-consent-text {
+    display: none;
+    margin: 0;
+    padding: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+.ctcw-channel-picker,
+.ctcw-telegram-fallback {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.ctcw-channel-picker-title,
+.ctcw-telegram-fallback-text {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.ctcw-channel-actions {
+    display: grid;
+    gap: 8px;
+}
+
+.ctcw-channel-btn {
+    appearance: none;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+}
+
+.ctcw-channel-btn:focus-visible {
+    outline: 2px solid var(--ctcw-channel-focus, #0f766e);
+    outline-offset: 2px;
+}
+
+.ctcw-channel-btn--whatsapp {
+    background: #25d366;
+    color: #fff;
+}
+
+.ctcw-channel-btn--whatsapp:hover {
+    background: var(--ctcw-green-dark, #128c7e);
+}
+
+.ctcw-channel-btn--telegram {
+    background: var(--ctcw-telegram, #0088cc);
+    color: #fff;
+}
+
+.ctcw-channel-btn--telegram:hover {
+    background: var(--ctcw-telegram-hover, #0077b5);
+}
+
+.ctcw-channel-btn--telegram:focus-visible {
+    outline-color: var(--ctcw-telegram-focus, rgba(0, 136, 204, 0.25));
+}
+
+.ctcw-channel-btn--secondary {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+@media (max-width: 767px) {
+    .ctcw-launcher-stack.widget-mode-multiple {
+        gap: 8px;
+    }
+
+    .ctcw-launcher-stack.widget-mode-multiple .ctcw-launcher {
+        min-height: 48px;
     }
 }

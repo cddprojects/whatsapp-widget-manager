@@ -219,6 +219,64 @@ function sanitize_widget_style(string $style, string $default = 'style-1'): stri
     return enum_value($style, array_keys(widget_styles()), $default);
 }
 
+/**
+ * Telegram-native launcher styles (independent from WhatsApp presets).
+ *
+ * @return array<string, string>
+ */
+function telegram_widget_styles(): array
+{
+    return [
+        'tg-compact' => 'Compact label + icon',
+        'tg-icon' => 'Icon only',
+        'tg-pill' => 'Combined pill',
+        'tg-reveal' => 'Reveal label on hover',
+    ];
+}
+
+/**
+ * Map legacy WhatsApp-style IDs previously stored in Telegram style columns.
+ */
+function map_legacy_telegram_widget_style(string $style): string
+{
+    $style = normalize_widget_style(trim($style));
+    if ($style === '') {
+        return default_telegram_widget_style();
+    }
+
+    // Preferred semantic alias from product docs.
+    if ($style === 'reveal_label_hover') {
+        return 'tg-reveal';
+    }
+
+    if (array_key_exists($style, telegram_widget_styles())) {
+        return $style;
+    }
+
+    return match ($style) {
+        'style-2', 'style-3', 'style-3-large', 'style-7' => 'tg-icon',
+        'style-1', 'style-6', 'style-8' => 'tg-pill',
+        // Hover-reveal WhatsApp layouts map to Telegram reveal style.
+        'style-7-extend', 'style-9-left-hover' => 'tg-reveal',
+        // Old Telegram default becomes compact label + icon.
+        'style-4' => 'tg-compact',
+        default => default_telegram_widget_style(),
+    };
+}
+
+function sanitize_telegram_widget_style(string $style, ?string $default = null): string
+{
+    $default = $default ?? default_telegram_widget_style();
+    $mapped = map_legacy_telegram_widget_style($style);
+
+    return enum_value($mapped, array_keys(telegram_widget_styles()), $default);
+}
+
+function default_telegram_widget_style(): string
+{
+    return 'tg-compact';
+}
+
 function country_code_options(): array
 {
     $rows = [
@@ -936,6 +994,8 @@ function default_widget_data(): array
         'call_to_action' => 'WhatsApp us',
         'desktop_style' => 'style-1',
         'mobile_style' => 'style-1',
+        'telegram_desktop_style' => default_telegram_widget_style(),
+        'telegram_mobile_style' => default_telegram_widget_style(),
         'desktop_position_type' => 'fixed',
         'mobile_position_type' => 'fixed',
         'desktop_vertical_position_type' => 'bottom',
@@ -965,6 +1025,8 @@ function default_widget_data(): array
         'greeting_delay_seconds' => 2,
         'greeting_open_behavior' => 'auto_delay',
         'greeting_capture_phone' => 0,
+        'consent_notice_enabled' => 0,
+        'consent_notice_text' => '',
         'greeting_phone_required' => 1,
         'greeting_allow_phone_plus' => 1,
         'greeting_force_phone_capture' => 0,
@@ -1044,6 +1106,14 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         'call_to_action' => trim((string) ($post['call_to_action'] ?? $defaults['call_to_action'])),
         'desktop_style' => sanitize_widget_style((string) ($post['desktop_style'] ?? 'style-1')),
         'mobile_style' => sanitize_widget_style((string) ($post['mobile_style'] ?? 'style-1')),
+        'telegram_desktop_style' => sanitize_telegram_widget_style(
+            (string) ($post['telegram_desktop_style'] ?? default_telegram_widget_style()),
+            default_telegram_widget_style()
+        ),
+        'telegram_mobile_style' => sanitize_telegram_widget_style(
+            (string) ($post['telegram_mobile_style'] ?? default_telegram_widget_style()),
+            default_telegram_widget_style()
+        ),
         'desktop_position_type' => enum_value((string) ($post['desktop_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed'),
         'mobile_position_type' => enum_value((string) ($post['mobile_position_type'] ?? 'fixed'), ['fixed', 'absolute'], 'fixed'),
         'desktop_vertical_position_type' => enum_value((string) ($post['desktop_vertical_position_type'] ?? 'bottom'), ['top', 'bottom'], 'bottom'),
@@ -1072,6 +1142,8 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         'greeting_delay_seconds' => max(0, min(120, (int) ($post['greeting_delay_seconds'] ?? 2))),
         'greeting_open_behavior' => 'auto_delay',
         'greeting_capture_phone' => 0,
+        'consent_notice_enabled' => 0,
+        'consent_notice_text' => '',
         'greeting_phone_required' => 0,
         'greeting_allow_phone_plus' => 1,
         'greeting_force_phone_capture' => 0,
@@ -1117,6 +1189,12 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         $data['greeting_open_behavior'] = normalize_greeting_open_behavior(
             (string) ($post['greeting_open_behavior'] ?? ($existing['greeting_open_behavior'] ?? $defaults['greeting_open_behavior']))
         );
+        $data['consent_notice_enabled'] = post_checkbox('consent_notice_enabled');
+        $consentText = trim((string) ($post['consent_notice_text'] ?? ''));
+        if (mb_strlen($consentText) > 500) {
+            $consentText = mb_substr($consentText, 0, 500);
+        }
+        $data['consent_notice_text'] = $consentText !== '' ? $consentText : null;
 
         if ($greetingCapturePhone) {
             $greetingForcePhoneCapture = post_checkbox('greeting_force_phone_capture');
@@ -1139,6 +1217,8 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
             $data['greeting_phone_submit_button_id'] = (string) ($existing['greeting_phone_submit_button_id'] ?? '');
         }
     } else {
+        $data['consent_notice_enabled'] = (int) ($existing['consent_notice_enabled'] ?? 0);
+        $data['consent_notice_text'] = $existing['consent_notice_text'] ?? null;
         $data['greeting_capture_phone'] = (int) ($existing['greeting_capture_phone'] ?? 0);
         $data['greeting_force_phone_capture'] = (int) ($existing['greeting_force_phone_capture'] ?? 0);
         $data['greeting_phone_required'] = (int) ($existing['greeting_phone_required'] ?? 1);
@@ -1171,6 +1251,13 @@ function sanitize_widget_input(array $post, ?array $existingWidget = null): arra
         $data['use_random_numbers'] = 1;
     }
 
+    $channelMode = enum_value(
+        (string) ($post['channel_mode'] ?? 'whatsapp_only'),
+        ['whatsapp_only', 'telegram_only', 'both'],
+        'whatsapp_only'
+    );
+    $data['channel_mode'] = $channelMode;
+
     return $data;
 }
 
@@ -1179,7 +1266,7 @@ function strip_php_tags(string $code): string
     return str_ireplace(['<?php', '<?=', '<?', '?>'], '', $code);
 }
 
-function validate_widget_data(array $data): array
+function validate_widget_data(array $data, ?int $widgetId = null): array
 {
     $errors = [];
 
@@ -1198,6 +1285,14 @@ function validate_widget_data(array $data): array
         }
     }
 
+    $channelMode = (string) ($data['channel_mode'] ?? 'whatsapp_only');
+    if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
+        $errors[] = t('channel.error.invalid_mode');
+    }
+
+    // Widgets may be saved before destinations exist. Readiness is shown in the UI
+    // and unready channels are not published publicly.
+
     return $errors;
 }
 
@@ -1206,9 +1301,11 @@ function insert_widget(int $userId, array $data): int
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
+    ensure_consent_notice_and_telegram_styles_schema();
+    $channelMode = (string) ($data['channel_mode'] ?? 'whatsapp_only');
+    unset($data['channel_mode'], $data['widget_status']);
     $data['user_id'] = $userId;
     $data['public_key'] = generate_public_key();
-    unset($data['widget_status']);
     $data = filter_widget_data_for_existing_columns($data);
 
     $columns = array_keys($data);
@@ -1218,6 +1315,17 @@ function insert_widget(int $userId, array $data): int
     $stmt->execute($data);
 
     $widgetId = (int) db()->lastInsertId();
+    ensure_widget_channel_rows($widgetId);
+    if (channel_schema_ready()) {
+        sync_whatsapp_destinations_from_legacy($widgetId);
+        // New widgets start WhatsApp-only unless explicitly configured after destinations exist.
+        if (in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
+            $result = save_widget_channel_config($widgetId, ['mode' => $channelMode]);
+            if (!$result['ok'] && $channelMode !== 'whatsapp_only') {
+                save_widget_channel_config($widgetId, ['mode' => 'whatsapp_only']);
+            }
+        }
+    }
     refresh_widget_destination_status($widgetId);
 
     return $widgetId;
@@ -1228,6 +1336,7 @@ function update_widget(int $widgetId, int $userId, array $data): void
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
+    ensure_consent_notice_and_telegram_styles_schema();
     $data = filter_widget_data_for_existing_columns($data);
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
     $data['id'] = $widgetId;
@@ -1270,16 +1379,34 @@ function build_empty_phone_widget_update(?array $existingWidget = null): array
 
 function widget_channel_types(): array
 {
-    return [WIDGET_CHANNEL_WHATSAPP];
+    return supported_widget_channels();
 }
 
-function widget_has_valid_destinations(array $widget, string $channel = WIDGET_CHANNEL_WHATSAPP): bool
+function widget_has_valid_destinations(array $widget, ?string $channel = null): bool
 {
-    if ($channel === WIDGET_CHANNEL_WHATSAPP) {
-        return count(widget_phone_list($widget)) >= 1;
+    $widgetId = (int) ($widget['id'] ?? 0);
+
+    if ($channel !== null) {
+        $normalized = normalize_widget_channel($channel);
+        if ($normalized === null) {
+            return false;
+        }
+        if ($normalized === WIDGET_CHANNEL_WHATSAPP) {
+            return count(widget_phone_list($widget)) >= 1;
+        }
+        if ($normalized === WIDGET_CHANNEL_TELEGRAM) {
+            return $widgetId > 0 && count_active_channel_destinations($widgetId, WIDGET_CHANNEL_TELEGRAM) >= 1;
+        }
+
+        return false;
     }
 
-    return false;
+    // No channel argument: widget is usable if at least one enabled channel is ready.
+    if ($widgetId > 0 && channel_schema_ready()) {
+        return publicly_ready_widget_channels($widgetId, $widget) !== [];
+    }
+
+    return count(widget_phone_list($widget)) >= 1;
 }
 
 function widget_is_admin_disabled(array $widget): bool
@@ -1426,7 +1553,17 @@ function enabled_label($value, string $enabled = 'Enabled', string $disabled = '
 
 function widget_style_frame_size(string $style): array
 {
-    $style = normalize_widget_style($style);
+    $trimmed = trim($style);
+    if (isset(telegram_widget_styles()[$trimmed]) || str_starts_with($trimmed, 'tg-')) {
+        return match (sanitize_telegram_widget_style($trimmed)) {
+            'tg-icon' => ['width' => 120, 'height' => 120],
+            'tg-pill' => ['width' => 300, 'height' => 110],
+            'tg-reveal' => ['width' => 360, 'height' => 120],
+            default => ['width' => 360, 'height' => 120],
+        };
+    }
+
+    $style = normalize_widget_style($trimmed);
 
     return match ($style) {
         'style-1' => ['width' => 280, 'height' => 110],
@@ -1463,8 +1600,14 @@ function widget_frame_size(array $widget): array
 {
     $desktop = widget_style_frame_size((string) ($widget['desktop_style'] ?? 'style-1'));
     $mobile = widget_style_frame_size((string) ($widget['mobile_style'] ?? 'style-1'));
-    $width = max($desktop['width'], $mobile['width']);
-    $height = max($desktop['height'], $mobile['height']);
+    $telegramDesktop = widget_style_frame_size(
+        sanitize_telegram_widget_style((string) ($widget['telegram_desktop_style'] ?? default_telegram_widget_style()))
+    );
+    $telegramMobile = widget_style_frame_size(
+        sanitize_telegram_widget_style((string) ($widget['telegram_mobile_style'] ?? default_telegram_widget_style()))
+    );
+    $width = max($desktop['width'], $mobile['width'], $telegramDesktop['width'], $telegramMobile['width']);
+    $height = max($desktop['height'], $mobile['height'], $telegramDesktop['height'], $telegramMobile['height']);
 
     return ['width' => $width, 'height' => $height];
 }
@@ -1532,6 +1675,111 @@ function is_widget_online(array $widget): bool
 function whatsapp_icon_svg(): string
 {
     return '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.04 3.2c-7.02 0-12.72 5.68-12.72 12.68 0 2.24.6 4.43 1.72 6.35L3.2 28.8l6.74-1.77a12.76 12.76 0 0 0 6.1 1.55h.01c7.01 0 12.72-5.68 12.72-12.68S23.06 3.2 16.04 3.2Zm0 23.24h-.01c-1.94 0-3.85-.52-5.52-1.5l-.4-.24-4 .96 1.07-3.9-.26-.4a10.48 10.48 0 0 1-1.6-5.48c0-5.82 4.8-10.55 10.72-10.55 2.86 0 5.56 1.1 7.58 3.1a10.45 10.45 0 0 1 3.15 7.47c0 5.82-4.8 10.54-10.73 10.54Zm5.88-7.9c-.32-.16-1.9-.94-2.2-1.05-.3-.11-.52-.16-.74.16-.22.32-.85 1.05-1.04 1.27-.19.22-.38.24-.7.08-.32-.16-1.36-.5-2.6-1.6-.96-.85-1.6-1.9-1.79-2.22-.19-.32-.02-.5.14-.66.15-.15.32-.38.48-.56.16-.19.22-.32.32-.54.11-.22.05-.4-.03-.56-.08-.16-.74-1.78-1.02-2.44-.27-.64-.54-.55-.74-.56h-.63c-.22 0-.56.08-.85.4-.3.32-1.12 1.1-1.12 2.68s1.15 3.1 1.31 3.31c.16.22 2.27 3.45 5.5 4.84.77.33 1.37.53 1.84.68.77.24 1.47.2 2.03.12.62-.09 1.9-.78 2.17-1.53.27-.75.27-1.4.19-1.53-.08-.13-.3-.21-.62-.37Z"/></svg>';
+}
+
+function telegram_icon_svg(): string
+{
+    // Official-style Telegram paper-plane mark (currentColor for theme reuse).
+    return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M9.04 15.3 8.85 18.9c.27 0 .39-.12.53-.26l2.55-2.45 5.29 3.88c.97.53 1.66.25 1.92-.9L21.9 4.72c.3-1.28-.46-1.78-1.4-1.47L2.72 9.52c-1.24.48-1.22 1.17-.21 1.48l4.66 1.45L18.3 6.2c.53-.35 1.02-.16.62.2L9.04 15.3Z"/></svg>';
+}
+
+/**
+ * Channels that are enabled and have at least one active destination.
+ *
+ * @return list<string>
+ */
+function publicly_ready_widget_channels(int $widgetId, ?array $widget = null): array
+{
+    $widget = $widget ?? find_widget_by_id($widgetId);
+    if ($widget === null) {
+        return [];
+    }
+
+    $ready = [];
+    foreach (enabled_widget_channels($widgetId, $widget) as $channel) {
+        if (widget_has_valid_destinations($widget, $channel)) {
+            $ready[] = $channel;
+        }
+    }
+
+    return $ready;
+}
+
+/**
+ * @return array{status: string, whatsapp: string, telegram: string, label: string}
+ */
+function widget_channel_readiness(int $widgetId, ?array $widget = null): array
+{
+    $widget = $widget ?? find_widget_by_id($widgetId);
+    $config = get_widget_channel_config($widgetId, $widget);
+    $waReady = !empty($config['whatsapp']) && widget_has_valid_destinations($widget ?? [], WIDGET_CHANNEL_WHATSAPP);
+    $tgReady = !empty($config['telegram']) && widget_has_valid_destinations($widget ?? [], WIDGET_CHANNEL_TELEGRAM);
+
+    $whatsappState = empty($config['whatsapp'])
+        ? 'disabled'
+        : ($waReady ? 'ready' : 'missing');
+    $telegramState = empty($config['telegram'])
+        ? 'disabled'
+        : ($tgReady ? 'ready' : 'missing');
+
+    $enabledCount = (int) !empty($config['whatsapp']) + (int) !empty($config['telegram']);
+    $readyCount = (int) $waReady + (int) $tgReady;
+
+    if ($readyCount === 0) {
+        $status = 'setup_incomplete';
+        $label = t('channel.readiness.setup_incomplete');
+    } elseif ($readyCount < $enabledCount) {
+        $status = 'partially_ready';
+        $label = t('channel.readiness.partially_ready');
+    } else {
+        $status = 'ready';
+        $label = t('channel.readiness.ready');
+    }
+
+    return [
+        'status' => $status,
+        'whatsapp' => $whatsappState,
+        'telegram' => $telegramState,
+        'label' => $label,
+    ];
+}
+
+function channel_launcher_label(string $channel, bool $online = true, ?array $widget = null): string
+{
+    if (!$online && is_array($widget)) {
+        return (string) ($widget['offline_message'] ?? t('widget.unavailable_generic'));
+    }
+
+    if ($channel === WIDGET_CHANNEL_TELEGRAM) {
+        return t('channel.launcher.telegram');
+    }
+
+    if (is_array($widget) && trim((string) ($widget['call_to_action'] ?? '')) !== '') {
+        return (string) $widget['call_to_action'];
+    }
+
+    return t('channel.launcher.whatsapp');
+}
+
+function channel_continue_label(string $channel): string
+{
+    return $channel === WIDGET_CHANNEL_TELEGRAM
+        ? t('widget.continue_telegram')
+        : t('widget.continue_whatsapp');
+}
+
+function channel_success_label(string $channel): string
+{
+    return $channel === WIDGET_CHANNEL_TELEGRAM
+        ? t('widget.redirecting_telegram')
+        : t('widget.redirecting_whatsapp');
+}
+
+function channel_force_phone_label(string $channel): string
+{
+    return $channel === WIDGET_CHANNEL_TELEGRAM
+        ? t('preview.phone_required_telegram')
+        : t('preview.phone_required');
 }
 
 function normalize_phone_number(string $countryCode, string $phone): ?array
@@ -1817,14 +2065,31 @@ function normalize_widget_destination_state(int $widgetId, ?string $requestedMet
     $stmt->execute($filtered);
 }
 
-function resolve_widget_destination(int $widgetId, string $publicKey, ?string $referrer = null): array
-{
+function resolve_widget_destination(
+    int $widgetId,
+    string $publicKey,
+    ?string $referrer = null,
+    string $channel = WIDGET_CHANNEL_WHATSAPP
+): array {
+    $normalizedChannel = normalize_widget_channel($channel) ?? WIDGET_CHANNEL_WHATSAPP;
+
+    if ($normalizedChannel === WIDGET_CHANNEL_TELEGRAM) {
+        return resolve_telegram_destination($widgetId, $publicKey, $referrer);
+    }
+
     $pdo = db();
 
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare('SELECT * FROM widgets WHERE id = :id AND public_key = :public_key LIMIT 1 FOR UPDATE');
+        $stmt = $pdo->prepare(
+            'SELECT w.*, u.status AS owner_status
+             FROM widgets w
+             INNER JOIN users u ON u.id = w.user_id
+             WHERE w.id = :id AND w.public_key = :public_key
+             LIMIT 1
+             FOR UPDATE'
+        );
         $stmt->execute([
             'id' => $widgetId,
             'public_key' => $publicKey,
@@ -1835,6 +2100,12 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
             $pdo->rollBack();
 
             return ['success' => false, 'message' => 'Widget not found'];
+        }
+
+        if (($widget['owner_status'] ?? '') !== USER_STATUS_ACTIVE) {
+            $pdo->rollBack();
+
+            return ['success' => false, 'message' => 'Widget not available'];
         }
 
         if (!domain_matches_referrer($widget, $referrer !== '' ? $referrer : null)) {
@@ -1855,17 +2126,31 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
             return ['success' => false, 'message' => 'Widget not available'];
         }
 
+        if (channel_schema_ready() && !widget_channel_is_enabled($widgetId, WIDGET_CHANNEL_WHATSAPP, $widget)) {
+            $pdo->rollBack();
+
+            return [
+                'success' => false,
+                'message' => 'WhatsApp is currently unavailable',
+                'error' => 'channel_disabled',
+            ];
+        }
+
         if (!is_widget_online($widget)) {
             $pdo->rollBack();
 
-            return ['success' => false, 'message' => 'Widget offline'];
+            return ['success' => false, 'message' => 'Widget offline', 'error' => 'channel_unavailable'];
         }
 
         $numbers = widget_phone_list($widget);
         if ($numbers === []) {
             $pdo->rollBack();
 
-            return ['success' => false, 'message' => 'No active destination'];
+            return [
+                'success' => false,
+                'message' => 'No active WhatsApp destination is configured',
+                'error' => 'no_active_destination',
+            ];
         }
 
         $method = effective_destination_selection_method($widget, count($numbers));
@@ -1886,6 +2171,10 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
                 'round_robin_next_index' => $nextIndex,
                 'id' => $widgetId,
             ]);
+
+            if (channel_schema_ready()) {
+                update_widget_channel_selection_method($widgetId, WIDGET_CHANNEL_WHATSAPP, 'round_robin', $nextIndex);
+            }
         } else {
             $selected = $numbers[array_rand($numbers)];
         }
@@ -1906,6 +2195,7 @@ function resolve_widget_destination(int $widgetId, string $publicKey, ?string $r
 
         return [
             'success' => true,
+            'channel' => WIDGET_CHANNEL_WHATSAPP,
             'country_code' => (string) ($selected['country_code'] ?? ''),
             'number' => (string) ($selected['number'] ?? ''),
             'full_number' => $fullNumber,
@@ -2015,6 +2305,10 @@ function update_widget_phone_fields(int $widgetId, array $data): void
     $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
     $stmt = db()->prepare($sql);
     $stmt->execute($filtered);
+
+    if (channel_schema_ready()) {
+        sync_whatsapp_destinations_from_legacy($widgetId);
+    }
 
     refresh_widget_destination_status($widgetId);
 }
@@ -2135,6 +2429,64 @@ function ensure_greeting_phone_submit_button_id_schema(): void
     }
 }
 
+function ensure_consent_notice_and_telegram_styles_schema(): void
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    $ensured = true;
+
+    if (!database_table_exists('widgets')) {
+        return;
+    }
+
+    if (!table_has_column('widgets', 'consent_notice_enabled')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN consent_notice_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER greeting_capture_phone"
+        );
+    }
+
+    if (!table_has_column('widgets', 'consent_notice_text')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN consent_notice_text VARCHAR(500) NULL DEFAULT NULL AFTER consent_notice_enabled"
+        );
+    }
+
+    if (!table_has_column('widgets', 'telegram_desktop_style')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN telegram_desktop_style VARCHAR(40) NOT NULL DEFAULT 'tg-compact' AFTER mobile_style"
+        );
+    }
+
+    if (!table_has_column('widgets', 'telegram_mobile_style')) {
+        db()->exec(
+            "ALTER TABLE widgets
+             ADD COLUMN telegram_mobile_style VARCHAR(40) NOT NULL DEFAULT 'tg-compact' AFTER telegram_desktop_style"
+        );
+    }
+}
+
+/**
+ * Resolve consent notice copy for a widget. Empty when the notice is disabled.
+ */
+function widget_consent_notice_text(array $widget, array $readyChannels = []): string
+{
+    if (empty($widget['consent_notice_enabled'])) {
+        return '';
+    }
+
+    $custom = trim((string) ($widget['consent_notice_text'] ?? ''));
+    if ($custom !== '') {
+        return $custom;
+    }
+
+    return t('widget.consent.channel_neutral');
+}
+
 function filter_widget_data_for_existing_columns(array $data): array
 {
     if (!database_table_exists('widgets')) {
@@ -2155,13 +2507,25 @@ function update_widget_admin(int $widgetId, array $data): void
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
-    unset($data['widget_status']);
+    ensure_consent_notice_and_telegram_styles_schema();
+    $channelMode = (string) ($data['channel_mode'] ?? '');
+    unset($data['channel_mode'], $data['widget_status']);
     $data = filter_widget_data_for_existing_columns($data);
     $assignments = array_map(static fn ($column) => $column . ' = :' . $column, array_keys($data));
     $data['id'] = $widgetId;
     $sql = 'UPDATE widgets SET ' . implode(', ', $assignments) . ', updated_at = CURRENT_TIMESTAMP WHERE id = :id';
     $stmt = db()->prepare($sql);
     $stmt->execute($data);
+
+    if (channel_schema_ready()) {
+        sync_whatsapp_destinations_from_legacy($widgetId);
+        if (in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
+            $result = save_widget_channel_config($widgetId, ['mode' => $channelMode]);
+            if (!$result['ok']) {
+                throw new InvalidArgumentException(implode(' ', $result['errors']));
+            }
+        }
+    }
 
     refresh_widget_destination_status($widgetId);
 }
@@ -2759,6 +3123,24 @@ function resolve_greeting_phone_submit_button_id(array $widget): string
     return 'ctcw-phone-submit-' . (int) ($widget['id'] ?? 0);
 }
 
+function find_recent_widget_lead_id(int $widgetId, string $fullPhone): ?int
+{
+    $sql = 'SELECT id FROM widget_leads
+            WHERE widget_id = :widget_id
+              AND visitor_full_phone = :phone
+              AND created_at >= (UTC_TIMESTAMP() - INTERVAL 1 MINUTE)';
+    if (table_has_column('widget_leads', 'deleted_at')) {
+        $sql .= ' AND deleted_at IS NULL';
+    }
+    $sql .= ' ORDER BY id DESC LIMIT 1';
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute(['widget_id' => $widgetId, 'phone' => $fullPhone]);
+    $id = $stmt->fetchColumn();
+
+    return $id !== false ? (int) $id : null;
+}
+
 function lead_recently_saved(int $widgetId, string $fullPhone): bool
 {
     $stmt = db()->prepare(
@@ -2797,12 +3179,93 @@ function insert_widget_lead(array $widget, array $lead): int
         $values['client_id'] = $clientId;
     }
 
+    $channelFields = [
+        'channel',
+        'channel_destination_id',
+        'destination_type',
+        'destination_name',
+        'destination_snapshot',
+        'channel_selected_at',
+        'destination_resolved_at',
+        'redirect_attempted_at',
+        'fallback_type',
+    ];
+    foreach ($channelFields as $field) {
+        if (!table_has_column('widget_leads', $field) || !array_key_exists($field, $lead)) {
+            continue;
+        }
+        $columns[] = $field;
+        $values[$field] = $lead[$field];
+    }
+
     $placeholders = array_map(static fn ($column) => ':' . $column, $columns);
     $sql = 'INSERT INTO widget_leads (' . implode(', ', $columns) . ', created_at) VALUES (' . implode(', ', $placeholders) . ', UTC_TIMESTAMP())';
     $stmt = db()->prepare($sql);
     $stmt->execute($values);
 
     return (int) db()->lastInsertId();
+}
+
+/**
+ * Update channel/destination metadata on an existing lead (multi-channel flow).
+ *
+ * @param array<string, mixed> $fields
+ */
+function update_widget_lead_channel_events(int $leadId, int $widgetId, array $fields): bool
+{
+    if ($leadId <= 0 || $widgetId <= 0 || !table_has_column('widget_leads', 'channel')) {
+        return false;
+    }
+
+    $allowed = [
+        'channel' => true,
+        'channel_destination_id' => true,
+        'destination_type' => true,
+        'destination_name' => true,
+        'destination_snapshot' => true,
+        'channel_selected_at' => true,
+        'destination_resolved_at' => true,
+        'redirect_attempted_at' => true,
+        'fallback_type' => true,
+        'whatsapp_redirect_url' => true,
+    ];
+    $filtered = array_intersect_key($fields, $allowed);
+    if ($filtered === []) {
+        return false;
+    }
+
+    $assignments = [];
+    foreach (array_keys($filtered) as $column) {
+        if ($column === 'channel_selected_at' && $filtered[$column] === 'now') {
+            $assignments[] = 'channel_selected_at = UTC_TIMESTAMP()';
+            unset($filtered[$column]);
+            continue;
+        }
+        if ($column === 'destination_resolved_at' && $filtered[$column] === 'now') {
+            $assignments[] = 'destination_resolved_at = UTC_TIMESTAMP()';
+            unset($filtered[$column]);
+            continue;
+        }
+        if ($column === 'redirect_attempted_at' && $filtered[$column] === 'now') {
+            $assignments[] = 'redirect_attempted_at = UTC_TIMESTAMP()';
+            unset($filtered[$column]);
+            continue;
+        }
+        $assignments[] = $column . ' = :' . $column;
+    }
+
+    if ($assignments === []) {
+        return false;
+    }
+
+    $filtered['id'] = $leadId;
+    $filtered['widget_id'] = $widgetId;
+    $sql = 'UPDATE widget_leads SET ' . implode(', ', $assignments)
+        . ' WHERE id = :id AND widget_id = :widget_id AND deleted_at IS NULL';
+    $stmt = db()->prepare($sql);
+    $stmt->execute($filtered);
+
+    return $stmt->rowCount() > 0;
 }
 
 function search_widget_leads(int $widgetId, array $options): array
@@ -2835,6 +3298,9 @@ function json_response(array $payload, int $status = 200): void
     exit;
 }
 
+require_once __DIR__ . '/channels.php';
+require_once __DIR__ . '/telegram.php';
+require_once __DIR__ . '/channel-destinations.php';
 require_once __DIR__ . '/lead-management.php';
 require_once __DIR__ . '/lead-pagination.php';
 require_once __DIR__ . '/api-credentials.php';
@@ -2882,6 +3348,7 @@ try {
     ensure_greeting_open_behavior_schema();
     ensure_greeting_allow_phone_plus_schema();
     ensure_greeting_phone_submit_button_id_schema();
+    ensure_consent_notice_and_telegram_styles_schema();
     ensure_lead_recycle_schema();
 } catch (Throwable $exception) {
     // Leave connection errors to the calling page; schema ensure runs when DB is available.

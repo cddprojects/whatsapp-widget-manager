@@ -5,8 +5,9 @@
     z-index: 999999;
     pointer-events: none;
     display: none;
-    max-width: calc(100vw - 24px);
-    max-height: calc(100vh - 24px);
+    max-width: min(420px, calc(100% - 24px));
+    max-height: calc(100% - 24px);
+    width: max-content;
     background: transparent !important;
     border: 0 !important;
     outline: 0 !important;
@@ -64,7 +65,7 @@
     display: flex;
     flex-direction: column;
     width: max-content;
-    max-width: calc(100vw - 32px);
+    max-width: min(420px, calc(100% - 32px));
 }
 
 .ctcw-admin-live-preview .ctcw-preview-badge {
@@ -126,7 +127,28 @@
 .ctcw-admin-live-preview {
     --ctcw-green: #25d366;
     --ctcw-green-dark: #128c7e;
+    --ctcw-telegram: #0088cc;
+    --ctcw-telegram-hover: #0077b5;
+    --ctcw-telegram-dark: #0077b5;
+    --ctcw-telegram-focus: rgba(0, 136, 204, 0.25);
+    --ctcw-channel: var(--ctcw-green);
+    --ctcw-channel-hover: var(--ctcw-green-dark);
+    --ctcw-channel-focus: rgba(18, 140, 126, 0.25);
     --ctcw-text: #102a43;
+}
+
+.ctcw-admin-live-preview .ctcw-container[data-active-channel="whatsapp"],
+.ctcw-admin-live-preview .ctcw-greeting[data-active-channel="whatsapp"] {
+    --ctcw-channel: var(--ctcw-green);
+    --ctcw-channel-hover: var(--ctcw-green-dark);
+    --ctcw-channel-focus: rgba(18, 140, 126, 0.25);
+}
+
+.ctcw-admin-live-preview .ctcw-container[data-active-channel="telegram"],
+.ctcw-admin-live-preview .ctcw-greeting[data-active-channel="telegram"] {
+    --ctcw-channel: var(--ctcw-telegram);
+    --ctcw-channel-hover: var(--ctcw-telegram-hover);
+    --ctcw-channel-focus: var(--ctcw-telegram-focus);
 }
 
 .ctcw-admin-live-preview .ctcw-icon {
@@ -147,7 +169,7 @@
     position: relative;
     display: none;
     width: 280px;
-    max-width: min(320px, calc(100vw - 48px));
+    max-width: min(320px, calc(100% - 24px));
     padding: 16px 18px;
     border: 1px solid #e5e7eb;
     border-radius: 16px;
@@ -157,8 +179,56 @@
 }
 
 .ctcw-admin-live-preview .ctcw-greeting.has-capture {
-    width: min(320px, calc(100vw - 48px));
+    width: min(320px, calc(100% - 24px));
     padding: 16px;
+}
+
+.ctcw-admin-live-preview .ctcw-launcher-stack {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+    max-width: 100%;
+    pointer-events: auto;
+}
+
+.ctcw-admin-live-preview.is-anchor-left .ctcw-launcher-stack {
+    align-items: flex-start;
+}
+
+.ctcw-admin-live-preview .ctcw-launcher-stack.widget-mode-single {
+    flex-direction: row;
+}
+
+.ctcw-admin-live-preview .ctcw-channel-shell,
+.ctcw-admin-live-preview .floating-channel-launcher {
+    display: inline-flex;
+    background: transparent;
+}
+
+.ctcw-admin-live-preview .ctcw-consent-text {
+    margin: 8px 0 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: rgba(15, 23, 42, 0.68);
+}
+
+.ctcw-admin-live-preview .ctcw-greeting:not(.has-consent) {
+    overflow: visible;
+    max-height: none;
+}
+
+.ctcw-admin-live-preview .ctcw-widget.channel-whatsapp {
+    background: var(--ctcw-green, #25d366);
+}
+
+.ctcw-admin-live-preview .ctcw-widget.channel-telegram {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .ctcw-widget[data-preview-channel] {
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .ctcw-admin-live-preview .ctcw-greeting.is-visible {
@@ -202,8 +272,13 @@
     border: 0;
     border-radius: 12px;
     color: #ffffff;
-    background: var(--ctcw-green);
+    background: var(--ctcw-channel, var(--ctcw-green));
     pointer-events: none;
+}
+
+.ctcw-admin-live-preview .ctcw-greeting-submit svg {
+    color: #ffffff;
+    fill: currentColor;
 }
 
 .ctcw-admin-live-preview .ctcw-greeting strong {
@@ -299,17 +374,17 @@
 .ctcw-admin-live-preview .style-7-extend .ctcw-widget {
     width: auto;
     min-width: 58px;
-    max-width: 58px;
+    max-width: calc(58px + 10px + 240px + 40px);
     height: 58px;
     min-height: 58px;
     overflow: hidden;
-    padding: 0 17px;
+    padding: 0 20px;
     border-radius: 999px;
     justify-content: flex-start;
 }
 
 .ctcw-admin-live-preview .style-7-extend .ctcw-text {
-    max-width: 0;
+    max-width: 240px;
     overflow: hidden;
     opacity: 0;
 }
@@ -349,4 +424,180 @@
     border-radius: 999px;
     background: var(--ctcw-green);
     white-space: nowrap;
+}
+
+/* Channel-specific colors must win over style skins in the admin preview. */
+.ctcw-admin-live-preview .style-1 .ctcw-widget.channel-telegram {
+    background: linear-gradient(135deg, var(--ctcw-telegram, #0088cc), var(--ctcw-telegram-hover, #0077b5));
+}
+
+.ctcw-admin-live-preview .style-6 .ctcw-widget.channel-telegram {
+    color: var(--ctcw-telegram-hover, #0077b5);
+    background: transparent;
+}
+
+.ctcw-admin-live-preview .style-7 .ctcw-widget.channel-telegram {
+    color: var(--ctcw-telegram, #0088cc);
+    background: #ffffff;
+}
+
+.ctcw-admin-live-preview .style-8 .ctcw-widget.channel-telegram {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .style-9-left-hover .ctcw-widget.channel-telegram .ctcw-icon,
+.ctcw-admin-live-preview .style-9-left-hover .ctcw-widget.channel-telegram .ctcw-text {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+/* Telegram-native launcher styles in admin preview */
+.ctcw-admin-live-preview .tg-compact .ctcw-widget {
+    min-height: 58px;
+    padding: 0;
+    gap: 10px;
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.ctcw-admin-live-preview .tg-compact .ctcw-widget.channel-telegram {
+    background: transparent;
+}
+
+.ctcw-admin-live-preview .tg-compact .ctcw-icon {
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .tg-compact .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    max-width: 240px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    white-space: nowrap;
+}
+
+.ctcw-admin-live-preview .tg-icon .ctcw-widget {
+    width: 56px;
+    height: 56px;
+    min-height: 56px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .tg-icon .ctcw-text {
+    display: none;
+}
+
+.ctcw-admin-live-preview .tg-pill .ctcw-widget {
+    min-height: 48px;
+    border-radius: 999px;
+    padding: 13px 18px;
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .tg-reveal .ctcw-widget {
+    min-height: 58px;
+    padding: 0;
+    gap: 10px;
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.ctcw-admin-live-preview .tg-reveal .ctcw-widget.channel-telegram {
+    background: transparent;
+}
+
+.ctcw-admin-live-preview .tg-reveal .ctcw-icon {
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .tg-reveal .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    max-width: 240px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.ctcw-admin-live-preview .tg-reveal .ctcw-widget:hover .ctcw-text,
+.ctcw-admin-live-preview .tg-reveal .ctcw-widget:focus-visible .ctcw-text,
+.ctcw-admin-live-preview .tg-reveal:focus-within .ctcw-text {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+@media (hover: none), (pointer: coarse) {
+    .ctcw-admin-live-preview .tg-reveal .ctcw-text {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.ctcw-admin-live-preview .ctcw-greeting-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 40px;
+    margin-top: 8px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 12px;
+    color: #ffffff;
+    background: var(--ctcw-channel, var(--ctcw-green));
+    font: inherit;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+/* Guard: Telegram must not render Style 9's split rectangular shell in preview. */
+.ctcw-admin-live-preview .floating-channel-launcher--telegram.style-9-left-hover .ctcw-widget,
+.ctcw-admin-live-preview .ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-widget {
+    min-height: 48px;
+    padding: 13px 18px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    flex-direction: row;
+}
+
+.ctcw-admin-live-preview .floating-channel-launcher--telegram.style-9-left-hover .ctcw-icon,
+.ctcw-admin-live-preview .ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-icon {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+}
+
+.ctcw-admin-live-preview .floating-channel-launcher--telegram.style-9-left-hover .ctcw-text,
+.ctcw-admin-live-preview .ctcw-channel-shell[data-channel-shell="telegram"].style-9-left-hover .ctcw-text {
+    max-width: none;
+    padding: 0;
+    background: transparent;
+    opacity: 1;
 }

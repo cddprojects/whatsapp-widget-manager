@@ -8,6 +8,10 @@ $clientId = (int) $user['id'];
 $query = trim((string) ($_GET['q'] ?? ''));
 $dateFrom = trim((string) ($_GET['date_from'] ?? ''));
 $dateTo = trim((string) ($_GET['date_to'] ?? ''));
+$channelFilter = trim((string) ($_GET['channel'] ?? ''));
+if ($channelFilter !== '' && normalize_widget_channel($channelFilter) === null) {
+    $channelFilter = '';
+}
 $widgetFilterId = (int) ($_GET['widget_id'] ?? 0);
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = normalize_lead_list_per_page($_GET['per_page'] ?? null);
@@ -18,6 +22,7 @@ $result = search_client_leads([
     'q' => $query,
     'date_from' => $dateFrom,
     'date_to' => $dateTo,
+    'channel' => $channelFilter,
     'page' => $page,
     'per_page' => $perPage,
 ]);
@@ -30,6 +35,7 @@ $exportUrl = app_url('export-leads.php', [
     'q' => $query,
     'date_from' => $dateFrom,
     'date_to' => $dateTo,
+    'channel' => $channelFilter,
 ]);
 
 $pageTitle = t('page.my_leads');
