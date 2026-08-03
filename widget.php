@@ -112,7 +112,6 @@ $widgetConfig = [
         ],
     ],
     'i18n' => [
-        'openTelegram' => t('widget.open_telegram'),
         'copyUsername' => t('widget.copy_telegram_username'),
         'copiedUsername' => t('widget.copied_telegram_username'),
         'telegramUnavailable' => t('widget.telegram_unavailable'),
@@ -277,9 +276,6 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
                 <div class="ctcw-telegram-fallback" data-telegram-fallback hidden>
                     <p class="ctcw-telegram-fallback-text" data-telegram-fallback-text></p>
                     <div class="ctcw-channel-actions">
-                        <button type="button" class="ctcw-channel-btn ctcw-channel-btn--telegram" data-telegram-open>
-                            <?= e(t('widget.open_telegram')) ?>
-                        </button>
                         <button type="button" class="ctcw-channel-btn ctcw-channel-btn--secondary" data-telegram-copy hidden>
                             <?= e(t('widget.copy_telegram_username')) ?>
                         </button>

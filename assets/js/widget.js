@@ -829,7 +829,6 @@
     var channelPicker = container.querySelector('[data-channel-picker]');
     var telegramFallback = container.querySelector('[data-telegram-fallback]');
     var telegramFallbackText = container.querySelector('[data-telegram-fallback-text]');
-    var telegramOpenBtn = container.querySelector('[data-telegram-open]');
     var telegramCopyBtn = container.querySelector('[data-telegram-copy]');
     var channelMode = String(config.channelMode || 'whatsapp_only');
     var enabledChannels = Array.isArray(config.enabledChannels) ? config.enabledChannels : ['whatsapp'];
@@ -989,7 +988,9 @@
         if (telegramFallback) {
             telegramFallback.hidden = false;
             if (telegramFallbackText) {
-                telegramFallbackText.textContent = widgetI18n.openTelegram || 'Open Telegram';
+                telegramFallbackText.textContent = telegramFallbackState.username
+                    ? (widgetI18n.copyUsername || 'Copy Telegram Username')
+                    : (widgetI18n.redirectingTelegram || widgetI18n.continueTelegram || 'Opening Telegram...');
             }
             if (telegramCopyBtn) {
                 telegramCopyBtn.hidden = !telegramFallbackState.username;
@@ -1466,14 +1467,6 @@
             });
         });
     });
-
-    if (telegramOpenBtn) {
-        telegramOpenBtn.addEventListener('click', function () {
-            if (telegramFallbackState.url) {
-                openUrl(telegramFallbackState.url);
-            }
-        });
-    }
 
     if (telegramCopyBtn) {
         telegramCopyBtn.addEventListener('click', function () {

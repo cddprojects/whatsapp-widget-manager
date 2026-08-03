@@ -180,6 +180,8 @@ assert_true(
 assert_true(str_contains($widgetPhp, 'data-greeting-cta'), 'Public widget markup supports full-width greeting CTA');
 assert_true(str_contains($widgetPhp, 'has-channel-cta'), 'Greeting marks both-channel CTA mode');
 assert_true(str_contains($widgetPhp, '<form class="ctcw-greeting-form"'), 'Phone capture uses a form for shared submit');
+assert_true(!str_contains($widgetPhp, 'data-telegram-open'), 'Greeting dialog no longer includes Open Telegram button');
+assert_true(!str_contains($widgetPhp, "t('widget.open_telegram')"), 'Greeting dialog does not render Open Telegram translation');
 $dashboardJsPreview = file_get_contents(dirname(__DIR__) . '/assets/js/dashboard.js');
 assert_true(
     str_contains($dashboardJsPreview, "channelMode === 'both'")
