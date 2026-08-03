@@ -348,7 +348,7 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
                         <span><?= e(t('label.desktop_style')) ?></span>
                         <select name="telegram_desktop_style" data-style-select data-style-channel="telegram">
                             <?php foreach (telegram_widget_styles() as $key => $label): ?>
-                                <option value="<?= e($key) ?>"<?= selected($telegramDesktopStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?></option>
+                                <option value="<?= e($key) ?>"<?= selected($telegramDesktopStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?><?= $key === default_telegram_widget_style() ? ' — ' . t('badge.recommended') : '' ?></option>
                             <?php endforeach; ?>
                         </select>
                     </label>
@@ -356,20 +356,32 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
                         <span><?= e(t('label.mobile_style')) ?></span>
                         <select name="telegram_mobile_style" data-style-select data-style-channel="telegram">
                             <?php foreach (telegram_widget_styles() as $key => $label): ?>
-                                <option value="<?= e($key) ?>"<?= selected($telegramMobileStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?></option>
+                                <option value="<?= e($key) ?>"<?= selected($telegramMobileStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?><?= $key === default_telegram_widget_style() ? ' — ' . t('badge.recommended') : '' ?></option>
                             <?php endforeach; ?>
                         </select>
                     </label>
                 </div>
                 <div class="style-preview-grid" data-style-preview-grid="telegram">
                     <?php foreach (telegram_widget_styles() as $key => $label): ?>
-                        <div class="style-preview" data-style-preview-card="<?= e($key) ?>" data-style-channel="telegram">
+                        <?php $isRecommendedTelegramStyle = $key === default_telegram_widget_style(); ?>
+                        <button
+                            type="button"
+                            class="style-preview<?= $isRecommendedTelegramStyle ? ' is-recommended' : '' ?>"
+                            data-style-preview-card="<?= e($key) ?>"
+                            data-style-channel="telegram"
+                            aria-pressed="<?= $telegramDesktopStyleValue === $key || $telegramMobileStyleValue === $key ? 'true' : 'false' ?>"
+                        >
                             <div class="mini-widget ctcw-widget channel-telegram <?= e($key) ?>">
                                 <span class="ctcw-icon"><?= telegram_icon_svg() ?></span>
                                 <span class="ctcw-text"><?= e(t('channel.launcher.telegram')) ?></span>
                             </div>
-                            <small><?= e(translate_widget_style($key)) ?></small>
-                        </div>
+                            <small>
+                                <?= e(translate_widget_style($key)) ?>
+                                <?php if ($isRecommendedTelegramStyle): ?>
+                                    <span class="style-recommended-badge"><?= e(t('badge.recommended')) ?></span>
+                                <?php endif; ?>
+                            </small>
+                        </button>
                     <?php endforeach; ?>
                 </div>
             </div>

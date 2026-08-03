@@ -207,6 +207,7 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
         data-desktop-align="<?= e($desktopAlign) ?>"
         data-mobile-align="<?= e($mobileAlign) ?>"
         data-channel-mode="<?= e($channelMode) ?>"
+        data-active-channel="<?= e($defaultPublicChannel) ?>"
     >
         <?php if (!empty($widget['greeting_enabled'])): ?>
             <div class="ctcw-greeting ctcw-widget-popup<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?><?= $consentText !== '' ? ' has-consent' : '' ?>" data-greeting data-active-channel="<?= e($defaultPublicChannel) ?>">

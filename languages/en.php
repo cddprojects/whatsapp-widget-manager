@@ -336,7 +336,8 @@ return [
     'helper.greeting_open_click_only' => 'Only show the greeting popup after the visitor clicks the widget.',
     'helper.show_consent_notice' => 'Display a short privacy notice beneath the lead form.',
     'helper.consent_notice_text' => 'Leave blank to use the default translated consent notice.',
-    'helper.telegram_launcher_style' => 'Telegram launcher style is configured separately from WhatsApp.',
+    'helper.telegram_launcher_style' => 'Choose a Telegram-specific launcher style. Compact label + icon is recommended.',
+    'badge.recommended' => 'Recommended',
     'helper.allow_phone_plus_symbol' => 'When enabled, visitors can enter international numbers and the phone input shows a + prefix.',
     'helper.phone_submit_button_id' => 'Used as the HTML ID for the phone submit button. Use letters, numbers, hyphens, and underscores only.',
     'helper.business_hours_always_online' => 'The widget is always available and WhatsApp clicks remain enabled.',
@@ -475,6 +476,9 @@ return [
     'widget_style.style-7-extend' => 'Style-7 Extend: Icon on Hover Extend',
     'widget_style.style-8' => 'Style-8: Button',
     'widget_style.style-9-left-hover' => 'Style-9: Left Hover Text',
+    'widget_style.tg-compact' => 'Compact label + icon',
+    'widget_style.tg-icon' => 'Icon only',
+    'widget_style.tg-pill' => 'Combined pill',
 
     // Phone numbers
     'phone.numbers_title' => 'Phone numbers',
@@ -916,6 +920,7 @@ return [
     'widget.continue_telegram' => 'Continue on Telegram',
     'widget.redirecting_whatsapp' => 'Opening WhatsApp...',
     'widget.redirecting_telegram' => 'Opening Telegram...',
+    'widget.open_whatsapp' => 'Open WhatsApp',
     'widget.open_telegram' => 'Open Telegram',
     'widget.copy_telegram_username' => 'Copy Telegram Username',
     'widget.copied_telegram_username' => 'Username copied',

@@ -1449,6 +1449,44 @@ code {
     border-radius: 18px;
     background: #f8fafc;
     text-align: center;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    width: 100%;
+}
+
+button.style-preview {
+    appearance: none;
+}
+
+.style-preview.is-selected {
+    border-color: #0088cc;
+    box-shadow: 0 0 0 2px rgba(0, 136, 204, 0.18);
+    background: #f0f9ff;
+}
+
+.style-preview[data-style-channel="whatsapp"].is-selected {
+    border-color: var(--green);
+    box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+    background: #f0fdf4;
+}
+
+.style-preview.is-recommended .style-recommended-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #0088cc;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    vertical-align: middle;
+}
+
+.mini-widget.channel-telegram {
+    background: #0088cc;
 }
 
 .mini-widget.ctcw-widget {
@@ -1550,6 +1588,55 @@ code {
     padding: 0 12px;
     border-radius: 999px;
     background: var(--green);
+}
+
+.mini-widget.tg-compact {
+    gap: 8px;
+    color: #ffffff;
+    background: transparent;
+    box-shadow: none;
+    flex-direction: row-reverse;
+    border-radius: 0;
+    padding: 0;
+}
+
+.mini-widget.tg-compact.channel-telegram {
+    background: transparent;
+}
+
+.mini-widget.tg-compact .ctcw-icon {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    padding: 10px;
+    border-radius: 50%;
+    background: #0088cc;
+}
+
+.mini-widget.tg-compact .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #0088cc;
+}
+
+.mini-widget.tg-icon {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    background: #0088cc;
+}
+
+.mini-widget.tg-icon .ctcw-text {
+    display: none;
+}
+
+.mini-widget.tg-pill {
+    border-radius: 999px;
+    background: #0088cc;
 }
 
 .position-grid {

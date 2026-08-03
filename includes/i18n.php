@@ -134,7 +134,11 @@ function translate_day(string $day): string
 
 function translate_widget_style(string $styleKey): string
 {
-    $styleKey = normalize_widget_style($styleKey);
+    if (isset(telegram_widget_styles()[$styleKey]) || str_starts_with($styleKey, 'tg-')) {
+        $styleKey = sanitize_telegram_widget_style($styleKey);
+    } else {
+        $styleKey = normalize_widget_style($styleKey);
+    }
     $key = 'widget_style.' . $styleKey;
     $translated = t($key);
 

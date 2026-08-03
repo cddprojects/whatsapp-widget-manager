@@ -630,10 +630,33 @@
             var selected = Array.from(document.querySelectorAll('[data-style-select][data-style-channel="' + channel + '"]')).map(function (select) {
                 return select.value;
             });
-            card.classList.toggle('is-selected', selected.indexOf(styleKey) !== -1);
+            var isSelected = selected.indexOf(styleKey) !== -1;
+            card.classList.toggle('is-selected', isSelected);
+            if (card.hasAttribute('aria-pressed')) {
+                card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+            }
         });
     }
     window.refreshSelectedStyleCards = refreshSelectedStyleCards;
+
+    document.addEventListener('click', function (event) {
+        var styleCard = event.target.closest('[data-style-preview-card]');
+        if (!styleCard) {
+            return;
+        }
+        var channel = styleCard.getAttribute('data-style-channel') || 'whatsapp';
+        var styleKey = styleCard.getAttribute('data-style-preview-card');
+        if (!styleKey) {
+            return;
+        }
+        document.querySelectorAll('[data-style-select][data-style-channel="' + channel + '"]').forEach(function (select) {
+            if (select.value !== styleKey) {
+                select.value = styleKey;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        refreshSelectedStyleCards();
+    });
 
     document.addEventListener('click', function (event) {
         var copyButton = event.target.closest('[data-copy-target]');
@@ -1467,11 +1490,18 @@ function initAdminLivePreview() {
     }
 
     function normalizeTelegramWidgetStyle(style) {
-        var normalized = normalizeWidgetStyle(style);
-        if (normalized === 'style-9-left-hover') {
-            return 'style-4';
+        var telegramStyles = ['tg-compact', 'tg-icon', 'tg-pill'];
+        var normalized = normalizeWidgetStyle(String(style || '').trim());
+        if (telegramStyles.indexOf(normalized) !== -1) {
+            return normalized;
         }
-        return normalized || 'style-4';
+        if (['style-2', 'style-3', 'style-3-large', 'style-7'].indexOf(normalized) !== -1) {
+            return 'tg-icon';
+        }
+        if (['style-1', 'style-6', 'style-8'].indexOf(normalized) !== -1) {
+            return 'tg-pill';
+        }
+        return 'tg-compact';
     }
 
     function previewDebugLog() {
@@ -1648,7 +1678,7 @@ function initAdminLivePreview() {
 
         return {
             desktopStyle: normalizeWidgetStyle(getFieldValue('desktop_style') || 'style-1'),
-            telegramDesktopStyle: normalizeTelegramWidgetStyle(getFieldValue('telegram_desktop_style') || 'style-4'),
+            telegramDesktopStyle: normalizeTelegramWidgetStyle(getFieldValue('telegram_desktop_style') || 'tg-compact'),
             desktopVerticalPosition: vertical === 'top' ? 'top' : 'bottom',
             desktopHorizontalPosition: horizontal === 'left' ? 'left' : 'right',
             callToAction: getFieldValue('call_to_action') || window.ctcwI18n('preview.default_cta'),
@@ -1692,15 +1722,17 @@ function initAdminLivePreview() {
             consentHtml = '<p class="ctcw-consent-text">' + escapeHtml(formState.consentNoticeText) + '</p>';
         }
 
+        var activeChannel = formState.activeChannel === 'telegram' ? 'telegram' : 'whatsapp';
+
         if (!formState.greetingCapturePhone) {
-            return '<div class="ctcw-greeting" data-preview-greeting data-preview-active-channel="' + escapeHtml(formState.activeChannel) + '">'
+            return '<div class="ctcw-greeting" data-preview-greeting data-active-channel="' + escapeHtml(activeChannel) + '" data-preview-active-channel="' + escapeHtml(activeChannel) + '">'
                 + '<strong>' + title + '</strong>'
                 + '<p>' + message + '</p>'
                 + forceNote
                 + '</div>';
         }
 
-        return '<div class="ctcw-greeting has-capture' + (consentHtml ? ' has-consent' : '') + '" data-preview-greeting data-preview-active-channel="' + escapeHtml(formState.activeChannel) + '">'
+        return '<div class="ctcw-greeting has-capture' + (consentHtml ? ' has-consent' : '') + '" data-preview-greeting data-active-channel="' + escapeHtml(activeChannel) + '" data-preview-active-channel="' + escapeHtml(activeChannel) + '">'
             + '<div class="ctcw-greeting-form">'
             + '<strong>' + title + '</strong>'
             + '<p>' + message + '</p>'
@@ -1723,7 +1755,7 @@ function initAdminLivePreview() {
         var icon = channel === 'telegram' ? telegramIcon : whatsappIcon;
         var channelClass = channel === 'telegram' ? 'channel-telegram' : 'channel-whatsapp';
         var style = channel === 'telegram'
-            ? escapeHtml(formState.telegramDesktopStyle || 'style-4')
+            ? escapeHtml(formState.telegramDesktopStyle || 'tg-compact')
             : escapeHtml(formState.desktopStyle || 'style-1');
         var shellMod = channel === 'telegram'
             ? 'floating-channel-launcher--telegram'
@@ -1740,13 +1772,14 @@ function initAdminLivePreview() {
     function buildAdminPreviewMarkup(formState) {
         var channels = Array.isArray(formState.channels) ? formState.channels : ['whatsapp'];
         var modeClass = channels.length > 1 ? 'widget-mode-multiple' : 'widget-mode-single';
+        var activeChannel = formState.activeChannel === 'telegram' ? 'telegram' : 'whatsapp';
         var launchers = channels.map(function (channel) {
             return buildPreviewLauncherHtml(channel, formState);
         }).join('');
 
         return '<div class="ctcw-admin-live-preview-inner">'
             + '<span class="ctcw-preview-badge">' + escapeHtml(window.ctcwI18n('preview.label')) + '</span>'
-            + '<div class="ctcw-container is-online ' + modeClass + '" data-preview-channel-mode="' + escapeHtml(formState.channelMode) + '">'
+            + '<div class="ctcw-container is-online ' + modeClass + '" data-preview-channel-mode="' + escapeHtml(formState.channelMode) + '" data-active-channel="' + escapeHtml(activeChannel) + '">'
             + buildGreetingHtml(formState)
             + '<div class="ctcw-launcher-stack ' + modeClass + '" data-preview-launcher-stack>'
             + launchers

@@ -128,8 +128,27 @@
     --ctcw-green: #25d366;
     --ctcw-green-dark: #128c7e;
     --ctcw-telegram: #0088cc;
-    --ctcw-telegram-dark: #007ab8;
+    --ctcw-telegram-hover: #0077b5;
+    --ctcw-telegram-dark: #0077b5;
+    --ctcw-telegram-focus: rgba(0, 136, 204, 0.25);
+    --ctcw-channel: var(--ctcw-green);
+    --ctcw-channel-hover: var(--ctcw-green-dark);
+    --ctcw-channel-focus: rgba(18, 140, 126, 0.25);
     --ctcw-text: #102a43;
+}
+
+.ctcw-admin-live-preview .ctcw-container[data-active-channel="whatsapp"],
+.ctcw-admin-live-preview .ctcw-greeting[data-active-channel="whatsapp"] {
+    --ctcw-channel: var(--ctcw-green);
+    --ctcw-channel-hover: var(--ctcw-green-dark);
+    --ctcw-channel-focus: rgba(18, 140, 126, 0.25);
+}
+
+.ctcw-admin-live-preview .ctcw-container[data-active-channel="telegram"],
+.ctcw-admin-live-preview .ctcw-greeting[data-active-channel="telegram"] {
+    --ctcw-channel: var(--ctcw-telegram);
+    --ctcw-channel-hover: var(--ctcw-telegram-hover);
+    --ctcw-channel-focus: var(--ctcw-telegram-focus);
 }
 
 .ctcw-admin-live-preview .ctcw-icon {
@@ -253,8 +272,13 @@
     border: 0;
     border-radius: 12px;
     color: #ffffff;
-    background: var(--ctcw-green);
+    background: var(--ctcw-channel, var(--ctcw-green));
     pointer-events: none;
+}
+
+.ctcw-admin-live-preview .ctcw-greeting-submit svg {
+    color: #ffffff;
+    fill: currentColor;
 }
 
 .ctcw-admin-live-preview .ctcw-greeting strong {
@@ -404,11 +428,11 @@
 
 /* Channel-specific colors must win over style skins in the admin preview. */
 .ctcw-admin-live-preview .style-1 .ctcw-widget.channel-telegram {
-    background: linear-gradient(135deg, var(--ctcw-telegram, #0088cc), var(--ctcw-telegram-dark, #007ab8));
+    background: linear-gradient(135deg, var(--ctcw-telegram, #0088cc), var(--ctcw-telegram-hover, #0077b5));
 }
 
 .ctcw-admin-live-preview .style-6 .ctcw-widget.channel-telegram {
-    color: var(--ctcw-telegram-dark, #007ab8);
+    color: var(--ctcw-telegram-hover, #0077b5);
     background: transparent;
 }
 
@@ -423,6 +447,62 @@
 
 .ctcw-admin-live-preview .style-9-left-hover .ctcw-widget.channel-telegram .ctcw-icon,
 .ctcw-admin-live-preview .style-9-left-hover .ctcw-widget.channel-telegram .ctcw-text {
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+/* Telegram-native launcher styles in admin preview */
+.ctcw-admin-live-preview .tg-compact .ctcw-widget {
+    min-height: 58px;
+    padding: 0;
+    gap: 10px;
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.ctcw-admin-live-preview .tg-compact .ctcw-widget.channel-telegram {
+    background: transparent;
+}
+
+.ctcw-admin-live-preview .tg-compact .ctcw-icon {
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .tg-compact .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    max-width: 240px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    white-space: nowrap;
+}
+
+.ctcw-admin-live-preview .tg-icon .ctcw-widget {
+    width: 56px;
+    height: 56px;
+    min-height: 56px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+}
+
+.ctcw-admin-live-preview .tg-icon .ctcw-text {
+    display: none;
+}
+
+.ctcw-admin-live-preview .tg-pill .ctcw-widget {
+    min-height: 48px;
+    border-radius: 999px;
+    padding: 13px 18px;
     background: var(--ctcw-telegram, #0088cc);
 }
 

@@ -220,32 +220,54 @@ function sanitize_widget_style(string $style, string $default = 'style-1'): stri
 }
 
 /**
- * Telegram-safe launcher styles. Style 9 inherits a WhatsApp-specific
- * left-hover layout that creates an unsuitable rectangular shell for Telegram.
+ * Telegram-native launcher styles (independent from WhatsApp presets).
  *
  * @return array<string, string>
  */
 function telegram_widget_styles(): array
 {
-    $styles = widget_styles();
-    unset($styles['style-9-left-hover']);
-
-    return $styles;
+    return [
+        'tg-compact' => 'Compact label + icon',
+        'tg-icon' => 'Icon only',
+        'tg-pill' => 'Combined pill',
+    ];
 }
 
-function sanitize_telegram_widget_style(string $style, string $default = 'style-4'): string
+/**
+ * Map legacy WhatsApp-style IDs previously stored in Telegram style columns.
+ */
+function map_legacy_telegram_widget_style(string $style): string
 {
     $style = normalize_widget_style(trim($style));
-    if ($style === 'style-9-left-hover') {
-        return $default;
+    if ($style === '') {
+        return default_telegram_widget_style();
     }
 
-    return enum_value($style, array_keys(telegram_widget_styles()), $default);
+    if (array_key_exists($style, telegram_widget_styles())) {
+        return $style;
+    }
+
+    return match ($style) {
+        'style-2', 'style-3', 'style-3-large', 'style-7' => 'tg-icon',
+        'style-1', 'style-6', 'style-8' => 'tg-pill',
+        // Old Telegram default (style-4) and hover-extend layouts become the
+        // recommended compact label + icon style.
+        'style-4', 'style-7-extend', 'style-9-left-hover' => 'tg-compact',
+        default => default_telegram_widget_style(),
+    };
+}
+
+function sanitize_telegram_widget_style(string $style, ?string $default = null): string
+{
+    $default = $default ?? default_telegram_widget_style();
+    $mapped = map_legacy_telegram_widget_style($style);
+
+    return enum_value($mapped, array_keys(telegram_widget_styles()), $default);
 }
 
 function default_telegram_widget_style(): string
 {
-    return 'style-4';
+    return 'tg-compact';
 }
 
 function country_code_options(): array
@@ -965,8 +987,8 @@ function default_widget_data(): array
         'call_to_action' => 'WhatsApp us',
         'desktop_style' => 'style-1',
         'mobile_style' => 'style-1',
-        'telegram_desktop_style' => 'style-4',
-        'telegram_mobile_style' => 'style-4',
+        'telegram_desktop_style' => default_telegram_widget_style(),
+        'telegram_mobile_style' => default_telegram_widget_style(),
         'desktop_position_type' => 'fixed',
         'mobile_position_type' => 'fixed',
         'desktop_vertical_position_type' => 'bottom',
@@ -1524,7 +1546,16 @@ function enabled_label($value, string $enabled = 'Enabled', string $disabled = '
 
 function widget_style_frame_size(string $style): array
 {
-    $style = normalize_widget_style($style);
+    $trimmed = trim($style);
+    if (isset(telegram_widget_styles()[$trimmed]) || str_starts_with($trimmed, 'tg-')) {
+        return match (sanitize_telegram_widget_style($trimmed)) {
+            'tg-icon' => ['width' => 120, 'height' => 120],
+            'tg-pill' => ['width' => 300, 'height' => 110],
+            default => ['width' => 360, 'height' => 120],
+        };
+    }
+
+    $style = normalize_widget_style($trimmed);
 
     return match ($style) {
         'style-1' => ['width' => 280, 'height' => 110],
@@ -1561,8 +1592,14 @@ function widget_frame_size(array $widget): array
 {
     $desktop = widget_style_frame_size((string) ($widget['desktop_style'] ?? 'style-1'));
     $mobile = widget_style_frame_size((string) ($widget['mobile_style'] ?? 'style-1'));
-    $width = max($desktop['width'], $mobile['width']);
-    $height = max($desktop['height'], $mobile['height']);
+    $telegramDesktop = widget_style_frame_size(
+        sanitize_telegram_widget_style((string) ($widget['telegram_desktop_style'] ?? default_telegram_widget_style()))
+    );
+    $telegramMobile = widget_style_frame_size(
+        sanitize_telegram_widget_style((string) ($widget['telegram_mobile_style'] ?? default_telegram_widget_style()))
+    );
+    $width = max($desktop['width'], $mobile['width'], $telegramDesktop['width'], $telegramMobile['width']);
+    $height = max($desktop['height'], $mobile['height'], $telegramDesktop['height'], $telegramMobile['height']);
 
     return ['width' => $width, 'height' => $height];
 }
@@ -2413,14 +2450,14 @@ function ensure_consent_notice_and_telegram_styles_schema(): void
     if (!table_has_column('widgets', 'telegram_desktop_style')) {
         db()->exec(
             "ALTER TABLE widgets
-             ADD COLUMN telegram_desktop_style VARCHAR(40) NOT NULL DEFAULT 'style-4' AFTER mobile_style"
+             ADD COLUMN telegram_desktop_style VARCHAR(40) NOT NULL DEFAULT 'tg-compact' AFTER mobile_style"
         );
     }
 
     if (!table_has_column('widgets', 'telegram_mobile_style')) {
         db()->exec(
             "ALTER TABLE widgets
-             ADD COLUMN telegram_mobile_style VARCHAR(40) NOT NULL DEFAULT 'style-4' AFTER telegram_desktop_style"
+             ADD COLUMN telegram_mobile_style VARCHAR(40) NOT NULL DEFAULT 'tg-compact' AFTER telegram_desktop_style"
         );
     }
 }

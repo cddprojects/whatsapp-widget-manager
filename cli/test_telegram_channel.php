@@ -138,15 +138,25 @@ assert_true(
 echo "\n=== Consent notice + Telegram styles ===\n";
 $defaults = default_widget_data();
 assert_eq(0, (int) ($defaults['consent_notice_enabled'] ?? 1), 'Consent notice defaults OFF');
-assert_eq('style-4', (string) ($defaults['telegram_desktop_style'] ?? ''), 'Telegram desktop style defaults to style-4');
-assert_eq('style-4', (string) ($defaults['telegram_mobile_style'] ?? ''), 'Telegram mobile style defaults to style-4');
+assert_eq('tg-compact', (string) ($defaults['telegram_desktop_style'] ?? ''), 'Telegram desktop style defaults to tg-compact');
+assert_eq('tg-compact', (string) ($defaults['telegram_mobile_style'] ?? ''), 'Telegram mobile style defaults to tg-compact');
+assert_eq('tg-compact', default_telegram_widget_style(), 'Default Telegram style helper returns tg-compact');
+assert_true(array_key_exists('tg-compact', telegram_widget_styles()), 'Telegram catalog includes compact style');
+assert_true(array_key_exists('tg-icon', telegram_widget_styles()), 'Telegram catalog includes icon style');
+assert_true(array_key_exists('tg-pill', telegram_widget_styles()), 'Telegram catalog includes pill style');
 assert_true(!array_key_exists('style-9-left-hover', telegram_widget_styles()), 'Telegram styles exclude Style 9');
-assert_eq('style-4', sanitize_telegram_widget_style('style-9-left-hover'), 'Style 9 sanitizes to Telegram default');
+assert_true(!array_key_exists('style-4', telegram_widget_styles()), 'Telegram styles exclude WhatsApp Style 4');
+assert_eq('tg-compact', sanitize_telegram_widget_style('style-9-left-hover'), 'Style 9 sanitizes to tg-compact');
+assert_eq('tg-compact', sanitize_telegram_widget_style('style-4'), 'Legacy style-4 sanitizes to tg-compact');
+assert_eq('tg-icon', sanitize_telegram_widget_style('style-3'), 'Legacy icon style sanitizes to tg-icon');
+assert_eq('tg-pill', sanitize_telegram_widget_style('style-8'), 'Legacy button style sanitizes to tg-pill');
+assert_eq('tg-compact', sanitize_telegram_widget_style('unknown-style'), 'Unknown Telegram style falls back to tg-compact');
 assert_eq('', widget_consent_notice_text(['consent_notice_enabled' => 0]), 'Consent text empty when disabled');
 assert_true(widget_consent_notice_text(['consent_notice_enabled' => 1]) !== '', 'Consent text present when enabled');
 assert_true(str_contains($widgetFormSource, 'name="consent_notice_enabled"'), 'Form includes consent notice toggle');
 assert_true(str_contains($widgetFormSource, 'name="telegram_desktop_style"'), 'Form includes Telegram desktop style');
 assert_true(str_contains($widgetFormSource, 'data-channel-style-panels'), 'Form includes channel style panels');
+assert_true(str_contains($widgetFormSource, 'badge.recommended') || str_contains($widgetFormSource, 'style-recommended-badge'), 'Telegram style UI marks recommended option');
 assert_true(
     is_file(dirname(__DIR__) . '/migrations/020_consent_notice_and_telegram_styles.sql'),
     'Migration 020 exists'
@@ -157,6 +167,18 @@ assert_true(str_contains($widgetPhp, 'widget_consent_notice_text'), 'Public widg
 $dashboardJs = file_get_contents(dirname(__DIR__) . '/assets/js/dashboard.js');
 assert_true(str_contains($dashboardJs, 'consentNoticeEnabled'), 'Live preview tracks consent toggle');
 assert_true(str_contains($dashboardJs, 'telegramDesktopStyle'), 'Live preview tracks Telegram style');
+assert_true(str_contains($dashboardJs, 'tg-compact'), 'Live preview normalizes to Telegram-native styles');
+$enLang = file_get_contents(dirname(__DIR__) . '/languages/en.php');
+$zhLang = file_get_contents(dirname(__DIR__) . '/languages/zh-CN.php');
+assert_true(str_contains($enLang, "'widget_style.tg-compact'"), 'EN includes tg-compact label');
+assert_true(str_contains($zhLang, "'widget_style.tg-compact'"), 'ZH includes tg-compact label');
+assert_true(str_contains($enLang, "'badge.recommended'"), 'EN includes Recommended badge');
+assert_true(str_contains($zhLang, "'badge.recommended'"), 'ZH includes Recommended badge');
+assert_true(str_contains($enLang, "'widget.open_whatsapp'"), 'EN includes Open WhatsApp');
+assert_true(str_contains($widgetCss = file_get_contents(dirname(__DIR__) . '/assets/css/widget.css'), 'data-active-channel="telegram"'), 'Widget CSS has Telegram active-channel tokens');
+assert_true(str_contains($widgetCss, '.tg-compact'), 'Widget CSS defines tg-compact launcher');
+assert_true(str_contains($widgetCss, '--ctcw-channel'), 'Widget CSS defines channel color tokens');
+assert_true(str_contains($widgetCss, '#0077b5') || str_contains($widgetCss, '#0077B5'), 'Widget CSS uses Telegram hover #0077B5');
 
 $embedJs = file_get_contents(dirname(__DIR__) . '/embed.js.php');
 assert_true(!preg_match('/height\s*=\s*255/', $embedJs), 'Embed script does not force greeting height to 255');

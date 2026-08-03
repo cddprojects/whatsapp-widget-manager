@@ -15,7 +15,12 @@
     var greetingSuccess = document.querySelector('[data-greeting-success]');
     var channelUnavailable = container ? container.querySelector('[data-channel-unavailable]') : null;
     var channelUnavailableText = container ? container.querySelector('[data-channel-unavailable-text]') : null;
-    var styleNames = ['style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-6', 'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover'];
+    var styleNames = [
+        'style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-6',
+        'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover',
+        'tg-compact', 'tg-icon', 'tg-pill'
+    ];
+    var telegramStyleNames = ['tg-compact', 'tg-icon', 'tg-pill'];
     var isOpening = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
     var currentState = 'button';
@@ -38,7 +43,7 @@
         url: '/',
         urlFull: ''
     };
-    var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-7'];
+    var iconOnlyStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'tg-icon'];
     var stateMinimums = {
         icon: { width: 72, height: 72 },
         button: { width: 72, height: 72 },
@@ -55,7 +60,7 @@
         'greeting-phone': { width: 280, height: 170 },
         'greeting-phone-consent': { width: 280, height: 190 }
     };
-    var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend'];
+    var mobileCollapsedIconStyles = ['style-2', 'style-3', 'style-3-large', 'style-7', 'style-7-extend', 'tg-icon'];
 
     function getMeasureSelectors() {
         return [
@@ -117,11 +122,18 @@
     }
 
     function normalizeTelegramStyle(style) {
-        var normalized = normalizeWidgetStyle(style);
-        if (normalized === 'style-9-left-hover') {
-            return 'style-4';
+        var normalized = normalizeWidgetStyle(String(style || '').trim());
+        if (telegramStyleNames.indexOf(normalized) !== -1) {
+            return normalized;
         }
-        return normalized || 'style-4';
+        if (['style-2', 'style-3', 'style-3-large', 'style-7'].indexOf(normalized) !== -1) {
+            return 'tg-icon';
+        }
+        if (['style-1', 'style-6', 'style-8'].indexOf(normalized) !== -1) {
+            return 'tg-pill';
+        }
+        // style-4 (old default), hover-extend, Style 9, empty, unknown → recommended
+        return 'tg-compact';
     }
 
     function shellForElement(el) {
@@ -528,8 +540,8 @@
                 styleNames.forEach(function (style) {
                     shell.classList.remove(style);
                 });
-                shell.classList.add(activeStyle || (channel === 'telegram' ? 'style-4' : 'style-1'));
-                shell.dataset.activeStyle = activeStyle || (channel === 'telegram' ? 'style-4' : 'style-1');
+                shell.classList.add(activeStyle || (channel === 'telegram' ? 'tg-compact' : 'style-1'));
+                shell.dataset.activeStyle = activeStyle || (channel === 'telegram' ? 'tg-compact' : 'style-1');
             });
             currentStyle = styleForShell(activeChannelShell());
         } else {
