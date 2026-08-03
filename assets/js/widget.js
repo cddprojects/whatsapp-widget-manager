@@ -9,7 +9,9 @@
     var channelShells = container ? Array.from(container.querySelectorAll('[data-channel-shell]')) : [];
     var greeting = document.querySelector('[data-greeting]');
     var closeGreeting = document.querySelector('[data-close-greeting]');
-    var greetingSubmit = document.querySelector('[data-greeting-submit]');
+    var greetingSubmitButtons = Array.from(document.querySelectorAll('[data-greeting-submit]'));
+    var greetingSubmit = greetingSubmitButtons[0] || null;
+    var greetingCta = document.querySelector('[data-greeting-cta]');
     var phoneInput = document.querySelector('[data-greeting-phone]');
     var phoneError = document.querySelector('[data-greeting-phone-error]');
     var greetingSuccess = document.querySelector('[data-greeting-success]');
@@ -18,10 +20,11 @@
     var styleNames = [
         'style-1', 'style-2', 'style-3', 'style-3-large', 'style-4', 'style-6',
         'style-7', 'style-7-extend', 'style-8', 'style-9-left-hover',
-        'tg-compact', 'tg-icon', 'tg-pill'
+        'tg-compact', 'tg-icon', 'tg-pill', 'tg-reveal'
     ];
-    var telegramStyleNames = ['tg-compact', 'tg-icon', 'tg-pill'];
+    var telegramStyleNames = ['tg-compact', 'tg-icon', 'tg-pill', 'tg-reveal'];
     var isOpening = false;
+    var isSubmittingLead = false;
     var currentStyle = container ? container.dataset.desktopStyle : 'style-1';
     var currentState = 'button';
     var selectedChannel = String(config.defaultChannel || 'whatsapp');
@@ -110,11 +113,27 @@
     }
 
     function resetSubmitButton(submitButton) {
+        var buttons = submitButton ? [submitButton] : greetingSubmitButtons;
+        buttons.forEach(function (button) {
+            if (!button) {
+                return;
+            }
+            button.disabled = false;
+            button.classList.remove('is-loading');
+        });
         if (!submitButton) {
-            return;
+            isSubmittingLead = false;
         }
-        submitButton.disabled = false;
-        submitButton.classList.remove('is-loading');
+    }
+
+    function setSubmitButtonsLoading(isLoading) {
+        greetingSubmitButtons.forEach(function (button) {
+            if (!button) {
+                return;
+            }
+            button.disabled = !!isLoading;
+            button.classList.toggle('is-loading', !!isLoading);
+        });
     }
 
     function normalizeWidgetStyle(style) {
@@ -123,6 +142,9 @@
 
     function normalizeTelegramStyle(style) {
         var normalized = normalizeWidgetStyle(String(style || '').trim());
+        if (normalized === 'reveal_label_hover') {
+            return 'tg-reveal';
+        }
         if (telegramStyleNames.indexOf(normalized) !== -1) {
             return normalized;
         }
@@ -132,8 +154,16 @@
         if (['style-1', 'style-6', 'style-8'].indexOf(normalized) !== -1) {
             return 'tg-pill';
         }
-        // style-4 (old default), hover-extend, Style 9, empty, unknown → recommended
+        if (['style-7-extend', 'style-9-left-hover'].indexOf(normalized) !== -1) {
+            return 'tg-reveal';
+        }
+        // style-4 (old default), empty, unknown → compact
         return 'tg-compact';
+    }
+
+    function isRevealLabelStyle(shell) {
+        var style = styleForShell(shell || activeChannelShell());
+        return style === 'tg-reveal' || style === 'style-9-left-hover';
     }
 
     function shellForElement(el) {
@@ -504,7 +534,8 @@
         if (greetingSuccess) {
             greetingSuccess.hidden = true;
         }
-        resetSubmitButton(greetingSubmit);
+        isSubmittingLead = false;
+        resetSubmitButton();
         launcherButtons.forEach(function (btn) {
             btn.classList.remove('is-dialog-open');
             btn.setAttribute('aria-expanded', 'false');
@@ -830,10 +861,21 @@
         if (greeting) {
             greeting.setAttribute('data-active-channel', ch);
         }
-        if (greetingSubmit) {
-            greetingSubmit.setAttribute('aria-label', channelCopy(ch, 'continue', ch === 'telegram'
-                ? (widgetI18n.continueTelegram || 'Continue on Telegram')
-                : (widgetI18n.continueWhatsApp || 'Continue on WhatsApp')));
+        var continueLabel = channelCopy(ch, 'continue', ch === 'telegram'
+            ? (widgetI18n.continueTelegram || 'Continue on Telegram')
+            : (widgetI18n.continueWhatsApp || 'Continue on WhatsApp'));
+        greetingSubmitButtons.forEach(function (button) {
+            if (!button) {
+                return;
+            }
+            button.setAttribute('aria-label', continueLabel);
+            if (button.hasAttribute('data-greeting-cta') || button.classList.contains('ctcw-greeting-cta')) {
+                button.textContent = continueLabel;
+            }
+        });
+        if (greetingCta && !greetingCta.hasAttribute('data-greeting-submit')) {
+            greetingCta.textContent = continueLabel;
+            greetingCta.setAttribute('aria-label', continueLabel);
         }
         if (greetingSuccess) {
             greetingSuccess.textContent = channelCopy(ch, 'success', ch === 'telegram'
@@ -1116,7 +1158,7 @@
     }
 
     function handlePhoneCaptureSubmit(submitButton) {
-        if (!config.online) {
+        if (!config.online || isSubmittingLead) {
             return;
         }
 
@@ -1166,10 +1208,8 @@
             return;
         }
 
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.classList.add('is-loading');
-        }
+        isSubmittingLead = true;
+        setSubmitButtonsLoading(true);
 
         if (!forceMode) {
             closeGreetingDialog();
@@ -1187,15 +1227,22 @@
             .catch(function (error) {
                 var message = (error && error.message) ? error.message : saveFailedMessage;
                 if (forceMode) {
-                    resetSubmitButton(submitButton);
+                    isSubmittingLead = false;
+                    resetSubmitButton();
                     setPhoneInputInvalid(message);
                     return;
                 }
 
                 redirectWithResolvedDestination().catch(function () {
+                    isSubmittingLead = false;
+                    resetSubmitButton();
                     showChannelUnavailable(redirectFailedMessage);
                 });
             });
+    }
+
+    function submitLeadForActiveChannel(submitButton) {
+        return handlePhoneCaptureSubmit(submitButton || greetingSubmit);
     }
 
     function buildMessage() {
@@ -1250,7 +1297,8 @@
         if (phoneInput) {
             phoneInput.removeAttribute('aria-invalid');
         }
-        resetSubmitButton(greetingSubmit);
+        isSubmittingLead = false;
+        resetSubmitButton();
         revealGreeting();
         window.setTimeout(function () {
             if (phoneInput) {
@@ -1385,17 +1433,24 @@
         closeGreeting.addEventListener('click', closeGreetingDialog);
     }
 
-    if (greetingSubmit) {
-        greetingSubmit.addEventListener('click', function (event) {
+    greetingSubmitButtons.forEach(function (button) {
+        button.addEventListener('click', function (event) {
             event.preventDefault();
-            handlePhoneCaptureSubmit(greetingSubmit);
+            submitLeadForActiveChannel(button);
         });
-    }
+    });
 
     if (phoneInput) {
         phoneInput.addEventListener('input', function () {
             clearPhoneInputInvalid();
             sendActualWidgetSize();
+        });
+        phoneInput.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') {
+                return;
+            }
+            event.preventDefault();
+            submitLeadForActiveChannel(greetingSubmit);
         });
     }
 

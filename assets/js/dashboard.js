@@ -1490,8 +1490,11 @@ function initAdminLivePreview() {
     }
 
     function normalizeTelegramWidgetStyle(style) {
-        var telegramStyles = ['tg-compact', 'tg-icon', 'tg-pill'];
+        var telegramStyles = ['tg-compact', 'tg-icon', 'tg-pill', 'tg-reveal'];
         var normalized = normalizeWidgetStyle(String(style || '').trim());
+        if (normalized === 'reveal_label_hover') {
+            return 'tg-reveal';
+        }
         if (telegramStyles.indexOf(normalized) !== -1) {
             return normalized;
         }
@@ -1500,6 +1503,9 @@ function initAdminLivePreview() {
         }
         if (['style-1', 'style-6', 'style-8'].indexOf(normalized) !== -1) {
             return 'tg-pill';
+        }
+        if (['style-7-extend', 'style-9-left-hover'].indexOf(normalized) !== -1) {
+            return 'tg-reveal';
         }
         return 'tg-compact';
     }
@@ -1745,6 +1751,7 @@ function initAdminLivePreview() {
             + '</button>'
             + '</div>'
             + '</div>'
+            + '<button type="button" class="ctcw-greeting-cta" aria-label="' + submitText + '" tabindex="-1">' + submitText + '</button>'
             + consentHtml
             + '</div>'
             + '</div>';
@@ -2045,7 +2052,10 @@ function initChannelDestinationsUi() {
                     : preferred;
 
                 panel.querySelectorAll('[data-style-tab-target]').forEach(function (tab) {
-                    tab.classList.toggle('is-active', tab.getAttribute('data-style-tab-target') === activeName);
+                    var isActive = tab.getAttribute('data-style-tab-target') === activeName;
+                    tab.classList.toggle('is-active', isActive);
+                    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                    tab.setAttribute('tabindex', isActive ? '0' : '-1');
                 });
                 panel.querySelectorAll('[data-style-tab-panel]').forEach(function (tabPanel) {
                     var match = tabPanel.getAttribute('data-style-tab-panel') === activeName;
@@ -2058,6 +2068,23 @@ function initChannelDestinationsUi() {
         if (typeof window.refreshSelectedStyleCards === 'function') {
             window.refreshSelectedStyleCards();
         }
+    }
+
+    function activateStyleChannelTab(panel, target) {
+        if (!panel || !target) {
+            return;
+        }
+        panel.querySelectorAll('[data-style-tab-target]').forEach(function (tab) {
+            var isActive = tab.getAttribute('data-style-tab-target') === target;
+            tab.classList.toggle('is-active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            tab.setAttribute('tabindex', isActive ? '0' : '-1');
+        });
+        panel.querySelectorAll('[data-style-tab-panel]').forEach(function (tabPanel) {
+            var match = tabPanel.getAttribute('data-style-tab-panel') === target;
+            tabPanel.classList.toggle('is-active', match);
+            tabPanel.hidden = !match;
+        });
     }
 
     function telegramSaveEndpoint() {
@@ -2143,20 +2170,45 @@ function initChannelDestinationsUi() {
     });
 
     document.querySelectorAll('[data-channel-style-panels]').forEach(function (panel) {
-        panel.querySelectorAll('[data-style-tab-target]').forEach(function (button) {
+        var tabs = Array.from(panel.querySelectorAll('[data-style-tab-target]'));
+        tabs.forEach(function (button) {
             button.addEventListener('click', function () {
                 if (button.classList.contains('is-channel-disabled') || button.hidden) {
                     return;
                 }
-                var target = button.getAttribute('data-style-tab-target');
-                panel.querySelectorAll('[data-style-tab-target]').forEach(function (tab) {
-                    tab.classList.toggle('is-active', tab === button);
+                activateStyleChannelTab(panel, button.getAttribute('data-style-tab-target'));
+                button.focus();
+            });
+            button.addEventListener('keydown', function (event) {
+                if (button.classList.contains('is-channel-disabled') || button.hidden) {
+                    return;
+                }
+                var enabledTabs = tabs.filter(function (tab) {
+                    return !tab.classList.contains('is-channel-disabled') && !tab.hidden;
                 });
-                panel.querySelectorAll('[data-style-tab-panel]').forEach(function (tabPanel) {
-                    var match = tabPanel.getAttribute('data-style-tab-panel') === target;
-                    tabPanel.classList.toggle('is-active', match);
-                    tabPanel.hidden = !match;
-                });
+                if (enabledTabs.length < 2) {
+                    return;
+                }
+                var currentIndex = enabledTabs.indexOf(button);
+                if (currentIndex === -1) {
+                    return;
+                }
+                var nextIndex = currentIndex;
+                if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                    nextIndex = (currentIndex + 1) % enabledTabs.length;
+                } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                    nextIndex = (currentIndex - 1 + enabledTabs.length) % enabledTabs.length;
+                } else if (event.key === 'Home') {
+                    nextIndex = 0;
+                } else if (event.key === 'End') {
+                    nextIndex = enabledTabs.length - 1;
+                } else {
+                    return;
+                }
+                event.preventDefault();
+                var nextTab = enabledTabs[nextIndex];
+                activateStyleChannelTab(panel, nextTab.getAttribute('data-style-tab-target'));
+                nextTab.focus();
             });
         });
     });

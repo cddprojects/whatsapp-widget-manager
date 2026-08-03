@@ -230,6 +230,7 @@ function telegram_widget_styles(): array
         'tg-compact' => 'Compact label + icon',
         'tg-icon' => 'Icon only',
         'tg-pill' => 'Combined pill',
+        'tg-reveal' => 'Reveal label on hover',
     ];
 }
 
@@ -243,6 +244,11 @@ function map_legacy_telegram_widget_style(string $style): string
         return default_telegram_widget_style();
     }
 
+    // Preferred semantic alias from product docs.
+    if ($style === 'reveal_label_hover') {
+        return 'tg-reveal';
+    }
+
     if (array_key_exists($style, telegram_widget_styles())) {
         return $style;
     }
@@ -250,9 +256,10 @@ function map_legacy_telegram_widget_style(string $style): string
     return match ($style) {
         'style-2', 'style-3', 'style-3-large', 'style-7' => 'tg-icon',
         'style-1', 'style-6', 'style-8' => 'tg-pill',
-        // Old Telegram default (style-4) and hover-extend layouts become the
-        // recommended compact label + icon style.
-        'style-4', 'style-7-extend', 'style-9-left-hover' => 'tg-compact',
+        // Hover-reveal WhatsApp layouts map to Telegram reveal style.
+        'style-7-extend', 'style-9-left-hover' => 'tg-reveal',
+        // Old Telegram default becomes compact label + icon.
+        'style-4' => 'tg-compact',
         default => default_telegram_widget_style(),
     };
 }
@@ -1551,6 +1558,7 @@ function widget_style_frame_size(string $style): array
         return match (sanitize_telegram_widget_style($trimmed)) {
             'tg-icon' => ['width' => 120, 'height' => 120],
             'tg-pill' => ['width' => 300, 'height' => 110],
+            'tg-reveal' => ['width' => 360, 'height' => 120],
             default => ['width' => 360, 'height' => 120],
         };
     }

@@ -510,6 +510,40 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
     fill: currentColor;
 }
 
+.ctcw-greeting-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 12px;
+    color: #ffffff;
+    background: var(--ctcw-channel, var(--ctcw-green));
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: none !important;
+    pointer-events: auto;
+}
+
+.ctcw-greeting-cta:hover:not(:disabled) {
+    background: var(--ctcw-channel-hover, var(--ctcw-green-dark));
+}
+
+.ctcw-greeting-cta:focus-visible {
+    outline: 3px solid var(--ctcw-channel-focus, rgba(18, 140, 126, 0.25));
+    outline-offset: 2px;
+}
+
+.ctcw-greeting-cta:disabled,
+.ctcw-greeting-cta.is-loading {
+    opacity: 0.75;
+    cursor: wait;
+}
+
 .ctcw-greeting-success {
     display: block;
     color: #047857;
@@ -862,6 +896,102 @@ html.ctcw-mobile .ctcw-widget-anchor.is-mobile-top.is-mobile-left {
 .tg-pill .ctcw-widget:hover,
 .tg-pill .ctcw-launcher:hover {
     background: var(--ctcw-telegram-hover, #0077b5);
+}
+
+/* Reveal label on hover: reserve full width; icon stays fixed. */
+.tg-reveal .ctcw-widget,
+.tg-reveal .ctcw-launcher {
+    min-height: 58px;
+    padding: 0;
+    gap: 10px;
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    transition: transform 0.2s ease;
+}
+
+.tg-reveal .ctcw-widget.channel-telegram,
+.tg-reveal .ctcw-launcher.channel-telegram,
+.tg-reveal .ctcw-widget.channel-telegram:hover,
+.tg-reveal .ctcw-launcher.channel-telegram:hover {
+    background: transparent;
+}
+
+.tg-reveal .ctcw-icon {
+    width: 58px;
+    height: 58px;
+    padding: 15px;
+    border-radius: 50%;
+    background: var(--ctcw-telegram, #0088cc);
+    color: #ffffff;
+    flex: 0 0 auto;
+}
+
+.tg-reveal .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    width: max-content;
+    max-width: var(--ctcw-hover-label-max-width);
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--ctcw-telegram, #0088cc);
+    color: #ffffff;
+    opacity: 0;
+    white-space: nowrap;
+    transform: translateX(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.tg-reveal .ctcw-widget:hover .ctcw-text,
+.tg-reveal .ctcw-launcher:hover .ctcw-text,
+.tg-reveal .ctcw-widget:focus-visible .ctcw-text,
+.tg-reveal .ctcw-launcher:focus-visible .ctcw-text,
+.tg-reveal.is-hovering .ctcw-text,
+.tg-reveal:focus-within .ctcw-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.tg-reveal .ctcw-widget:hover .ctcw-icon,
+.tg-reveal .ctcw-launcher:hover .ctcw-icon,
+.tg-reveal .ctcw-widget:hover .ctcw-text,
+.tg-reveal .ctcw-launcher:hover .ctcw-text,
+.tg-reveal.is-hovering .ctcw-icon,
+.tg-reveal.is-hovering .ctcw-text {
+    background: var(--ctcw-telegram-hover, #0077b5);
+}
+
+.tg-reveal .ctcw-launcher:focus-visible,
+.tg-reveal .ctcw-widget:focus-visible {
+    outline: none;
+}
+
+.tg-reveal .ctcw-launcher:focus-visible .ctcw-icon,
+.tg-reveal .ctcw-widget:focus-visible .ctcw-icon {
+    box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.95) !important;
+}
+
+/* Touch / coarse pointers: label stays visible (no hover required). */
+@media (hover: none), (pointer: coarse) {
+    .tg-reveal .ctcw-text {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+    }
+}
+
+html.ctcw-mobile .tg-reveal .ctcw-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
 @media (max-width: 767px) {

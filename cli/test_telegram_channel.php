@@ -144,9 +144,11 @@ assert_eq('tg-compact', default_telegram_widget_style(), 'Default Telegram style
 assert_true(array_key_exists('tg-compact', telegram_widget_styles()), 'Telegram catalog includes compact style');
 assert_true(array_key_exists('tg-icon', telegram_widget_styles()), 'Telegram catalog includes icon style');
 assert_true(array_key_exists('tg-pill', telegram_widget_styles()), 'Telegram catalog includes pill style');
+assert_true(array_key_exists('tg-reveal', telegram_widget_styles()), 'Telegram catalog includes reveal-on-hover style');
 assert_true(!array_key_exists('style-9-left-hover', telegram_widget_styles()), 'Telegram styles exclude Style 9');
 assert_true(!array_key_exists('style-4', telegram_widget_styles()), 'Telegram styles exclude WhatsApp Style 4');
-assert_eq('tg-compact', sanitize_telegram_widget_style('style-9-left-hover'), 'Style 9 sanitizes to tg-compact');
+assert_eq('tg-reveal', sanitize_telegram_widget_style('style-9-left-hover'), 'Style 9 sanitizes to tg-reveal');
+assert_eq('tg-reveal', sanitize_telegram_widget_style('reveal_label_hover'), 'Semantic alias maps to tg-reveal');
 assert_eq('tg-compact', sanitize_telegram_widget_style('style-4'), 'Legacy style-4 sanitizes to tg-compact');
 assert_eq('tg-icon', sanitize_telegram_widget_style('style-3'), 'Legacy icon style sanitizes to tg-icon');
 assert_eq('tg-pill', sanitize_telegram_widget_style('style-8'), 'Legacy button style sanitizes to tg-pill');
@@ -156,7 +158,13 @@ assert_true(widget_consent_notice_text(['consent_notice_enabled' => 1]) !== '', 
 assert_true(str_contains($widgetFormSource, 'name="consent_notice_enabled"'), 'Form includes consent notice toggle');
 assert_true(str_contains($widgetFormSource, 'name="telegram_desktop_style"'), 'Form includes Telegram desktop style');
 assert_true(str_contains($widgetFormSource, 'data-channel-style-panels'), 'Form includes channel style panels');
-assert_true(str_contains($widgetFormSource, 'badge.recommended') || str_contains($widgetFormSource, 'style-recommended-badge'), 'Telegram style UI marks recommended option');
+assert_true(str_contains($widgetFormSource, 'channel-style-tab'), 'Form uses modern segmented style tabs');
+assert_true(
+    !str_contains($widgetFormSource, 'badge.recommended')
+    && !str_contains($widgetFormSource, 'style-recommended-badge')
+    && !str_contains($widgetFormSource, 'is-recommended'),
+    'Telegram style UI has no Recommended badge references'
+);
 assert_true(
     is_file(dirname(__DIR__) . '/migrations/020_consent_notice_and_telegram_styles.sql'),
     'Migration 020 exists'
@@ -164,21 +172,34 @@ assert_true(
 $widgetPhp = file_get_contents(dirname(__DIR__) . '/widget.php');
 assert_true(str_contains($widgetPhp, 'data-channel-shell="telegram"'), 'Public widget renders Telegram style shell');
 assert_true(str_contains($widgetPhp, 'widget_consent_notice_text'), 'Public widget uses consent helper');
+assert_true(str_contains($widgetPhp, 'data-greeting-cta'), 'Public widget includes full-width greeting CTA');
+assert_true(substr_count($widgetPhp, 'data-greeting-submit') >= 2, 'Public widget has arrow and full CTA submit controls');
 $dashboardJs = file_get_contents(dirname(__DIR__) . '/assets/js/dashboard.js');
 assert_true(str_contains($dashboardJs, 'consentNoticeEnabled'), 'Live preview tracks consent toggle');
 assert_true(str_contains($dashboardJs, 'telegramDesktopStyle'), 'Live preview tracks Telegram style');
 assert_true(str_contains($dashboardJs, 'tg-compact'), 'Live preview normalizes to Telegram-native styles');
+assert_true(str_contains($dashboardJs, 'tg-reveal'), 'Live preview supports Telegram reveal style');
+assert_true(str_contains($dashboardJs, 'aria-selected'), 'Style tabs manage aria-selected');
 $enLang = file_get_contents(dirname(__DIR__) . '/languages/en.php');
 $zhLang = file_get_contents(dirname(__DIR__) . '/languages/zh-CN.php');
 assert_true(str_contains($enLang, "'widget_style.tg-compact'"), 'EN includes tg-compact label');
 assert_true(str_contains($zhLang, "'widget_style.tg-compact'"), 'ZH includes tg-compact label');
-assert_true(str_contains($enLang, "'badge.recommended'"), 'EN includes Recommended badge');
-assert_true(str_contains($zhLang, "'badge.recommended'"), 'ZH includes Recommended badge');
+assert_true(str_contains($enLang, "'widget_style.tg-reveal'"), 'EN includes tg-reveal label');
+assert_true(str_contains($zhLang, "'widget_style.tg-reveal'"), 'ZH includes tg-reveal label');
+assert_true(!str_contains($enLang, "'badge.recommended'"), 'EN Recommended badge key removed');
+assert_true(!str_contains($zhLang, "'badge.recommended'"), 'ZH Recommended badge key removed');
+assert_true(!str_contains($enLang, 'is recommended'), 'EN helper no longer says recommended');
 assert_true(str_contains($enLang, "'widget.open_whatsapp'"), 'EN includes Open WhatsApp');
 assert_true(str_contains($widgetCss = file_get_contents(dirname(__DIR__) . '/assets/css/widget.css'), 'data-active-channel="telegram"'), 'Widget CSS has Telegram active-channel tokens');
 assert_true(str_contains($widgetCss, '.tg-compact'), 'Widget CSS defines tg-compact launcher');
+assert_true(str_contains($widgetCss, '.tg-reveal'), 'Widget CSS defines tg-reveal launcher');
+assert_true(str_contains($widgetCss, 'hover: none') || str_contains($widgetCss, 'pointer: coarse'), 'Widget CSS has touch hover fallback for reveal');
+assert_true(str_contains($widgetCss, '.ctcw-greeting-cta'), 'Widget CSS defines full-width greeting CTA');
 assert_true(str_contains($widgetCss, '--ctcw-channel'), 'Widget CSS defines channel color tokens');
 assert_true(str_contains($widgetCss, '#0077b5') || str_contains($widgetCss, '#0077B5'), 'Widget CSS uses Telegram hover #0077B5');
+$styleCss = file_get_contents(dirname(__DIR__) . '/assets/css/style.css');
+assert_true(str_contains($styleCss, '.channel-style-tab'), 'Admin CSS defines segmented style tabs');
+assert_true(!str_contains($styleCss, 'style-recommended-badge'), 'Admin CSS Recommended badge styles removed');
 
 $embedJs = file_get_contents(dirname(__DIR__) . '/embed.js.php');
 assert_true(!preg_match('/height\s*=\s*255/', $embedJs), 'Embed script does not force greeting height to 255');

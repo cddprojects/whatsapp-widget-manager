@@ -252,6 +252,15 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
                             </div>
                             <span class="ctcw-phone-error" id="<?= e($phoneErrorId) ?>" data-greeting-phone-error hidden></span>
                         </div>
+                        <button
+                            type="button"
+                            class="ctcw-greeting-cta"
+                            data-ctcw-role="phone-submit-cta"
+                            data-greeting-submit
+                            data-greeting-cta
+                        >
+                            <?= e($phoneSubmitButtonText) ?>
+                        </button>
                         <?php if ($consentText !== ''): ?>
                             <p class="ctcw-consent-text"><?= e($consentText) ?></p>
                         <?php endif; ?>

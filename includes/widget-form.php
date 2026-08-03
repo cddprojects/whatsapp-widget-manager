@@ -280,21 +280,34 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
             data-channel-style-panels
             data-channel-mode="<?= e($channelMode) ?>"
         >
-            <div class="tab-bar channel-style-tabs" role="tablist" data-channel-style-tabs>
+            <div
+                class="channel-style-tabs"
+                role="tablist"
+                aria-label="<?= e(t('section.style_position.title')) ?>"
+                data-channel-style-tabs
+            >
                 <button
                     type="button"
-                    class="tab-link<?= $activeStyleTab === 'whatsapp' ? ' is-active' : '' ?><?= !$styleWhatsappVisible ? ' is-channel-disabled' : '' ?>"
+                    class="channel-style-tab channel-style-tab--whatsapp<?= $activeStyleTab === 'whatsapp' ? ' is-active' : '' ?><?= !$styleWhatsappVisible ? ' is-channel-disabled' : '' ?>"
                     data-style-tab-target="whatsapp"
                     role="tab"
+                    id="ctc-style-tab-whatsapp"
+                    aria-controls="ctc-style-panel-whatsapp"
+                    aria-selected="<?= $activeStyleTab === 'whatsapp' ? 'true' : 'false' ?>"
+                    tabindex="<?= $activeStyleTab === 'whatsapp' ? '0' : '-1' ?>"
                     <?= !$styleWhatsappVisible ? 'hidden' : '' ?>
                 >
                     <?= e(t('label.whatsapp_style')) ?>
                 </button>
                 <button
                     type="button"
-                    class="tab-link<?= $activeStyleTab === 'telegram' ? ' is-active' : '' ?><?= !$styleTelegramVisible ? ' is-channel-disabled' : '' ?>"
+                    class="channel-style-tab channel-style-tab--telegram<?= $activeStyleTab === 'telegram' ? ' is-active' : '' ?><?= !$styleTelegramVisible ? ' is-channel-disabled' : '' ?>"
                     data-style-tab-target="telegram"
                     role="tab"
+                    id="ctc-style-tab-telegram"
+                    aria-controls="ctc-style-panel-telegram"
+                    aria-selected="<?= $activeStyleTab === 'telegram' ? 'true' : 'false' ?>"
+                    tabindex="<?= $activeStyleTab === 'telegram' ? '0' : '-1' ?>"
                     <?= !$styleTelegramVisible ? 'hidden' : '' ?>
                 >
                     <?= e(t('label.telegram_style')) ?>
@@ -304,6 +317,9 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
             <div
                 class="channel-style-panel<?= $activeStyleTab === 'whatsapp' ? ' is-active' : '' ?><?= !$styleWhatsappVisible ? ' is-channel-disabled' : '' ?>"
                 data-style-tab-panel="whatsapp"
+                id="ctc-style-panel-whatsapp"
+                role="tabpanel"
+                aria-labelledby="ctc-style-tab-whatsapp"
                 <?= !$styleWhatsappVisible ? 'hidden' : '' ?>
             >
                 <div class="form-grid two-columns">
@@ -340,6 +356,9 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
             <div
                 class="channel-style-panel<?= $activeStyleTab === 'telegram' ? ' is-active' : '' ?><?= !$styleTelegramVisible ? ' is-channel-disabled' : '' ?>"
                 data-style-tab-panel="telegram"
+                id="ctc-style-panel-telegram"
+                role="tabpanel"
+                aria-labelledby="ctc-style-tab-telegram"
                 <?= !$styleTelegramVisible ? 'hidden' : '' ?>
             >
                 <p class="field-helper"><?= e(t('helper.telegram_launcher_style')) ?></p>
@@ -348,7 +367,7 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
                         <span><?= e(t('label.desktop_style')) ?></span>
                         <select name="telegram_desktop_style" data-style-select data-style-channel="telegram">
                             <?php foreach (telegram_widget_styles() as $key => $label): ?>
-                                <option value="<?= e($key) ?>"<?= selected($telegramDesktopStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?><?= $key === default_telegram_widget_style() ? ' — ' . t('badge.recommended') : '' ?></option>
+                                <option value="<?= e($key) ?>"<?= selected($telegramDesktopStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </label>
@@ -356,17 +375,16 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
                         <span><?= e(t('label.mobile_style')) ?></span>
                         <select name="telegram_mobile_style" data-style-select data-style-channel="telegram">
                             <?php foreach (telegram_widget_styles() as $key => $label): ?>
-                                <option value="<?= e($key) ?>"<?= selected($telegramMobileStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?><?= $key === default_telegram_widget_style() ? ' — ' . t('badge.recommended') : '' ?></option>
+                                <option value="<?= e($key) ?>"<?= selected($telegramMobileStyleValue, $key) ?>><?= e(translate_widget_style($key)) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </label>
                 </div>
                 <div class="style-preview-grid" data-style-preview-grid="telegram">
                     <?php foreach (telegram_widget_styles() as $key => $label): ?>
-                        <?php $isRecommendedTelegramStyle = $key === default_telegram_widget_style(); ?>
                         <button
                             type="button"
-                            class="style-preview<?= $isRecommendedTelegramStyle ? ' is-recommended' : '' ?>"
+                            class="style-preview"
                             data-style-preview-card="<?= e($key) ?>"
                             data-style-channel="telegram"
                             aria-pressed="<?= $telegramDesktopStyleValue === $key || $telegramMobileStyleValue === $key ? 'true' : 'false' ?>"
@@ -375,12 +393,7 @@ if (!in_array($channelMode, ['whatsapp_only', 'telegram_only', 'both'], true)) {
                                 <span class="ctcw-icon"><?= telegram_icon_svg() ?></span>
                                 <span class="ctcw-text"><?= e(t('channel.launcher.telegram')) ?></span>
                             </div>
-                            <small>
-                                <?= e(translate_widget_style($key)) ?>
-                                <?php if ($isRecommendedTelegramStyle): ?>
-                                    <span class="style-recommended-badge"><?= e(t('badge.recommended')) ?></span>
-                                <?php endif; ?>
-                            </small>
+                            <small><?= e(translate_widget_style($key)) ?></small>
                         </button>
                     <?php endforeach; ?>
                 </div>

@@ -336,8 +336,7 @@ return [
     'helper.greeting_open_click_only' => '仅在访客点击小组件后显示问候弹窗。',
     'helper.show_consent_notice' => '在线索表单下方显示简短隐私声明。',
     'helper.consent_notice_text' => '留空则使用默认翻译的同意声明。',
-    'helper.telegram_launcher_style' => '选择 Telegram 专用启动器样式。推荐使用“标签 + 图标”紧凑样式。',
-    'badge.recommended' => '推荐',
+    'helper.telegram_launcher_style' => '选择 Telegram 专用启动器样式。',
     'helper.allow_phone_plus_symbol' => '启用后，访客可输入国际号码，电话输入框会显示 + 前缀。',
     'helper.phone_submit_button_id' => '用作电话提交按钮的 HTML ID。仅可使用字母、数字、连字符和下划线。',
     'helper.business_hours_always_online' => '小组件始终可用，WhatsApp 点击始终启用。',
@@ -479,6 +478,7 @@ return [
     'widget_style.tg-compact' => '紧凑标签 + 图标',
     'widget_style.tg-icon' => '仅图标',
     'widget_style.tg-pill' => '组合胶囊',
+    'widget_style.tg-reveal' => '悬停显示标签',
 
     // Phone numbers
     'phone.numbers_title' => '电话号码',

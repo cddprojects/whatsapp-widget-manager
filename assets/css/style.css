@@ -1471,20 +1471,6 @@ button.style-preview {
     background: #f0fdf4;
 }
 
-.style-preview.is-recommended .style-recommended-badge {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 6px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: #0088cc;
-    color: #ffffff;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    vertical-align: middle;
-}
-
 .mini-widget.channel-telegram {
     background: #0088cc;
 }
@@ -1637,6 +1623,45 @@ button.style-preview {
 .mini-widget.tg-pill {
     border-radius: 999px;
     background: #0088cc;
+}
+
+.mini-widget.tg-reveal {
+    gap: 8px;
+    color: #ffffff;
+    background: transparent;
+    box-shadow: none;
+    flex-direction: row-reverse;
+    border-radius: 0;
+    padding: 0;
+}
+
+.mini-widget.tg-reveal.channel-telegram {
+    background: transparent;
+}
+
+.mini-widget.tg-reveal .ctcw-icon {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    padding: 10px;
+    border-radius: 50%;
+    background: #0088cc;
+}
+
+.mini-widget.tg-reveal .ctcw-text {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #0088cc;
+    opacity: 0.35;
+}
+
+.style-preview:hover .mini-widget.tg-reveal .ctcw-text,
+.style-preview:focus-visible .mini-widget.tg-reveal .ctcw-text,
+.style-preview.is-selected .mini-widget.tg-reveal .ctcw-text {
+    opacity: 1;
 }
 
 .position-grid {
@@ -3795,14 +3820,90 @@ button.style-preview {
 }
 
 .channel-style-panels {
+    --ctc-style-tabs-bg: #f3f5f7;
+    --ctc-style-tab-surface: #ffffff;
+    --ctc-style-tab-text: #526173;
+    --ctc-whatsapp-color: var(--green, #25d366);
+    --ctc-telegram-color: #0088cc;
     display: grid;
     gap: 16px;
     margin-bottom: 24px;
 }
 
+.channel-style-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 4px;
+    padding: 5px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--ctc-style-tabs-bg);
+    box-sizing: border-box;
+}
+
 .channel-style-tabs[data-visible-count="1"],
 .channel-style-tabs.is-single-channel {
     display: none;
+}
+
+.channel-style-tab {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 140px;
+    min-width: 0;
+    margin: 0;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ctc-style-tab-text);
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 650;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.channel-style-tab:hover:not(.is-active):not(.is-channel-disabled) {
+    background: rgba(255, 255, 255, 0.55);
+    color: #334155;
+}
+
+.channel-style-tab.is-active {
+    background: var(--ctc-style-tab-surface);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+
+.channel-style-tab--whatsapp.is-active {
+    color: var(--ctc-whatsapp-color);
+}
+
+.channel-style-tab--telegram.is-active {
+    color: var(--ctc-telegram-color);
+}
+
+.channel-style-tab:focus {
+    outline: none;
+}
+
+.channel-style-tab:focus-visible {
+    outline: 2px solid #64748b;
+    outline-offset: 2px;
+}
+
+.channel-style-tab--whatsapp:focus-visible {
+    outline-color: var(--ctc-whatsapp-color);
+}
+
+.channel-style-tab--telegram:focus-visible {
+    outline-color: var(--ctc-telegram-color);
 }
 
 .channel-style-panel {
@@ -3816,6 +3917,12 @@ button.style-preview {
 .channel-style-panel.is-channel-disabled,
 .channel-style-tabs [data-style-tab-target].is-channel-disabled {
     display: none !important;
+}
+
+@media (max-width: 560px) {
+    .channel-style-tab {
+        flex: 1 1 100%;
+    }
 }
 
 .channel-style-heading {
