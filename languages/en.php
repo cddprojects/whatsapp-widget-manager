@@ -268,7 +268,8 @@ return [
     'empty.no_active_leads' => 'No active leads found.',
     'empty.no_recycled_leads' => 'No recycled leads found.',
     'empty.client_no_widgets' => 'This client has no widgets yet.',
-    'empty.no_phone_numbers' => 'No numbers added yet. Click Add number to get started.',
+    'empty.no_phone_numbers' => 'Add one or more WhatsApp numbers and choose how visitors are routed.',
+    'empty.no_whatsapp_numbers_title' => 'No WhatsApp numbers yet',
 
     // Login
     'login.title' => 'Login',
@@ -482,7 +483,7 @@ return [
 
     // Phone numbers
     'phone.numbers_title' => 'Phone numbers',
-    'phone.numbers_description' => 'Add one or more WhatsApp numbers. When more than one number is added, choose how visitors are routed using Number distribution.',
+    'phone.numbers_description' => 'Add one or more WhatsApp numbers and choose how visitors are routed.',
     'phone.select_all' => 'Select all',
     'phone.select_all_aria' => 'Select all phone numbers',
     'phone.selected_count' => '{count} selected',
@@ -858,13 +859,13 @@ return [
     'channel.readiness.ready' => 'Ready',
     'channel.readiness.no_whatsapp' => 'No active WhatsApp destination',
     'channel.readiness.no_telegram' => 'No active Telegram destination',
-    'telegram.destinations_title' => 'Telegram Destinations',
-    'telegram.destinations_help' => 'Add usernames, bots, groups, or channels visitors can continue to.',
-    'telegram.add_destination' => 'Add Telegram Destination',
-    'telegram.edit_destination' => 'Edit Telegram Destination',
+    'telegram.destinations_title' => 'Telegram destinations',
+    'telegram.destinations_help' => 'Add usernames, bots, groups, or channels for this widget.',
+    'telegram.add_destination' => 'Add Telegram destination',
+    'telegram.edit_destination' => 'Edit Telegram destination',
     'telegram.modal_help' => 'Use the same destination values visitors will open in Telegram.',
-    'telegram.empty_title' => 'No Telegram destinations yet.',
-    'telegram.empty_description' => 'Add a Telegram destination so visitors can continue the conversation through Telegram.',
+    'telegram.empty_title' => 'No Telegram destinations yet',
+    'telegram.empty_description' => 'Add usernames, bots, groups, or channels so visitors can continue through Telegram.',
     'telegram.save_widget_first_title' => 'Save the widget first',
     'telegram.save_widget_first_description' => 'Create and save this widget, then return here to add Telegram destinations.',
     'telegram.disabled_title' => 'Telegram is disabled',

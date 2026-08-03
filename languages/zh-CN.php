@@ -268,7 +268,8 @@ return [
     'empty.no_active_leads' => '未找到有效线索。',
     'empty.no_recycled_leads' => '未找到已回收线索。',
     'empty.client_no_widgets' => '此客户尚无小组件。',
-    'empty.no_phone_numbers' => '尚未添加号码。点击「添加号码」开始。',
+    'empty.no_phone_numbers' => '添加一个或多个 WhatsApp 号码，并选择访客的路由方式。',
+    'empty.no_whatsapp_numbers_title' => '还没有 WhatsApp 号码',
 
     // Login
     'login.title' => '登录',
@@ -482,7 +483,7 @@ return [
 
     // Phone numbers
     'phone.numbers_title' => '电话号码',
-    'phone.numbers_description' => '添加一个或多个 WhatsApp 号码。当添加了多个号码时，请使用“号码分配”设置访客的路由方式。',
+    'phone.numbers_description' => '添加一个或多个 WhatsApp 号码，并选择访客的路由方式。',
     'phone.select_all' => '全选',
     'phone.select_all_aria' => '全选电话号码',
     'phone.selected_count' => '已选 {count} 项',
@@ -858,12 +859,12 @@ return [
     'channel.readiness.no_whatsapp' => '没有有效的 WhatsApp 目标',
     'channel.readiness.no_telegram' => '没有有效的 Telegram 目标',
     'telegram.destinations_title' => 'Telegram 目标',
-    'telegram.destinations_help' => '添加访客可以继续会话的用户名、机器人、群组或频道。',
+    'telegram.destinations_help' => '为此小组件添加用户名、机器人、群组或频道。',
     'telegram.add_destination' => '添加 Telegram 目标',
     'telegram.edit_destination' => '编辑 Telegram 目标',
     'telegram.modal_help' => '请填写访客将在 Telegram 中打开的目标值。',
-    'telegram.empty_title' => '还没有 Telegram 目标。',
-    'telegram.empty_description' => '添加 Telegram 目标，以便访客可以通过 Telegram 继续对话。',
+    'telegram.empty_title' => '还没有 Telegram 目标',
+    'telegram.empty_description' => '添加用户名、机器人、群组或频道，以便访客可以通过 Telegram 继续对话。',
     'telegram.save_widget_first_title' => '请先保存小组件',
     'telegram.save_widget_first_description' => '请先创建并保存此小组件，然后再回来添加 Telegram 目标。',
     'telegram.disabled_title' => 'Telegram 已禁用',

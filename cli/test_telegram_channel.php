@@ -118,12 +118,23 @@ assert_true($bothModeErrors === [], 'Both-channel widget validates without desti
 
 $jsI18n = dashboard_js_i18n();
 assert_true(isset($jsI18n['telegram.add_destination']), 'JS i18n includes telegram.add_destination');
-assert_eq('Add Telegram Destination', $jsI18n['telegram.add_destination'], 'JS i18n add destination label');
+assert_eq('Add Telegram destination', $jsI18n['telegram.add_destination'], 'JS i18n add destination label');
 assert_true(isset($jsI18n['telegram.error.save_failed']), 'JS i18n includes save_failed');
 assert_true(str_contains(telegram_icon_svg(), 'viewBox="0 0 24 24"'), 'Telegram icon SVG present');
 assert_true(str_contains(file_get_contents(dirname(__DIR__) . '/assets/css/widget.css'), '#0088cc')
     || str_contains(file_get_contents(dirname(__DIR__) . '/assets/css/widget.css'), '#0088CC'),
     'Widget CSS uses Telegram brand blue');
+
+$destinationsPanelSource = file_get_contents(dirname(__DIR__) . '/includes/destinations-panel.php');
+assert_true(str_contains($destinationsPanelSource, 'channel-dest-tab'), 'Destinations panel uses segmented dest tabs');
+assert_true(str_contains($destinationsPanelSource, 'ctc-status-badge'), 'Destinations panel shows readiness badges');
+assert_true(str_contains($destinationsPanelSource, 'aria-selected'), 'Destinations tabs expose aria-selected');
+assert_true(str_contains($destinationsPanelSource, 'btn-channel-telegram'), 'Telegram add uses channel-colored button');
+$adminCss = file_get_contents(dirname(__DIR__) . '/assets/css/style.css');
+assert_true(str_contains($adminCss, '.channel-dest-tab'), 'Admin CSS defines destination segmented tabs');
+assert_true(str_contains($adminCss, '.ctc-destination-empty'), 'Admin CSS defines destination empty states');
+$dashboardJsDest = file_get_contents(dirname(__DIR__) . '/assets/js/dashboard.js');
+assert_true(str_contains($dashboardJsDest, 'activateDestChannelTab'), 'Dashboard JS activates destination tabs accessibly');
 
 $widgetFormSource = file_get_contents(dirname(__DIR__) . '/includes/widget-form.php');
 assert_true(

@@ -1313,11 +1313,28 @@ code {
     grid-template-columns: auto minmax(150px, 180px) minmax(0, 1fr) auto;
     gap: 12px;
     align-items: center;
-    padding: 14px;
-    border: 1px solid var(--line);
+    padding: 14px 16px;
+    border: 1px solid #e2e8f0;
     border-radius: 14px;
-    background: #fafbfc;
+    background: #fff;
     overflow: visible;
+}
+
+@media (max-width: 640px) {
+    .phone-number-row {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .phone-number-row .ctcw-calling-code-picker,
+    .phone-number-row .phone-number-input,
+    .phone-number-row [data-remove-phone-number] {
+        grid-column: 1 / -1;
+    }
+
+    .phone-number-row [data-remove-phone-number] {
+        width: 100%;
+        min-height: 44px;
+    }
 }
 
 .ctcw-phone-row {
@@ -3805,7 +3822,7 @@ button.style-preview {
     margin-top: 18px;
 }
 
-.dest-tab-panel.is-active {
+.dest-tab-panel.is-active:not(.is-channel-disabled) {
     display: block;
 }
 
@@ -3814,9 +3831,317 @@ button.style-preview {
     display: none !important;
 }
 
-.channel-dest-tabs.is-single-channel .tab-link:only-child,
+.channel-dest-tabs {
+    --ctc-dest-tabs-bg: #f3f5f7;
+    --ctc-dest-tab-surface: #ffffff;
+    --ctc-dest-tab-text: #526173;
+    --ctc-whatsapp-color: var(--green, #25d366);
+    --ctc-telegram-color: #0088cc;
+    --ctc-telegram-hover: #0077b5;
+    --ctc-telegram-focus: rgba(0, 136, 204, 0.25);
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 8px;
+    padding: 5px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--ctc-dest-tabs-bg);
+    box-sizing: border-box;
+}
+
+.channel-dest-tabs.is-single-channel,
 .channel-dest-tabs[data-visible-count="1"] {
-    margin-bottom: 0;
+    display: none;
+}
+
+.channel-dest-tab {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1 1 140px;
+    min-width: 0;
+    margin: 0;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ctc-dest-tab-text);
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 650;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.channel-dest-tab:hover:not(.is-active):not(.is-channel-disabled) {
+    background: rgba(255, 255, 255, 0.55);
+    color: #334155;
+}
+
+.channel-dest-tab.is-active {
+    background: var(--ctc-dest-tab-surface);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.06);
+}
+
+.channel-dest-tab--whatsapp.is-active {
+    color: var(--ctc-whatsapp-color);
+}
+
+.channel-dest-tab--telegram.is-active {
+    color: var(--ctc-telegram-color);
+}
+
+.channel-dest-tab:focus {
+    outline: none;
+}
+
+.channel-dest-tab:focus-visible {
+    outline: 2px solid #64748b;
+    outline-offset: 2px;
+}
+
+.channel-dest-tab--whatsapp:focus-visible {
+    outline-color: var(--ctc-whatsapp-color);
+}
+
+.channel-dest-tab--telegram:focus-visible {
+    outline-color: var(--ctc-telegram-color);
+}
+
+.channel-dest-tab__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.channel-dest-tab--whatsapp.is-active .channel-dest-tab__count {
+    background: rgba(37, 211, 102, 0.16);
+    color: #0f7a3f;
+}
+
+.channel-dest-tab--telegram.is-active .channel-dest-tab__count {
+    background: rgba(0, 136, 204, 0.14);
+    color: #006fa8;
+}
+
+.ctc-destination-panel__header,
+.phone-numbers-card .ctc-destination-panel__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 4px;
+}
+
+.ctc-destination-panel__heading {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.ctc-destination-panel__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.ctc-destination-panel__title-row h3 {
+    margin: 0;
+}
+
+.ctc-destination-panel__heading .helper-text,
+.ctc-destination-panel__heading p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.ctc-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.ctc-status-badge--ready {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.ctc-status-badge--missing {
+    color: #92400e;
+    background: #fffbeb;
+    border-color: #fcd34d;
+}
+
+.ctc-status-badge--disabled {
+    color: #64748b;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.btn-channel-whatsapp {
+    background: var(--green, #25d366);
+    border-color: var(--green, #25d366);
+    color: #fff;
+    border-radius: 12px;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-weight: 700;
+}
+
+.btn-channel-whatsapp:hover,
+.btn-channel-whatsapp:focus-visible {
+    filter: brightness(0.96);
+}
+
+.btn-channel-whatsapp:focus-visible {
+    outline: 2px solid rgba(18, 140, 126, 0.45);
+    outline-offset: 2px;
+}
+
+.btn-channel-telegram {
+    background: #0088cc;
+    border-color: #0088cc;
+    color: #fff;
+    border-radius: 12px;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-weight: 700;
+}
+
+.btn-channel-telegram:hover,
+.btn-channel-telegram:focus-visible {
+    background: #0077b5;
+    border-color: #0077b5;
+}
+
+.btn-channel-telegram:focus-visible {
+    outline: 2px solid rgba(0, 136, 204, 0.25);
+    outline-offset: 2px;
+}
+
+.ctc-destination-toolbar {
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+.ctc-destination-empty {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 28px 20px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 16px;
+    background: #f8fafc;
+    text-align: center;
+}
+
+.ctc-destination-empty h3 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.ctc-destination-empty p {
+    margin: 0;
+    max-width: 36rem;
+    color: var(--muted);
+}
+
+.ctc-destination-empty__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    color: #fff;
+}
+
+.ctc-destination-empty--whatsapp .ctc-destination-empty__icon {
+    background: var(--green, #25d366);
+}
+
+.ctc-destination-empty--telegram .ctc-destination-empty__icon {
+    background: #0088cc;
+}
+
+.ctc-destination-empty__icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+.ctc-destination-card.phone-number-row,
+.ctc-destination-card.telegram-destination-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #fff;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ctc-destination-card.phone-number-row:hover,
+.ctc-destination-card.telegram-destination-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ctc-destination-card.phone-number-row.is-selected {
+    border-color: rgba(37, 211, 102, 0.55);
+    background: #f0fdf4;
+}
+
+.ctc-destination-card.telegram-destination-card.is-inactive {
+    opacity: 0.78;
+    background: #f8fafc;
+}
+
+@media (max-width: 560px) {
+    .channel-dest-tab {
+        flex: 1 1 100%;
+    }
+
+    .ctc-destination-panel__header,
+    .phone-numbers-card .ctc-destination-panel__header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ctc-destination-panel__header .btn,
+    .phone-numbers-card .ctc-destination-panel__header .btn {
+        width: 100%;
+    }
+
+    .ctcw-phone-bulk-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ctcw-delete-selected-btn {
+        width: 100%;
+        min-height: 44px;
+    }
 }
 
 .channel-style-panels {
@@ -3940,7 +4265,8 @@ button.style-preview {
     font-weight: 400;
 }
 
-.telegram-destination-list {
+.telegram-destination-list,
+.ctc-destination-list {
     display: grid;
     gap: 12px;
     margin-top: 16px;
@@ -3951,8 +4277,8 @@ button.style-preview {
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    padding: 16px;
-    border: 1px solid var(--line);
+    padding: 16px 18px;
+    border: 1px solid #e2e8f0;
     border-radius: 14px;
     background: #fff;
 }

@@ -1950,6 +1950,26 @@ function initAdminLivePreview() {
 }
 
 function initChannelDestinationsUi() {
+    function activateDestChannelTab(panel, target) {
+        if (!panel || !target) {
+            return;
+        }
+        panel.querySelectorAll('[data-dest-tab-target]').forEach(function (tab) {
+            var isActive = tab.getAttribute('data-dest-tab-target') === target
+                && !tab.classList.contains('is-channel-disabled')
+                && !tab.hidden;
+            tab.classList.toggle('is-active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            tab.setAttribute('tabindex', isActive ? '0' : '-1');
+        });
+        panel.querySelectorAll('[data-dest-tab-panel]').forEach(function (tabPanel) {
+            var match = tabPanel.getAttribute('data-dest-tab-panel') === target
+                && !tabPanel.classList.contains('is-channel-disabled');
+            tabPanel.classList.toggle('is-active', match);
+            tabPanel.hidden = !match;
+        });
+    }
+
     function syncDestinationPanelsForMode(mode) {
         var whatsappEnabled = mode === 'whatsapp_only' || mode === 'both';
         var telegramEnabled = mode === 'telegram_only' || mode === 'both';
@@ -1960,6 +1980,7 @@ function initChannelDestinationsUi() {
             var telegramTab = panel.querySelector('[data-dest-tab-target="telegram"]');
             var whatsappPanel = panel.querySelector('[data-dest-tab-panel="whatsapp"]');
             var telegramPanel = panel.querySelector('[data-dest-tab-panel="telegram"]');
+            var visibleCount = (whatsappEnabled ? 1 : 0) + (telegramEnabled ? 1 : 0);
 
             if (whatsappTab) {
                 whatsappTab.classList.toggle('is-channel-disabled', !whatsappEnabled);
@@ -1977,28 +1998,19 @@ function initChannelDestinationsUi() {
             }
             if (tabs) {
                 tabs.setAttribute('data-channel-mode', mode);
-                tabs.setAttribute('data-visible-count', String((whatsappEnabled ? 1 : 0) + (telegramEnabled ? 1 : 0)));
+                tabs.setAttribute('data-visible-count', String(visibleCount));
+                tabs.classList.toggle('is-single-channel', visibleCount < 2);
+                tabs.hidden = visibleCount < 2;
             }
 
             var preferred = telegramEnabled && !whatsappEnabled
                 ? 'telegram'
                 : (whatsappEnabled ? 'whatsapp' : 'telegram');
-            var activeTab = panel.querySelector('[data-dest-tab-target].is-active:not(.is-channel-disabled)');
-            if (!activeTab) {
-                panel.querySelectorAll('[data-dest-tab-target]').forEach(function (tab) {
-                    var match = tab.getAttribute('data-dest-tab-target') === preferred;
-                    tab.classList.toggle('is-active', match && !tab.classList.contains('is-channel-disabled'));
-                });
-                panel.querySelectorAll('[data-dest-tab-panel]').forEach(function (tabPanel) {
-                    var match = tabPanel.getAttribute('data-dest-tab-panel') === preferred;
-                    tabPanel.classList.toggle('is-active', match && !tabPanel.classList.contains('is-channel-disabled'));
-                });
-            } else if (whatsappPanel && telegramPanel) {
-                var activeName = activeTab.getAttribute('data-dest-tab-target');
-                panel.querySelectorAll('[data-dest-tab-panel]').forEach(function (tabPanel) {
-                    tabPanel.classList.toggle('is-active', tabPanel.getAttribute('data-dest-tab-panel') === activeName);
-                });
-            }
+            var activeTab = panel.querySelector('[data-dest-tab-target].is-active:not(.is-channel-disabled):not([hidden])');
+            var activeName = activeTab
+                ? activeTab.getAttribute('data-dest-tab-target')
+                : preferred;
+            activateDestChannelTab(panel, activeName || preferred);
         });
     }
 
@@ -2158,18 +2170,45 @@ function initChannelDestinationsUi() {
     });
 
     document.querySelectorAll('[data-destinations-panel]').forEach(function (panel) {
-        panel.querySelectorAll('[data-dest-tab-target]').forEach(function (button) {
+        var destTabs = Array.from(panel.querySelectorAll('[data-dest-tab-target]'));
+        destTabs.forEach(function (button) {
             button.addEventListener('click', function () {
                 if (button.classList.contains('is-channel-disabled') || button.hidden) {
                     return;
                 }
-                var target = button.getAttribute('data-dest-tab-target');
-                panel.querySelectorAll('[data-dest-tab-target]').forEach(function (tab) {
-                    tab.classList.toggle('is-active', tab === button);
+                activateDestChannelTab(panel, button.getAttribute('data-dest-tab-target'));
+                button.focus();
+            });
+            button.addEventListener('keydown', function (event) {
+                if (button.classList.contains('is-channel-disabled') || button.hidden) {
+                    return;
+                }
+                var enabledTabs = destTabs.filter(function (tab) {
+                    return !tab.classList.contains('is-channel-disabled') && !tab.hidden;
                 });
-                panel.querySelectorAll('[data-dest-tab-panel]').forEach(function (tabPanel) {
-                    tabPanel.classList.toggle('is-active', tabPanel.getAttribute('data-dest-tab-panel') === target);
-                });
+                if (enabledTabs.length < 2) {
+                    return;
+                }
+                var currentIndex = enabledTabs.indexOf(button);
+                if (currentIndex === -1) {
+                    return;
+                }
+                var nextIndex = currentIndex;
+                if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                    nextIndex = (currentIndex + 1) % enabledTabs.length;
+                } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                    nextIndex = (currentIndex - 1 + enabledTabs.length) % enabledTabs.length;
+                } else if (event.key === 'Home') {
+                    nextIndex = 0;
+                } else if (event.key === 'End') {
+                    nextIndex = enabledTabs.length - 1;
+                } else {
+                    return;
+                }
+                event.preventDefault();
+                var nextTab = enabledTabs[nextIndex];
+                activateDestChannelTab(panel, nextTab.getAttribute('data-dest-tab-target'));
+                nextTab.focus();
             });
         });
     });
