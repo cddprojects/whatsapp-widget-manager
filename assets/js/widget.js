@@ -1333,7 +1333,7 @@
             event.stopImmediatePropagation();
         }
 
-        if (isOpening) {
+        if (isOpening || isSubmittingLead) {
             return;
         }
 
@@ -1433,24 +1433,25 @@
         closeGreeting.addEventListener('click', closeGreetingDialog);
     }
 
-    greetingSubmitButtons.forEach(function (button) {
-        button.addEventListener('click', function (event) {
+    var greetingForm = greeting ? greeting.querySelector('form[data-greeting-form]') : null;
+    if (greetingForm) {
+        greetingForm.addEventListener('submit', function (event) {
             event.preventDefault();
-            submitLeadForActiveChannel(button);
+            submitLeadForActiveChannel(greetingSubmit);
         });
-    });
+    } else {
+        greetingSubmitButtons.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                submitLeadForActiveChannel(button);
+            });
+        });
+    }
 
     if (phoneInput) {
         phoneInput.addEventListener('input', function () {
             clearPhoneInputInvalid();
             sendActualWidgetSize();
-        });
-        phoneInput.addEventListener('keydown', function (event) {
-            if (event.key !== 'Enter') {
-                return;
-            }
-            event.preventDefault();
-            submitLeadForActiveChannel(greetingSubmit);
         });
     }
 

@@ -1738,22 +1738,27 @@ function initAdminLivePreview() {
                 + '</div>';
         }
 
-        return '<div class="ctcw-greeting has-capture' + (consentHtml ? ' has-consent' : '') + '" data-preview-greeting data-active-channel="' + escapeHtml(activeChannel) + '" data-preview-active-channel="' + escapeHtml(activeChannel) + '">'
-            + '<div class="ctcw-greeting-form">'
+        var showChannelCta = formState.channelMode === 'both';
+        var channelCtaHtml = showChannelCta
+            ? '<button type="submit" class="ctcw-greeting-cta" aria-label="' + submitText + '" tabindex="-1">' + submitText + '</button>'
+            : '';
+
+        return '<div class="ctcw-greeting has-capture' + (consentHtml ? ' has-consent' : '') + (showChannelCta ? ' has-channel-cta' : '') + '" data-preview-greeting data-channel-mode="' + escapeHtml(formState.channelMode || 'whatsapp_only') + '" data-active-channel="' + escapeHtml(activeChannel) + '" data-preview-active-channel="' + escapeHtml(activeChannel) + '">'
+            + '<form class="ctcw-greeting-form" action="#" method="post" onsubmit="return false;">'
             + '<strong>' + title + '</strong>'
             + '<p>' + message + '</p>'
             + forceNote
             + '<div class="ctcw-phone-field">'
             + '<div class="ctcw-phone-row">'
             + '<input class="ctcw-phone-input" type="tel" placeholder="' + placeholder + '" readonly tabindex="-1">'
-            + '<button type="button" class="ctcw-greeting-submit" aria-label="' + submitText + '" tabindex="-1">'
+            + '<button type="submit" class="ctcw-greeting-submit" aria-label="' + submitText + '" tabindex="-1">'
             + '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>'
             + '</button>'
             + '</div>'
             + '</div>'
-            + '<button type="button" class="ctcw-greeting-cta" aria-label="' + submitText + '" tabindex="-1">' + submitText + '</button>'
+            + channelCtaHtml
             + consentHtml
-            + '</div>'
+            + '</form>'
             + '</div>';
     }
 

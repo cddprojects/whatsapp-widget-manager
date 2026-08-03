@@ -172,8 +172,20 @@ assert_true(
 $widgetPhp = file_get_contents(dirname(__DIR__) . '/widget.php');
 assert_true(str_contains($widgetPhp, 'data-channel-shell="telegram"'), 'Public widget renders Telegram style shell');
 assert_true(str_contains($widgetPhp, 'widget_consent_notice_text'), 'Public widget uses consent helper');
-assert_true(str_contains($widgetPhp, 'data-greeting-cta'), 'Public widget includes full-width greeting CTA');
-assert_true(substr_count($widgetPhp, 'data-greeting-submit') >= 2, 'Public widget has arrow and full CTA submit controls');
+assert_true(
+    str_contains($widgetPhp, "channelMode === 'both'")
+        || str_contains($widgetPhp, '$channelMode === \'both\''),
+    'Full-width greeting CTA is gated on both-channel mode'
+);
+assert_true(str_contains($widgetPhp, 'data-greeting-cta'), 'Public widget markup supports full-width greeting CTA');
+assert_true(str_contains($widgetPhp, 'has-channel-cta'), 'Greeting marks both-channel CTA mode');
+assert_true(str_contains($widgetPhp, '<form class="ctcw-greeting-form"'), 'Phone capture uses a form for shared submit');
+$dashboardJsPreview = file_get_contents(dirname(__DIR__) . '/assets/js/dashboard.js');
+assert_true(
+    str_contains($dashboardJsPreview, "channelMode === 'both'")
+        || str_contains($dashboardJsPreview, 'channelMode === "both"'),
+    'Live preview gates full CTA on both-channel mode'
+);
 $dashboardJs = file_get_contents(dirname(__DIR__) . '/assets/js/dashboard.js');
 assert_true(str_contains($dashboardJs, 'consentNoticeEnabled'), 'Live preview tracks consent toggle');
 assert_true(str_contains($dashboardJs, 'telegramDesktopStyle'), 'Live preview tracks Telegram style');
@@ -195,7 +207,16 @@ assert_true(str_contains($widgetCss, '.tg-compact'), 'Widget CSS defines tg-comp
 assert_true(str_contains($widgetCss, '.tg-reveal'), 'Widget CSS defines tg-reveal launcher');
 assert_true(str_contains($widgetCss, 'hover: none') || str_contains($widgetCss, 'pointer: coarse'), 'Widget CSS has touch hover fallback for reveal');
 assert_true(str_contains($widgetCss, '.ctcw-greeting-cta'), 'Widget CSS defines full-width greeting CTA');
+assert_true(str_contains($widgetCss, ':not(.has-channel-cta)'), 'Widget CSS collapses CTA space outside both mode');
 assert_true(str_contains($widgetCss, '--ctcw-channel'), 'Widget CSS defines channel color tokens');
+$widgetJsSource = file_get_contents(dirname(__DIR__) . '/assets/js/widget.js');
+assert_true(str_contains($widgetJsSource, 'submitLeadForActiveChannel'), 'Widget JS shares one submitLeadForActiveChannel helper');
+assert_true(str_contains($widgetJsSource, 'isSubmittingLead'), 'Widget JS guards against duplicate submissions');
+assert_true(
+    str_contains($widgetJsSource, "greetingForm.addEventListener('submit'")
+        || str_contains($widgetJsSource, 'greetingForm.addEventListener("submit"'),
+    'Widget JS binds shared form submit handler'
+);
 assert_true(str_contains($widgetCss, '#0077b5') || str_contains($widgetCss, '#0077B5'), 'Widget CSS uses Telegram hover #0077B5');
 $styleCss = file_get_contents(dirname(__DIR__) . '/assets/css/style.css');
 assert_true(str_contains($styleCss, '.channel-style-tab'), 'Admin CSS defines segmented style tabs');

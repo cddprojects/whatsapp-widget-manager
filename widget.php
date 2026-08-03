@@ -210,7 +210,7 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
         data-active-channel="<?= e($defaultPublicChannel) ?>"
     >
         <?php if (!empty($widget['greeting_enabled'])): ?>
-            <div class="ctcw-greeting ctcw-widget-popup<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?><?= $consentText !== '' ? ' has-consent' : '' ?>" data-greeting data-active-channel="<?= e($defaultPublicChannel) ?>">
+            <div class="ctcw-greeting ctcw-widget-popup<?= !empty($widget['greeting_capture_phone']) ? ' has-capture' : '' ?><?= $consentText !== '' ? ' has-consent' : '' ?><?= $channelMode === 'both' ? ' has-channel-cta' : '' ?>" data-greeting data-channel-mode="<?= e($channelMode) ?>" data-active-channel="<?= e($defaultPublicChannel) ?>">
                 <div class="ctcw-greeting-header">
                     <strong class="ctcw-greeting-title" data-greeting-title><?= e($greetingTitle) ?></strong>
                     <button class="ctcw-close" type="button" aria-label="<?= e(t('widget.close')) ?>" data-close-greeting>
@@ -218,7 +218,7 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
                     </button>
                 </div>
                 <?php if (!empty($widget['greeting_capture_phone'])): ?>
-                    <div class="ctcw-greeting-form" data-greeting-form>
+                    <form class="ctcw-greeting-form" data-greeting-form action="#" method="post">
                         <p class="ctcw-greeting-message" data-greeting-message><?= e($greetingMessage) ?></p>
                         <div class="ctcw-phone-field">
                             <div class="ctcw-phone-row">
@@ -252,20 +252,22 @@ $showTelegramLauncher = in_array(WIDGET_CHANNEL_TELEGRAM, $readyChannels, true);
                             </div>
                             <span class="ctcw-phone-error" id="<?= e($phoneErrorId) ?>" data-greeting-phone-error hidden></span>
                         </div>
-                        <button
-                            type="button"
-                            class="ctcw-greeting-cta"
-                            data-ctcw-role="phone-submit-cta"
-                            data-greeting-submit
-                            data-greeting-cta
-                        >
-                            <?= e($phoneSubmitButtonText) ?>
-                        </button>
+                        <?php if ($channelMode === 'both'): ?>
+                            <button
+                                type="submit"
+                                class="ctcw-greeting-cta"
+                                data-ctcw-role="phone-submit-cta"
+                                data-greeting-submit
+                                data-greeting-cta
+                            >
+                                <?= e($phoneSubmitButtonText) ?>
+                            </button>
+                        <?php endif; ?>
                         <?php if ($consentText !== ''): ?>
                             <p class="ctcw-consent-text"><?= e($consentText) ?></p>
                         <?php endif; ?>
                         <span class="ctcw-greeting-success" id="ctcw-greeting-success-gtm" data-greeting-success hidden><?= e($successMessage) ?></span>
-                    </div>
+                    </form>
                 <?php else: ?>
                     <div class="ctcw-greeting-form" data-greeting-form>
                         <p class="ctcw-greeting-message" data-greeting-message><?= e($greetingMessage) ?></p>
